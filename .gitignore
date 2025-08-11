@@ -1,6 +1,8 @@
 node_modules
+logo
 *.crt
 *.key
+data_factory/download
 
 # Output
 .output

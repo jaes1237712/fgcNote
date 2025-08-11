@@ -1,5 +1,4 @@
-export const CHARACTER_TO_ICON_SRC = 
-{
+export const CHARACTER_TO_ICON_SRC = {
     aki: "src/lib/images/character/icon/aki.png",
     blanka: "src/lib/images/character/icon/blanka.png",
     cammy: "src/lib/images/character/icon/cammy.png",
@@ -27,6 +26,10 @@ export const CHARACTER_TO_ICON_SRC =
     terry: "src/lib/images/character/icon/terry.png",
     vega: "src/lib/images/character/icon/vega.png",
     zangief: "src/lib/images/character/icon/zangief.png",
+}
+
+export const CHARACTER_NUMPAD_TO_ACTION_SRC = {
+    
 }
 
 export type CHARACTER = keyof typeof CHARACTER_TO_ICON_SRC;

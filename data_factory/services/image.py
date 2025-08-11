@@ -3,6 +3,16 @@ from pathlib import Path
 from urllib.parse import urlparse
 import csv
 import asyncio
+import shutil
+import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from typing import Optional, List, Tuple
+
+try:
+    from PIL import Image, UnidentifiedImageError
+except Exception:  # Pillow not installed or import failed
+    Image = None  # type: ignore
+    UnidentifiedImageError = Exception  # type: ignore
 
 def get_all_image_urls(page_title):
     session = requests.Session()
@@ -247,6 +257,241 @@ async def async_download_files(
 
     _append_downloaded_urls(csv_path, newly_downloaded_urls)
     return saved_file_paths
+
+def convert_all_image_into_webp(target_directory: Path, quality: int = 90, method: int = 6):
+    '''
+        Recursively process `target_directory` and all subdirectories.
+        - If a file is an image and not in WEBP format, convert it to WEBP.
+        - If a file is already WEBP, copy it as-is.
+        - Outputs go into a sibling folder named "{target_directory.name}_webp".
+        - Subfolder names are preserved (only the top-level folder name is changed).
+        - If the top-level output folder already exists, raise FileExistsError and do nothing.
+
+        Args:
+            quality: WEBP quality (0-100). Default 90.
+            method: WEBP encoder method/effort (0-6). Default 6 (slower, higher quality).
+
+        Returns: list[str] of generated/copied file paths (absolute paths).
+    '''
+
+    if Image is None:
+        raise RuntimeError(
+            "Pillow is required to convert images to WEBP. Please install it: pip install pillow"
+        )
+
+    src_dir = Path(target_directory).expanduser().resolve()
+    if not src_dir.exists() or not src_dir.is_dir():
+        raise NotADirectoryError(f"Target directory does not exist or is not a directory: {src_dir}")
+
+    dst_dir = src_dir.parent / f"{src_dir.name}_webp"
+    if dst_dir.exists():
+        raise FileExistsError(f"Destination already exists: {dst_dir}")
+    dst_dir.mkdir(parents=True, exist_ok=False)
+
+    image_suffixes = {
+        ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tif", ".tiff", ".webp", ".jfif", ".pjpeg", ".pjp",
+    }
+
+    # output_paths: list[str] = []
+
+    for entry in src_dir.rglob("*"):
+        if not entry.is_file():
+            continue
+
+        suffix = entry.suffix.lower()
+        if suffix not in image_suffixes:
+            continue
+
+        # Mirror the directory structure under dst_dir, preserving subfolder names
+        rel_parent = entry.parent.relative_to(src_dir)
+        dest_parent_dir = dst_dir / rel_parent
+        _ensure_directory(dest_parent_dir)
+
+        # Determine destination filename and ensure uniqueness inside the subfolder
+        if suffix == ".webp":
+            desired_name = entry.name
+        else:
+            desired_name = f"{entry.stem}.webp"
+
+        try:
+            target_path = _unique_target_path(dest_parent_dir, desired_name)
+        except Exception:
+            target_path = dest_parent_dir / desired_name
+
+        if suffix == ".webp":
+            shutil.copy2(entry, target_path)
+            # output_paths.append(str(target_path))
+            continue
+
+        try:
+            with Image.open(entry) as img:
+                try:
+                    if getattr(img, "is_animated", False):
+                        img.seek(0)
+                except Exception:
+                    pass
+
+                has_palette_alpha = (img.mode == "P" and "transparency" in img.info)
+                has_alpha = ("A" in (img.getbands() or ())) or has_palette_alpha
+                convert_mode = "RGBA" if has_alpha else "RGB"
+                converted = img.convert(convert_mode)
+
+                save_params = {"format": "WEBP", "quality": int(quality), "method": int(method)}
+                converted.save(target_path, **save_params)
+                # output_paths.append(str(target_path))
+        except UnidentifiedImageError:
+            continue
+        except Exception:
+            if target_path.exists():
+                try:
+                    target_path.unlink()
+                except Exception:
+                    pass
+            continue
+
+    # return output_paths
+
+
+def _convert_or_copy_to_webp_worker(args: Tuple[str, str, int, int]) -> Tuple[str, bool]:
+    src_path_str, dst_path_str, quality, method = args
+    src_path = Path(src_path_str)
+    dst_path = Path(dst_path_str)
+
+    try:
+        dst_path.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
+    suffix = src_path.suffix.lower()
+    if suffix == ".webp":
+        try:
+            shutil.copy2(src_path, dst_path)
+            return (dst_path_str, True)
+        except Exception:
+            return (dst_path_str, False)
+
+    try:
+        with Image.open(src_path) as img:
+            try:
+                if getattr(img, "is_animated", False):
+                    img.seek(0)
+            except Exception:
+                pass
+
+            has_palette_alpha = (img.mode == "P" and "transparency" in img.info)
+            has_alpha = ("A" in (img.getbands() or ())) or has_palette_alpha
+            convert_mode = "RGBA" if has_alpha else "RGB"
+            converted = img.convert(convert_mode)
+
+            save_params = {"format": "WEBP", "quality": int(quality), "method": int(method)}
+            converted.save(dst_path, **save_params)
+            return (dst_path_str, True)
+    except UnidentifiedImageError:
+        return (dst_path_str, False)
+    except Exception:
+        if dst_path.exists():
+            try:
+                dst_path.unlink()
+            except Exception:
+                pass
+        return (dst_path_str, False)
+
+
+def convert_all_image_into_webp_parallel(
+    target_directory: Path,
+    quality: int = 90,
+    method: int = 6,
+    max_workers: Optional[int] = None,
+) -> List[str]:
+    '''
+        Parallel version using processes. Recursively mirrors folder structure under
+        a top-level "{target_directory.name}_webp" directory. Only the top-level
+        folder name is changed; subfolder names are preserved.
+
+        - quality: WEBP quality (0-100), default 90
+        - method: WEBP encoder effort (0-6), default 6 (slower, higher quality)
+        - max_workers: number of worker processes (defaults to os.cpu_count())
+
+        Returns: list[str] of generated/copied file paths (absolute paths).
+    '''
+
+    if Image is None:
+        raise RuntimeError(
+            "Pillow is required to convert images to WEBP. Please install it: pip install pillow"
+        )
+
+    src_dir = Path(target_directory).expanduser().resolve()
+    if not src_dir.exists() or not src_dir.is_dir():
+        raise NotADirectoryError(f"Target directory does not exist or is not a directory: {src_dir}")
+
+    dst_dir = src_dir.parent / f"{src_dir.name}_webp"
+    if dst_dir.exists():
+        raise FileExistsError(f"Destination already exists: {dst_dir}")
+    dst_dir.mkdir(parents=True, exist_ok=False)
+
+    image_suffixes = {
+        ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tif", ".tiff", ".webp", ".jfif", ".pjpeg", ".pjp",
+    }
+
+    # Precompute unique destination paths per subfolder to avoid name races
+    assigned_names_per_dir: dict[Path, set[str]] = {}
+    tasks: List[Tuple[str, str, int, int]] = []
+
+    for entry in src_dir.rglob("*"):
+        if not entry.is_file():
+            continue
+        if entry.suffix.lower() not in image_suffixes:
+            continue
+
+        rel_parent = entry.parent.relative_to(src_dir)
+        dest_parent_dir = dst_dir / rel_parent
+
+        desired_name = entry.name if entry.suffix.lower() == ".webp" else f"{entry.stem}.webp"
+
+        used = assigned_names_per_dir.setdefault(dest_parent_dir, set())
+        candidate_name = desired_name
+        if candidate_name in used:
+            stem = Path(desired_name).stem
+            suffix = Path(desired_name).suffix
+            counter = 1
+            while True:
+                new_name = f"{stem}({counter}){suffix}"
+                if new_name not in used:
+                    candidate_name = new_name
+                    break
+                counter += 1
+        used.add(candidate_name)
+
+        final_dst = dest_parent_dir / candidate_name
+        tasks.append((str(entry), str(final_dst), int(quality), int(method)))
+
+    if not tasks:
+        return []
+
+    # Ensure all destination directories exist to reduce mkdir contention
+    for dest_parent in assigned_names_per_dir.keys():
+        try:
+            dest_parent.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+
+    worker_count = max_workers or os.cpu_count() or 1
+    results: List[str] = []
+    with ProcessPoolExecutor(max_workers=worker_count) as executor:
+        future_to_dst = {executor.submit(_convert_or_copy_to_webp_worker, t): t[1] for t in tasks}
+        for future in as_completed(future_to_dst):
+            dst_path_str = future_to_dst[future]
+            try:
+                _, ok = future.result()
+                if ok:
+                    results.append(dst_path_str)
+            except Exception:
+                # Ignore failures to keep batch going
+                pass
+
+    # return results
+
+
 
 
 # if __name__ == "__main__":
