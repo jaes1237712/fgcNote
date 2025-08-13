@@ -1,10 +1,9 @@
 import type { PageLoad } from './$types';
-import {userGetMe} from '$lib/client/sdk.gen'
-import type {UserPublic} from '$lib/client/types.gen'
+import {userControllerGetMe} from '$lib/client/sdk.gen'
 
 export const load: PageLoad = async ({  }) => {
     try {
-        const resp = await userGetMe({
+        const resp = await userControllerGetMe({
             credentials: 'include'
         })
         

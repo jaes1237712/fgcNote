@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Character, CharacterDto } from '../../entities/character.entity';
+import { Character, CharacterDto } from './entities/character.entity';
 import {
   CharacterMoveImage,
   CharacterImageDto,
-} from '../../entities/character-move-image.entity';
+} from './entities/character-move-image.entity';
 
 @Injectable()
 export class CharacterService {

@@ -6,7 +6,7 @@
     import {create_image, LAYOUT_SETTING} from '$lib/utils/canvas'
     import {numpadCompiler} from '$lib/utils/numpadCompiler'
     import { Stage } from 'konva/lib/Stage';
-    import {userGetMe, authGoogleLogin} from '$lib/client/sdk.gen'
+    import {authControllerGoogleLogin, userControllerGetMe} from '$lib/client/sdk.gen'
     import type {PageProps} from './$types';
     import { Plus, Image } from '@lucide/svelte';
 	import type { Layer } from 'konva/lib/Layer';
@@ -16,7 +16,6 @@
     import type {UserSettings} from '$lib/utils/numpadEditorDialog'
     import '$lib/css/context_menu.css'
     import '$lib/component/SelectCharacter.svelte'
-	import type { UserPublic } from '$lib/client';
     let {data} : PageProps = $props();
     let stage: Stage;
     let layer: Layer;
@@ -200,7 +199,7 @@
             })
             
             // 1) call backend to exchange id_token for session cookie
-            const loginResponse = await authGoogleLogin({
+            const loginResponse = await authControllerGoogleLogin({
                 body:{
                     id_token: currentCredential.token
                 },
@@ -211,7 +210,7 @@
                 console.log('登錄成功，正在獲取用戶信息...')
                 
                 // 2) call protected endpoint; cookie will be sent automatically
-                const userResponse = await userGetMe({
+                const userResponse = await userControllerGetMe({
                     credentials: 'include'
                 })
                 

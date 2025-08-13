@@ -133,5 +133,5 @@ export type CharacterAdminControllerSyncFromFileSystemResponses = {
 export type CharacterAdminControllerSyncFromFileSystemResponse = CharacterAdminControllerSyncFromFileSystemResponses[keyof CharacterAdminControllerSyncFromFileSystemResponses];
 
 export type ClientOptions = {
-    baseUrl: string;
+    baseUrl: 'https://localhost:3000' | (string & {});
 };

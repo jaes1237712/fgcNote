@@ -1,8 +1,8 @@
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
-import { CharacterService } from '../services/character.service';
-import { CharacterDto } from '../../entities/character.entity';
-import { CharacterImageDto } from '../../entities/character-move-image.entity';
+import { CharacterService } from './character.service';
+import { CharacterDto } from './entities/character.entity';
+import { CharacterImageDto } from './entities/character-move-image.entity';
 
 @ApiTags('characters')
 @Controller('characters')

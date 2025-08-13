@@ -11,7 +11,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check .",
-		"generate-client": "openapi-ts"
+		"generate-client": "curl https://localhost:3000/api-json -o openapi.json && openapi-ts"
 	},
 	"files": [
 		"dist",

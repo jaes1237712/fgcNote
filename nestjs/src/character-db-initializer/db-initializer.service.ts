@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Character } from '../../entities/character.entity';
-import { CharacterMoveImage } from '../../entities/character-move-image.entity';
-import { characterConfig } from '../../config/character.config';
+import { Character } from 'src/character/entities/character.entity';
+import { CharacterMoveImage } from 'src/character/entities/character-move-image.entity';
+import { characterConfig } from 'src/config/character.config';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 

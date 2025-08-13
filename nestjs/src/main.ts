@@ -6,9 +6,16 @@ import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { readFileSync } from 'fs';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const httpsOptions = {
+    key: readFileSync('secrets/self.key'),
+    cert: readFileSync('secrets/self.crt'),
+  };
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    httpsOptions,
+  });
 
   // 配置靜態檔案服務
   app.useStaticAssets(join(__dirname, '..', 'assets'), {
@@ -20,6 +27,7 @@ async function bootstrap() {
     .setTitle('FGC Note API')
     .setDescription('FGC Note 角色管理系統 API 文檔')
     .setVersion('1.0')
+    .addServer('https://localhost:3000', 'Local Development Server')
     .addTag('characters', '角色管理')
     .addTag('admin', '管理員功能')
     .build();
@@ -28,27 +36,15 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   const configService = app.get(ConfigService);
-  const originsRaw = configService.get<string | string[] | undefined>(
-    'CORS_ORIGINS',
-  );
-  let corsOrigins: string[] = [
-    'http://localhost:5173',
-    'http://localhost:8080',
-    'https://localhost:5173',
-  ];
-  if (Array.isArray(originsRaw)) {
-    corsOrigins = originsRaw;
-  } else if (typeof originsRaw === 'string' && originsRaw.trim().length > 0) {
-    try {
-      const parsed = JSON.parse(originsRaw);
-      if (Array.isArray(parsed)) corsOrigins = parsed;
-    } catch {
-      corsOrigins = originsRaw
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
-  }
+  const originsRaw = configService.get<string[]>('CORS_ORIGINS');
+
+  const corsOrigins: string[] = originsRaw
+    ? originsRaw
+    : [
+        'http://localhost:5173',
+        'http://localhost:8080',
+        'https://localhost:5173',
+      ];
 
   app.enableCors({
     origin: corsOrigins,
@@ -63,8 +59,8 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') ?? 3000;
   await app.listen(port);
 
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📚 Swagger API documentation: http://localhost:${port}/api`);
+  console.log(`🚀 Application is running on: https://localhost:${port}`);
+  console.log(`📚 Swagger API documentation: https://localhost:${port}/api`);
 }
 
 bootstrap();

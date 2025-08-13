@@ -4,8 +4,11 @@ import { OAuth2Client, TokenPayload } from 'google-auth-library';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../entities/user.entity';
+import { User } from '../user/entities/user.entity';
 import { Algorithm } from 'jsonwebtoken'; // 導入 Algorithm 類型
+import { UserService } from 'src/user/user.service';
+import { UserDto } from 'src/user/dto/user.dto';
+import { GoogleUserInfo } from './interface/google-user-info.interface';
 
 @Injectable()
 export class AuthService {
@@ -15,14 +18,13 @@ export class AuthService {
   constructor(
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly userService: UserService,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
   ) {
     this.googleClient = new OAuth2Client(this.config.get<string>('CLIENT_ID'));
   }
 
-  async verifyGoogleToken(
-    idToken: string,
-  ): Promise<Pick<User, 'email' | 'name' | 'picture' | 'google_sub'>> {
+  async verifyGoogleToken(idToken: string): Promise<GoogleUserInfo> {
     try {
       const ticket = await this.googleClient.verifyIdToken({
         idToken,
@@ -33,7 +35,7 @@ export class AuthService {
         google_sub: payload.sub,
         email: payload.email!,
         name: payload.name ?? '',
-        picture: payload.picture ?? null,
+        picture: payload.picture,
       };
     } catch (err) {
       if (err instanceof Error) {
@@ -53,28 +55,21 @@ export class AuthService {
     }
   }
 
-  async createOrGetUserFromGoogle(info: {
-    google_sub: string;
-    email: string;
-    name: string;
-    picture: string | null;
-  }): Promise<User> {
-    let user = await this.userRepo.findOne({
-      where: { google_sub: info.google_sub },
-    });
+  async createOrGetUserFromGoogle(info: GoogleUserInfo): Promise<UserDto> {
+    const user = await this.userService.findByGoogleSub(info.google_sub);
     if (!user) {
-      user = this.userRepo.create({
+      return this.userService.create({
         google_sub: info.google_sub,
         email: info.email,
         name: info.name,
+        nickname: info.name,
         picture: info.picture,
       });
-      await this.userRepo.save(user);
     }
     return user;
   }
 
-  createSessionJwt(userId: string): string {
+  createSessionJwt(userId: string) {
     const expiresMinutes = Number(
       this.config.get<string>('JWT_EXPIRES_MINUTES') ?? '10080',
     );
@@ -84,7 +79,7 @@ export class AuthService {
       {
         sub: userId,
         iat: nowSeconds,
-        exp,
+        exp: exp,
         iss: 'fgcNote',
         typ: 'sess',
       },

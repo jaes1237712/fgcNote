@@ -1,38 +1,27 @@
-import { Controller, Get, Param, UseGuards, Req } from '@nestjs/common';
-import { SessionGuard } from '../common/session.guard';
+import { Controller, Get, UseGuards, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { UserService } from './user.service';
-import { User } from '../entities/user.entity';
+import { UserDto } from './dto/user.dto';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { Algorithm } from 'jsonwebtoken'; // 導入 Algorithm 類型
+import { SessionGuard } from 'src/common/session.guard';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly users: UserService) {}
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly config: ConfigService,
+    private readonly userService: UserService,
+  ) {}
 
   @Get('me')
   @UseGuards(SessionGuard)
-  async getMe(@Req() req: Request): Promise<{
-    email: string;
-    name: string;
-    picture: string | null;
-    google_sub: string;
-    created_at: Date;
-    updated_at: Date;
-  }> {
-    const u = (req as any).user as User;
-    return {
-      email: u.email,
-      name: u.name,
-      picture: u.picture,
-      google_sub: u.google_sub,
-      created_at: u.created_at,
-      updated_at: u.updated_at,
-    };
-  }
-
-  @Get('search/:email')
-  @UseGuards(SessionGuard)
-  async isYouThere(@Param('email') email: string): Promise<boolean> {
-    const target = await this.users.findByEmail(email);
-    return !!target;
+  getMe(@Req() req: Request): UserDto | null {
+    if (req.user) {
+      return req.user;
+    } else {
+      return null;
+    }
   }
 }
