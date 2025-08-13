@@ -11,9 +11,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check .",
-		"generate-client": "openapi-ts",
-		"fastapi": "cd src/lib/api/ && uv run -- uvicorn main:app --host 0.0.0.0 --port 8000 --ssl-keyfile=./self.key --ssl-certfile=./self.crt",
-		"fastapi-http": "cd src/lib/api/ && uv run -- uvicorn main:app --host 0.0.0.0 --port 8000"
+		"generate-client": "openapi-ts"
 	},
 	"files": [
 		"dist",
