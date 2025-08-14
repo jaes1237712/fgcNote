@@ -7,6 +7,7 @@ import { CharacterMoveImage } from 'src/character/entities/character-move-image.
 import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
 import { CharacterModule } from 'src/character/character.module';
+import { CharacterDbSyncModule } from 'src/character-db-sync/character-db-sync.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CharacterModule } from 'src/character/character.module';
     AuthModule,
     UserModule,
     CharacterModule,
+    CharacterDbSyncModule,
   ],
 })
 export class AppModule {}

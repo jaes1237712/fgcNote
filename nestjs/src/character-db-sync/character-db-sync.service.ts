@@ -148,7 +148,7 @@ export class CharacterSyncService {
           path.join(folderPath, 'icon'),
         );
         if (iconFiles.length > 0) {
-          folderInfo.iconFile = iconFiles[0]; // 取第一個檔案作為 icon
+          folderInfo.iconFile = iconFiles[0];
         }
       }
 
@@ -161,7 +161,7 @@ export class CharacterSyncService {
           path.join(folderPath, 'portrait'),
         );
         if (portraitFiles.length > 0) {
-          folderInfo.portraitFile = portraitFiles[0]; // 取第一個檔案作為 portrait
+          folderInfo.portraitFile = portraitFiles[0];
         }
       }
 
@@ -251,19 +251,19 @@ export class CharacterSyncService {
       if (isNew) {
         character = this.characterRepository.create({
           name: folderInfo.name,
-          folderPath: folderInfo.path,
+          folderPath: this.toStaticPath(folderInfo.path),
         });
       } else if (character) {
-        character.folderPath = folderInfo.path;
+        character.folderPath = this.toStaticPath(folderInfo.path);
         character.updatedAt = new Date();
       }
 
       if (character) {
         if (folderInfo.iconFile) {
-          character.iconFilePath = folderInfo.iconFile.path;
+          character.iconFilePath = this.toStaticPath(folderInfo.iconFile.path);
         }
         if (folderInfo.portraitFile) {
-          character.portraitFilePath = folderInfo.portraitFile.path;
+          character.portraitFilePath = this.toStaticPath(folderInfo.portraitFile.path);
         }
 
         // 先保存角色，確保有 ID
@@ -333,7 +333,7 @@ export class CharacterSyncService {
       if (!image) {
         image = this.moveImageRepository.create({
           fileName: file.name,
-          filePath: file.path,
+          filePath: this.toStaticPath(file.path),
           fileSize: file.size,
           mimeType: file.mimeType,
           characterId: character.id,
@@ -341,9 +341,10 @@ export class CharacterSyncService {
         updatedCount++;
       } else {
         // 檢查檔案是否有變更
-        if (image.fileSize !== file.size || image.filePath !== file.path) {
+        const newStaticPath = this.toStaticPath(file.path);
+        if (image.fileSize !== file.size || image.filePath !== newStaticPath) {
           image.fileSize = file.size;
-          image.filePath = file.path;
+          image.filePath = newStaticPath;
           image.mimeType = file.mimeType;
           updatedCount++;
         }
@@ -353,5 +354,22 @@ export class CharacterSyncService {
     }
 
     return { updatedCount };
+  }
+
+  private toStaticPath(absolutePath: string): string {
+    try {
+      const assetsRoot = path.join(process.cwd(), 'assets');
+      let relativePath = path.relative(assetsRoot, absolutePath);
+      // Normalize to POSIX-style for URLs
+      relativePath = relativePath.split(path.sep).join('/');
+      if (!relativePath || relativePath.startsWith('..')) {
+        // If outside assets, fall back to original name in assets root
+        const baseName = path.basename(absolutePath);
+        return `/assets/${baseName}`;
+      }
+      return `/assets/${relativePath}`;
+    } catch (e) {
+      return absolutePath;
+    }
   }
 }

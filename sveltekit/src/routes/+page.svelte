@@ -262,7 +262,7 @@
     <main>
         <div class="left-panel">
             <div class="user-character">
-                <select-character onselectCharacter={(event) =>{
+                <select-character characters={data.characters} onselectCharacter={(event) =>{
                     console.log(event.detail.name);
                 }}>
                     

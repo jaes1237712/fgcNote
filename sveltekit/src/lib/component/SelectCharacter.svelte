@@ -1,11 +1,11 @@
 <svelte:options customElement="select-character" />
 
 <script lang="ts">
-    import {CHARACTER_TO_ICON_SRC} from '$lib/constants/character'
-    import type {CHARACTER} from '$lib/constants/character'
-	import { onMount } from 'svelte';
+    import type {CharacterDto} from '$lib/client/types.gen'
+    let {characters}: {characters: CharacterDto[]} = $props();
     let isGridVisible = $state<boolean>(false);
-    let selectCharacter = $state<CHARACTER>('chunli');
+    let selectCharacter = $state<CharacterDto>(characters[0]?characters[0]:null);
+    const NESTJS_BASE_URL = "https://localhost:3000"
     function dispatch(type){
         $host().dispatchEvent(new CustomEvent(type,))
     }
@@ -15,7 +15,7 @@
     <button class="btn-character" onclick={() => {
             isGridVisible = !isGridVisible;
         }}>
-        <img src={CHARACTER_TO_ICON_SRC[selectCharacter]} alt={selectCharacter}>
+        <img src={NESTJS_BASE_URL+selectCharacter.iconFilePath} alt={selectCharacter.name}>
     </button>
     {#if isGridVisible}
         <div class="overlay"
@@ -28,17 +28,17 @@
                 }
             }}></div>
         <div class="grid-select-character">
-            {#each Object.entries(CHARACTER_TO_ICON_SRC) as [name, icon]}
+            {#each characters as character}
                 <button class="btn-character" onclick={() => {
-                    selectCharacter = name as CHARACTER;
+                    selectCharacter = character;
                     $host().dispatchEvent(new CustomEvent("selectCharacter",{
                         detail:{
-                            name: name
+                            character: character
                         }
                     }));
                     isGridVisible = !isGridVisible;
                 }}>
-                    <img src={icon} alt={name}>
+                    <img src={NESTJS_BASE_URL+character.iconFilePath} alt={character.name}>
                 </button>
             {/each}
         </div>
