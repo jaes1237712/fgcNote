@@ -50,8 +50,7 @@ async function bootstrap() {
     origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: '*',
-    exposedHeaders: '*',
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   app.use(cookieParser());

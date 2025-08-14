@@ -1,6 +1,7 @@
 node_modules
 *.crt
 *.key
+/assets
 
 # Output
 .output

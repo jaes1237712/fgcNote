@@ -1,8 +1,8 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { CharacterService } from './character.service';
-import { CharacterDto } from './entities/character.entity';
-import { CharacterImageDto } from './entities/character-move-image.entity';
+import { CharacterDto } from './dtos/character.dto';
+import { CharacterMoveImageDto } from './dtos/character-move-image.dto';
 
 @ApiTags('characters')
 @Controller('characters')
@@ -32,11 +32,11 @@ export class CharacterController {
   @ApiResponse({
     status: 200,
     description: '成功獲取角色圖片',
-    type: [CharacterImageDto],
+    type: [CharacterMoveImageDto],
   })
   async findImages(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<CharacterImageDto[]> {
+  ): Promise<CharacterMoveImageDto[]> {
     return this.characterService.findMoveImages(id);
   }
 }

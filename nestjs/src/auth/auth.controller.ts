@@ -1,10 +1,11 @@
 import { Body, Controller, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserDto } from 'src/user/dto/user.dto';
 
 class GoogleLoginBody {
+  @ApiProperty()
   id_token!: string;
 }
 
@@ -24,12 +25,10 @@ export class AuthController {
   })
   async googleLogin(
     @Body() body: GoogleLoginBody,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+    @Res({ passthrough: true }) res: Response,): Promise<UserDto> {
     const info = await this.authService.verifyGoogleToken(body.id_token);
     const user = await this.authService.createOrGetUserFromGoogle(info);
     const jwt = this.authService.createSessionJwt(user.id);
-
     res.cookie('session', jwt, {
       httpOnly: true,
       secure: true,

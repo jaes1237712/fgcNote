@@ -7,23 +7,22 @@ import {
   OneToMany,
 } from 'typeorm';
 import { CharacterMoveImage } from './character-move-image.entity';
-import { ApiProperty } from '@nestjs/swagger';
 
 @Entity({ name: 'character' })
 export class Character {
-  // @ApiProperty({ description: '角色唯一識別碼' })
+  // @ApiProperty({ description: 'Primary ID' })
   @PrimaryGeneratedColumn()
   id!: number;
 
-  // @ApiProperty({ description: '角色名稱（唯一）' })
+  // @ApiProperty({ description: 'Character Name' })
   @Column({ unique: true })
   name!: string;
 
-  // @ApiProperty({ description: '角色Icon圖片' })
+  // @ApiProperty({ description: 'Icon Path' })
   @Column({ unique: true })
   iconFilePath!: string;
 
-  // @ApiProperty({ description: '角色Portrait圖片' })
+  // @ApiProperty({ description: 'Portrait Path' })
   @Column({ unique: true })
   portraitFilePath!: string;
 
@@ -32,26 +31,17 @@ export class Character {
   })
   moveImages!: CharacterMoveImage[];
 
-  // @ApiProperty({ description: '檔案系統中的資料夾路徑' })
+  // @ApiProperty({ description: 'Character Folder' })
   @Column()
   folderPath!: string;
 
-  // @ApiProperty({ description: '創建時間' })
+  // @ApiProperty({ description: 'Created at' })
   @CreateDateColumn()
   createdAt!: Date;
 
-  // @ApiProperty({ description: '更新時間' })
+  // @ApiProperty({ description: 'Updated at' })
   @UpdateDateColumn()
   updatedAt!: Date;
 }
 
-export class CharacterDto {
-  @ApiProperty({ description: '角色名稱' })
-  name!: string;
 
-  @ApiProperty({ description: '角色Icon圖片' })
-  iconFilePath!: string;
-
-  @ApiProperty({ description: '角色Portrait圖片' })
-  portraitFilePath!: string;
-}

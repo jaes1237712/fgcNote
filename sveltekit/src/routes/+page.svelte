@@ -239,7 +239,7 @@
         <img alt="sf6_logo"src={logo}/>
         <Notebook size=40 color="oklch(0.91 0.15 194.77)"/>
         {#if currentUser}
-            <span class="user-name">{currentUser.name}</span>
+            <span class="user-name">{currentUser.nickname}</span>
         {:else}
         <button class="btn-login" onclick={
             async () => {

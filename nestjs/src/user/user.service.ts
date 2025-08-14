@@ -12,8 +12,10 @@ export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
   ) {}
-  create(createUserDto: CreateUserDto): User {
-    return this.userRepo.create(createUserDto);
+  async create(createUserDto: CreateUserDto): Promise<UserDto> {
+    const userEntity = this.userRepo.create(createUserDto);
+    const savedUser = await this.userRepo.save(userEntity);
+    return this.toUserDto(savedUser);
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserDto> {

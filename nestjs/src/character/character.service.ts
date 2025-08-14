@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Character, CharacterDto } from './entities/character.entity';
-import {
-  CharacterMoveImage,
-  CharacterImageDto,
-} from './entities/character-move-image.entity';
+import { Character} from './entities/character.entity';
+import {CharacterDto} from './dtos/character.dto';
+import {CharacterMoveImage} from './entities/character-move-image.entity';
+import {CharacterMoveImageDto} from './dtos/character-move-image.dto';
+
 
 @Injectable()
 export class CharacterService {
@@ -26,7 +26,7 @@ export class CharacterService {
     }));
   }
 
-  async findMoveImages(characterId: number): Promise<CharacterImageDto[]> {
+  async findMoveImages(characterId: number): Promise<CharacterMoveImageDto[]> {
     const images = await this.imageRepository.find({
       where: { characterId },
       order: { fileName: 'ASC' },

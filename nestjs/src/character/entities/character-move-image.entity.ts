@@ -7,35 +7,34 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Character } from './character.entity';
-import { ApiProperty } from '@nestjs/swagger';
 
 @Entity({ name: 'character_move_image' })
 export class CharacterMoveImage {
-  @ApiProperty({ description: '圖片唯一識別碼' })
+  // @ApiProperty({ description: 'Unique identifier for the image' })
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ApiProperty({ description: '圖片檔案名稱' })
+  // @ApiProperty({ description: 'File name of the image' })
   @Column()
   fileName!: string;
 
-  @ApiProperty({ description: '圖片檔案路徑' })
+  // @ApiProperty({ description: 'File path of the image' })
   @Column()
   filePath!: string;
 
-  @ApiProperty({ description: '圖片檔案大小（位元組）' })
+  // @ApiProperty({ description: 'File size of the image in bytes' })
   @Column()
   fileSize!: number;
 
-  @ApiProperty({ description: '圖片 MIME 類型', required: false })
+  // @ApiProperty({ description: 'MIME type of the image file', required: false })
   @Column({ nullable: true })
   mimeType?: string;
 
-  @ApiProperty({ description: '圖片寬度（像素）', required: false })
+  // @ApiProperty({ description: 'Width of the image in pixels', required: false })
   @Column({ nullable: true })
   width?: number;
 
-  @ApiProperty({ description: '圖片高度（像素）', required: false })
+  // @ApiProperty({ description: 'Height of the image in pixels', required: false })
   @Column({ nullable: true })
   height?: number;
 
@@ -45,22 +44,11 @@ export class CharacterMoveImage {
   @JoinColumn({ name: 'characterId' })
   character!: Character;
 
-  @ApiProperty({ description: '所屬角色 ID' })
+  // @ApiProperty({ description: 'ID of the associated character' })
   @Column()
   characterId!: number;
 
-  @ApiProperty({ description: '創建時間' })
+  // @ApiProperty({ description: 'Creation timestamp' })
   @CreateDateColumn()
   createdAt!: Date;
-}
-
-export class CharacterImageDto {
-  @ApiProperty({ description: '圖片檔案名稱' })
-  fileName!: string;
-
-  @ApiProperty({ description: '圖片檔案路徑' })
-  filePath!: string;
-
-  @ApiProperty({ description: '所屬角色 ID' })
-  characterId!: number;
 }
