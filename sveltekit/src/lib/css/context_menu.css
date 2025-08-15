@@ -1,45 +1,45 @@
-    /* 右鍵選單樣式 */
-    .context-menu {
-        position: fixed;
-        z-index: 1000;
-        background: oklch(0.95 0.02 264.15);
-        border: 1px solid oklch(0.8 0.02 264.15);
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        padding: 4px;
-        min-width: 160px;
-        backdrop-filter: blur(8px);
-    }
+/* 右鍵選單樣式 */
+.context-menu {
+	position: fixed;
+	z-index: 1000;
+	background: oklch(0.95 0.02 264.15);
+	border: 1px solid oklch(0.8 0.02 264.15);
+	border-radius: 8px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	padding: 4px;
+	min-width: 160px;
+	backdrop-filter: blur(8px);
+}
 
-    .context-menu-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        width: 100%;
-        padding: 8px 12px;
-        border: none;
-        background: transparent;
-        color: oklch(0.2 0.02 264.15);
-        font-size: 14px;
-        cursor: pointer;
-        border-radius: 4px;
-        transition: all 0.2s ease;
-    }
+.context-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 12px;
+	border: none;
+	background: transparent;
+	color: oklch(0.2 0.02 264.15);
+	font-size: 14px;
+	cursor: pointer;
+	border-radius: 4px;
+	transition: all 0.2s ease;
+}
 
-    .context-menu-item:hover {
-        background: oklch(0.9 0.02 264.15);
-        color: oklch(0.1 0.02 264.15);
-    }
+.context-menu-item:hover {
+	background: oklch(0.9 0.02 264.15);
+	color: oklch(0.1 0.02 264.15);
+}
 
-    .context-menu-item:active {
-        background: oklch(0.85 0.02 264.15);
-        transform: scale(0.98);
-    }
+.context-menu-item:active {
+	background: oklch(0.85 0.02 264.15);
+	transform: scale(0.98);
+}
 
-    :global(.context-menu-item svg) {
-        color: oklch(0.4 0.02 264.15);
-    }
+:global(.context-menu-item svg) {
+	color: oklch(0.4 0.02 264.15);
+}
 
-    :global(.context-menu-item:hover svg) {
-        color: oklch(0.2 0.02 264.15);
-    }
+:global(.context-menu-item:hover svg) {
+	color: oklch(0.2 0.02 264.15);
+}

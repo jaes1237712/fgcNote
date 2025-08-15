@@ -8,8 +8,8 @@ export default defineConfig({
 		port: 5173,
 		https: {
 			key: path.resolve(__dirname, 'self.key'),
-      		cert: path.resolve(__dirname, 'self.crt'),
+			cert: path.resolve(__dirname, 'self.crt')
 		}
-	  },
+	},
 	plugins: [sveltekit()]
 });

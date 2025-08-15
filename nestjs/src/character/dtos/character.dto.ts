@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CharacterDto {
+    @ApiProperty({ description: 'Primary ID' })
+    id!: number;
+
     @ApiProperty({ description: 'Character Name' })
     name!: string;
   
