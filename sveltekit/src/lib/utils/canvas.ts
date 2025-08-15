@@ -1,8 +1,6 @@
 import Konva from 'konva';
 import { Group } from 'konva/lib/Group';
 import { Layer } from 'konva/lib/Layer';
-import { NUMPAD_TO_SRC } from '$lib/utils/numpadCompiler';
-import type { NUMPAD_ACTION_SET_TYPE, CONTROLLER_TYPE } from '$lib/utils/numpadCompiler';
 
 export interface CreateImageConfig {
 	x: number;
@@ -10,8 +8,7 @@ export interface CreateImageConfig {
 	width: number;
 	height: number;
 	length_unit: number;
-	key: NUMPAD_ACTION_SET_TYPE['CLASSIC'] | NUMPAD_ACTION_SET_TYPE['MODERN'];
-	type: CONTROLLER_TYPE;
+	src: string;
 }
 
 export function create_image(config: CreateImageConfig, layer: Layer | Group) {
@@ -26,11 +23,7 @@ export function create_image(config: CreateImageConfig, layer: Layer | Group) {
 		});
 		layer.add(konva_img);
 	};
-	if (config.type == 'CLASSIC') {
-		imageObj.src = NUMPAD_TO_SRC.CLASSIC[config.key];
-	} else {
-		imageObj.src = NUMPAD_TO_SRC.MODERN[config.key];
-	}
+	imageObj.src = config.src;
 }
 
 export const LAYOUT_SETTING = {

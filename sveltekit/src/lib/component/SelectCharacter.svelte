@@ -10,6 +10,8 @@
 	import { PUBLIC_NESTJS_URL } from '$env/static/public';
 	let isGridVisible = $state<boolean>(false);
 	let selectCharacter = $state<CharacterDto>(defaultCharacter);
+
+
 	const gridWidth = `calc(${size}*7)`;
 </script>
 

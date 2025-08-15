@@ -88,10 +88,13 @@ function parseInputToActions(input: string, actionSet: Set<string>): string[] {
 export function numpadCompiler(config: NumpadCompilerConfig): CreateImageConfig[] {
 	let return_cofigs: CreateImageConfig[] = [];
 	let action_set;
+	let action_to_src;
 	if (config.type == 'CLASSIC') {
 		action_set = NUMPAD_KEYS_SET.CLASSIC;
+		action_to_src = NUMPAD_TO_SRC.CLASSIC;
 	} else {
 		action_set = NUMPAD_KEYS_SET.MODERN;
+		action_to_src = NUMPAD_TO_SRC.MODERN;
 	}
 
 	// Parse input into valid actions
@@ -99,7 +102,6 @@ export function numpadCompiler(config: NumpadCompilerConfig): CreateImageConfig[
 
 	let count = 0;
 	let step = 3;
-	let unit = config.length_unit;
 
 	for (let action of actions) {
 		return_cofigs.push({
@@ -108,8 +110,7 @@ export function numpadCompiler(config: NumpadCompilerConfig): CreateImageConfig[
 			width: step,
 			height: step,
 			length_unit: config.length_unit,
-			key: action as NUMPAD_ACTION_SET_TYPE[typeof config.type],
-			type: config.type
+			src: action_to_src[action]
 		});
 		count += step;
 	}

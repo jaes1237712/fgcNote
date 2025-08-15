@@ -147,6 +147,9 @@
 	.search-character-image {
 		width: 100%;
 		height: 100%;
+		overflow-y: hidden;
+		overflow-x: hidden;
+		color: white;
 		input{
 			font-size: x-large;
 			height: 3rem;
@@ -159,6 +162,7 @@
             display: flex;
             flex-direction: column;
             overflow-y: scroll;
+			overflow-x: hidden;
             li{	
                 button{
 					color: white;

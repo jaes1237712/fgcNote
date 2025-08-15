@@ -4,20 +4,22 @@
 	import { onMount } from 'svelte';
 	import Konva from 'konva';
 	import { create_image, LAYOUT_SETTING } from '$lib/utils/canvas';
+	import { PUBLIC_NESTJS_URL } from '$env/static/public';
 	import { numpadCompiler } from '$lib/utils/numpadCompiler';
 	import { Stage } from 'konva/lib/Stage';
 	import { authControllerGoogleLogin, userControllerGetMe } from '$lib/client/sdk.gen';
 	import type { PageProps } from './$types';
-	import { Plus, Image } from '@lucide/svelte';
+	import { Plus, ImageIcon } from '@lucide/svelte';
 	import type { Layer } from 'konva/lib/Layer';
 	import { Group } from 'konva/lib/Group';
-	import type { CharacterDto } from '$lib/client/types.gen';
+	import type { CharacterDto, CharacterMoveImageDto } from '$lib/client/types.gen';
 	import type { CreateImageConfig } from '$lib/utils/canvas';
 	import { HandleNumpadEditorDialog } from '$lib/utils/numpadEditorDialog';
 	import type { UserSettings } from '$lib/utils/numpadEditorDialog';
 	import '$lib/css/context_menu.css';
 	import '$lib/component/SelectCharacter.svelte';
-	// import '$lib/component/SearchCharacterImages.svelte';
+	import '$lib/component/SearchCharacterImages.svelte';
+	import { scale } from 'svelte/transition';
 	let { data }: PageProps = $props();
 	let stage: Stage;
 	let layer: Layer;
@@ -38,7 +40,7 @@
 	// 右鍵選單選項
 	const contextMenuOptions = [
 		{ id: 'insert-block', label: '插入區塊', icon: Plus },
-		{ id: 'insert-image', label: '插入圖片', icon: Image }
+		{ id: 'insert-image', label: '插入圖片', icon: ImageIcon }
 	];
 
 	// 處理右鍵選單選項點擊
@@ -73,7 +75,10 @@
 					numpadEditorInput.value = '';
 					preview_layer.destroyChildren();
 				}
+				break
 			case 'insert-image':
+				imageSearchDialog.showModal()
+				break
 		}
 		hideContextMenu();
 	}
@@ -276,6 +281,7 @@
 			<div class="user-character">
 				<select-character
 					allCharacters={data.allCharacters}
+					defaultCharacter={data.allCharacters[0]}
 					onselectCharacter={(event) => {
 						currentCharacter = event.detail.character;
 					}}
@@ -326,6 +332,30 @@
 				</button>
 			</div>
 		</div>
+	</dialog>
+
+	<dialog id="search-character-image" bind:this={imageSearchDialog}>
+		<search-character-image 
+		allCharacter={data.allCharacters}
+		characterMe={data.allCharacters[0]}
+		characterOpponent={data.allCharacters[1]}
+		onselectImage={(event)=>{
+			const image = event.detail.image as CharacterMoveImageDto;
+			const rec_konve = konvaContainer.getBoundingClientRect();
+			Konva.Image.fromURL(PUBLIC_NESTJS_URL+image.filePath, function(moveImage){
+				moveImage.setAttrs({
+					x: contextMenuPosition.x - rec_konve.left,
+					y: contextMenuPosition.y - rec_konve.top,
+					scaleX: 0.25,
+					scaleY: 0.25,
+					draggable:true
+				});
+				layer.add(moveImage)
+			})
+			imageSearchDialog.close()
+		}}
+		>
+		</search-character-image>
 	</dialog>
 </div>
 
@@ -412,5 +442,10 @@
 				height: 2rem;
 			}
 		}
+	}
+	search-character-image{
+		display: block;
+		width: 50vw;
+		height: 80vh;
 	}
 </style>
