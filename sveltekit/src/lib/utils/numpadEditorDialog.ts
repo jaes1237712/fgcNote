@@ -1,9 +1,8 @@
 import Konva from 'konva';
-import type { CreateImageConfig } from '$lib/utils/canvas';
-import { numpadCompiler } from '$lib/utils/numpadCompiler';
-import { create_image } from '$lib/utils/canvas';
+import type { CreateNumpadBlockConfig } from '$lib/utils/canvas';
+import { createNumpadBlock } from '$lib/utils/canvas';
 import type { CONTROLLER_TYPE } from '$lib/utils/numpadCompiler';
-import { LAYOUT_SETTING } from '$lib/utils/canvas';
+import { LAYOUT_SETTING } from '$lib/userInterface';
 
 interface NumpadEditorDialogDependencies {
 	previewStage: Konva.Stage;
@@ -28,7 +27,7 @@ export class HandleNumpadEditorDialog {
 	private numpadEditorDialog: HTMLDialogElement;
 	private LENGTH_UNIT: number;
 	// initial
-	private preview_image_configs: CreateImageConfig[] = [];
+	private preview_image_configs: CreateNumpadBlockConfig[] = [];
 
 	constructor(deps: NumpadEditorDialogDependencies) {
 		this.previewStage = deps.previewStage;

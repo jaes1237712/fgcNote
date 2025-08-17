@@ -43,5 +43,3 @@ export class Character {
   @UpdateDateColumn()
   updatedAt!: Date;
 }
-
-

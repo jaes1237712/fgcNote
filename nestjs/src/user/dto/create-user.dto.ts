@@ -8,10 +8,10 @@ export class CreateUserDto {
   google_sub: string;
   @ApiProperty()
   name: string;
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'User Nickname(Default Google Name)',
-    type: String, 
+    type: String,
     nullable: true,
-   })
+  })
   nickname: string;
 }

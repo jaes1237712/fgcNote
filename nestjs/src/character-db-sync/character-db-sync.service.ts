@@ -6,6 +6,7 @@ import { CharacterMoveImage } from 'src/character/entities/character-move-image.
 import { characterConfig } from 'src/config/character.config';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { imageSizeFromFile } from 'image-size/fromFile';
 
 interface FolderInfo {
   name: string;
@@ -208,12 +209,22 @@ export class CharacterSyncService {
           if (characterConfig.supportedFormats.includes(ext)) {
             const filePath = path.join(folderPath, entry.name);
             const stats = await fs.stat(filePath);
-
+            let width: number | undefined = undefined;
+            let height: number | undefined = undefined;
+            try {
+              const dimensions = await imageSizeFromFile(filePath);
+              width = dimensions.width;
+              height = dimensions.height;
+            } catch (e) {
+              this.logger.warn(`無法取得圖片尺寸: ${filePath}`);
+            }
             files.push({
               name: entry.name,
               path: filePath,
               size: stats.size,
               mimeType: this.getMimeType(ext),
+              width,
+              height,
             });
           }
         }
@@ -263,7 +274,9 @@ export class CharacterSyncService {
           character.iconFilePath = this.toStaticPath(folderInfo.iconFile.path);
         }
         if (folderInfo.portraitFile) {
-          character.portraitFilePath = this.toStaticPath(folderInfo.portraitFile.path);
+          character.portraitFilePath = this.toStaticPath(
+            folderInfo.portraitFile.path,
+          );
         }
 
         // 先保存角色，確保有 ID
@@ -336,6 +349,8 @@ export class CharacterSyncService {
           filePath: this.toStaticPath(file.path),
           fileSize: file.size,
           mimeType: file.mimeType,
+          width: file.width,
+          height: file.height,
           characterId: character.id,
         });
         updatedCount++;

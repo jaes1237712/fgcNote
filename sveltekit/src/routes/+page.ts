@@ -8,16 +8,16 @@ export const load: PageLoad = async ({}) => {
 		});
 		const allCharacters = await characterControllerFindAll();
 		console.log('Page load response:', resp);
-
-		const data = {
-			user: resp.data ? resp.data : null,
-			allCharacters: allCharacters.data ?? []
-		};
-		return data;
+		if(resp.data){
+			return {
+				user: resp.data,
+				allCharacters: allCharacters.data ?? []
+			};
+		}
+		else{return {allCharacters:allCharacters.data}}
 	} catch (error) {
 		console.error('Error loading user data:', error);
 		return {
-			user: null
 		};
 	}
 };

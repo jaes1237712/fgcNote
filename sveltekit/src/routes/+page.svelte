@@ -1,37 +1,31 @@
 <script lang="ts">
 	import logo from '$lib/images/common/logo_mark.png';
-	import { Notebook } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import Konva from 'konva';
-	import { create_image, LAYOUT_SETTING } from '$lib/utils/canvas';
+	import { createNumpadBlock } from '$lib/utils/canvas';
+	import type { CanvasNumpadBlock, CreateNumpadBlockConfig} from '$lib/utils/canvas';
+	import type {UserSettings} from '$lib/userInterface'
 	import { PUBLIC_NESTJS_URL } from '$env/static/public';
-	import { numpadCompiler } from '$lib/utils/numpadCompiler';
 	import { Stage } from 'konva/lib/Stage';
-	import { authControllerGoogleLogin, userControllerGetMe } from '$lib/client/sdk.gen';
+	import { authControllerGoogleLogin, userControllerGetMe, authControllerGoogleLogout } from '$lib/client/sdk.gen';
 	import type { PageProps } from './$types';
 	import { Plus, ImageIcon } from '@lucide/svelte';
 	import type { Layer } from 'konva/lib/Layer';
-	import { Group } from 'konva/lib/Group';
-	import type { CharacterDto, CharacterMoveImageDto } from '$lib/client/types.gen';
-	import type { CreateImageConfig } from '$lib/utils/canvas';
-	import { HandleNumpadEditorDialog } from '$lib/utils/numpadEditorDialog';
-	import type { UserSettings } from '$lib/utils/numpadEditorDialog';
+	import type { CharacterDto, CharacterMoveImageDto, UserDto } from '$lib/client/types.gen';
+	// import { HandleNumpadEditorDialog } from '$lib/utils/numpadEditorDialog';
 	import '$lib/css/context_menu.css';
 	import '$lib/component/SelectCharacter.svelte';
 	import '$lib/component/SearchCharacterImages.svelte';
-	import { scale } from 'svelte/transition';
 	let { data }: PageProps = $props();
 	let stage: Stage;
 	let layer: Layer;
-	let preview_stage: Stage;
-	let preview_layer: Layer;
-	let preview_group: Group;
-	let preview_image_configs: CreateImageConfig[];
-	let handleNumpadEditorDialog = $state<HandleNumpadEditorDialog>();
+	// let preview_group: Group;
+	// let preview_image_configs: CreateImageConfig[];
+	// let handleNumpadEditorDialog = $state<HandleNumpadEditorDialog>();
 	let userSettings = $state<UserSettings>();
 
 	// 用戶狀態管理 - 使用響應式變量
-	let currentUser = $state(data.user || null);
+	let currentUser = $state<UserDto>(data?.user);
 
 	// 右鍵選單狀態
 	let contextMenuVisible = $state(false);
@@ -48,33 +42,33 @@
 		switch (optionId) {
 			case 'insert-block':
 				numpadEditorDialog.showModal();
-				if (!preview_stage) {
-					const rec_konva_preview = konvaPreview.getBoundingClientRect();
-					preview_stage = new Konva.Stage({
-						container: konvaPreview,
-						width: rec_konva_preview.width,
-						height: rec_konva_preview.height
-					});
-					preview_layer = new Konva.Layer();
-					preview_stage.add(preview_layer);
-					handleNumpadEditorDialog = new HandleNumpadEditorDialog({
-						previewLayer: preview_layer,
-						previewStage: preview_stage,
-						numpadEditorDialog: numpadEditorDialog,
-						numpadEditorInput: numpadEditorInput,
-						LENGTH_UNIT: LENGTH_UNIT
-					});
-					userSettings = {
-						controllerType: 'CLASSIC',
-						mainStage: stage,
-						mainLayer: layer,
-						mainStageContainer: konvaContainer,
-						contextMenuPosition: contextMenuPosition
-					};
-				} else {
-					numpadEditorInput.value = '';
-					preview_layer.destroyChildren();
-				}
+				// if (!preview_stage) {
+				// 	const rec_konva_preview = konvaPreview.getBoundingClientRect();
+				// 	preview_stage = new Konva.Stage({
+				// 		container: konvaPreview,
+				// 		width: rec_konva_preview.width,
+				// 		height: rec_konva_preview.height
+				// 	});
+				// 	preview_layer = new Konva.Layer();
+				// 	preview_stage.add(preview_layer);
+				// 	handleNumpadEditorDialog = new HandleNumpadEditorDialog({
+				// 		previewLayer: preview_layer,
+				// 		previewStage: preview_stage,
+				// 		numpadEditorDialog: numpadEditorDialog,
+				// 		numpadEditorInput: numpadEditorInput,
+				// 		LENGTH_UNIT: LENGTH_UNIT
+				// 	});
+				// 	userSettings = {
+				// 		controllerType: 'CLASSIC',
+				// 		mainStage: stage,
+				// 		mainLayer: layer,
+				// 		mainStageContainer: konvaContainer,
+				// 		contextMenuPosition: contextMenuPosition
+				// 	};
+				// } else {
+				// 	numpadEditorInput.value = '';
+				// 	preview_layer.destroyChildren();
+				// }
 				break
 			case 'insert-image':
 				imageSearchDialog.showModal()
@@ -128,59 +122,51 @@
 
 		layer = new Konva.Layer();
 		stage.add(layer);
-		const group1 = new Konva.Group({
-			x: LENGTH_UNIT * 10,
-			y: LENGTH_UNIT * 10,
-			draggable: true
-		});
-		const input = '5hp+236p+throw';
-		const imageConfigArray = numpadCompiler({
-			input: input,
-			type: 'CLASSIC',
-			length_unit: LENGTH_UNIT,
-			block_height: LAYOUT_SETTING.block_height
-		});
-		const block_width = 3 * imageConfigArray.length + LAYOUT_SETTING.horizontal_margin * 2;
-		const block = new Konva.Rect({
-			width: block_width * LENGTH_UNIT,
-			height: LAYOUT_SETTING.block_height * LENGTH_UNIT,
-			fill: 'oklch(0.45 0.02 264.15)',
-			stroke: 'black',
-			strokeWidth: 0
-		});
-		group1.add(block);
-		for (let config of imageConfigArray) {
-			config.x = config.x + LAYOUT_SETTING.horizontal_margin;
-			create_image(config, group1);
+		const userSettings: UserSettings= {
+			viewportHeightUnit: SCREEN_HEIGHT/100,
+			viewportWidthUnit: SCREEN_WIDTH/100,
+			lengthUnit: LENGTH_UNIT,
+			moveImageHeight:5,
+			commandSize:3,
+			defaultControllerType:'CLASSIC'
 		}
-		const background_height = 24;
-		const tag_empty_space = 8;
-		const punish_tag = new Konva.Text({
-			x: tag_empty_space,
-			y: -1 * background_height,
-			text: '#PUNISH',
-			fontSize: 24,
-			fill: 'oklch(1 0 0)'
-		});
-		const punish_background = new Konva.Rect({
-			x: 0,
-			y: -2 * LENGTH_UNIT,
-			width: 16 * 12,
-			height: 2 * LENGTH_UNIT,
-			fillLinearGradientStartPoint: { x: 0, y: -2 * LENGTH_UNIT },
-			fillLinearGradientEndPoint: { x: 16 * 12, y: -2 * LENGTH_UNIT },
-			fillLinearGradientColorStops: [
-				0,
-				'oklch(0.61 0.13 45.88)',
-				0.5,
-				'oklch(0.54 0.13 47.28)',
-				1,
-				'oklch(0.5 0.05 41.48/0)'
-			]
-		});
-		group1.add(punish_background);
-		group1.add(punish_tag);
-		layer.add(group1);
+		const canvasNumpadBlock: CanvasNumpadBlock = {
+			input:'5hp+236p+throw',
+			type:'CLASSIC',
+			x:0,
+			y:0		
+		}
+		const createNumpadBlockConfig: CreateNumpadBlockConfig ={
+			canvasNumpadBlock: canvasNumpadBlock,
+			userSettings: userSettings
+		}
+		createNumpadBlock(createNumpadBlockConfig, layer);
+		// const background_height = 24;
+		// const tag_empty_space = 8;
+		// const punish_tag = new Konva.Text({
+		// 	x: tag_empty_space,
+		// 	y: -1 * background_height,
+		// 	text: '#PUNISH',
+		// 	fontSize: 24,
+		// 	fill: 'oklch(1 0 0)'
+		// });
+		// const punish_background = new Konva.Rect({
+		// 	x: 0,
+		// 	y: -2 * LENGTH_UNIT,
+		// 	width: 16 * 12,
+		// 	height: 2 * LENGTH_UNIT,
+		// 	fillLinearGradientStartPoint: { x: 0, y: -2 * LENGTH_UNIT },
+		// 	fillLinearGradientEndPoint: { x: 16 * 12, y: -2 * LENGTH_UNIT },
+		// 	fillLinearGradientColorStops: [
+		// 		0,
+		// 		'oklch(0.61 0.13 45.88)',
+		// 		0.5,
+		// 		'oklch(0.54 0.13 47.28)',
+		// 		1,
+		// 		'oklch(0.5 0.05 41.48/0)'
+		// 	]
+		// });
+		
 
 		// 添加全域點擊事件監聽器
 		document.addEventListener('click', handleClickOutside);
@@ -243,7 +229,8 @@
 		}
 	}
 
-	let currentCharacter = $state<CharacterDto>();
+	let characterMe = $state<CharacterDto>(data.allCharacters[0]);
+	let characterOpponent = $state<CharacterDto>(data.allCharacters[1]);
 </script>
 
 <svelte:head>
@@ -252,28 +239,42 @@
 
 <div id="root">
 	<header>
-		<img alt="sf6_logo" src={logo} />
-		<Notebook size="40" color="oklch(0.91 0.15 194.77)" />
-		{#if currentUser}
-			<span class="user-name">{currentUser.nickname}</span>
-		{:else}
-			<button
-				class="btn-login"
-				onclick={async () => {
-					if (!navigator.credentials || !navigator.credentials.get) {
-						alert('錯誤：你的瀏覽器不支援 FedCM API。');
-						return;
-					}
-					try {
-						handleLogIn();
-					} catch (error) {
-						alert(`登錄失敗${error}`);
-					}
-				}}
-			>
-				Log in
-			</button>
-		{/if}
+		<div class="header-wrapper">
+			<img alt="sf6_logo" src={logo} />
+			<div>
+				{#if currentUser}
+					<p class="user-name">{currentUser.nickname}</p>
+					<button
+						class="btn-logout"
+						onclick={async () => {
+							authControllerGoogleLogout({
+								credentials: 'include'
+							})
+							currentUser = null
+						}}
+					>
+						Log out
+					</button>
+				{:else}
+					<button
+						class="btn-login"
+						onclick={async () => {
+							if (!navigator.credentials || !navigator.credentials.get) {
+								alert('錯誤：你的瀏覽器不支援 FedCM API。');
+								return;
+							}
+							try {
+								handleLogIn();
+							} catch (error) {
+								alert(`登錄失敗${error}`);
+							}
+						}}
+					>
+						Log in
+					</button>
+				{/if}
+			</div>
+		</div>	
 	</header>
 
 	<main>
@@ -283,7 +284,15 @@
 					allCharacters={data.allCharacters}
 					defaultCharacter={data.allCharacters[0]}
 					onselectCharacter={(event) => {
-						currentCharacter = event.detail.character;
+						characterMe = event.detail.character;
+					}}
+				>
+				</select-character>
+				<select-character
+					allCharacters={data.allCharacters}
+					defaultCharacter={data.allCharacters[1]}
+					onselectCharacter={(event) => {
+						characterOpponent = event.detail.character;
 					}}
 				>
 				</select-character>
@@ -308,7 +317,7 @@
 		</div>
 	{/if}
 
-	<dialog id="numpad-editor" bind:this={numpadEditorDialog}>
+	<!-- <dialog id="numpad-editor" bind:this={numpadEditorDialog}>
 		<div class="dialog-wrapper">
 			<label>
 				<p>NUMPAD 指令</p>
@@ -332,30 +341,32 @@
 				</button>
 			</div>
 		</div>
-	</dialog>
+	</dialog> -->
 
 	<dialog id="search-character-image" bind:this={imageSearchDialog}>
+		{#key [characterMe, characterOpponent]}
 		<search-character-image 
-		allCharacter={data.allCharacters}
-		characterMe={data.allCharacters[0]}
-		characterOpponent={data.allCharacters[1]}
-		onselectImage={(event)=>{
-			const image = event.detail.image as CharacterMoveImageDto;
-			const rec_konve = konvaContainer.getBoundingClientRect();
-			Konva.Image.fromURL(PUBLIC_NESTJS_URL+image.filePath, function(moveImage){
-				moveImage.setAttrs({
-					x: contextMenuPosition.x - rec_konve.left,
-					y: contextMenuPosition.y - rec_konve.top,
-					scaleX: 0.25,
-					scaleY: 0.25,
-					draggable:true
-				});
-				layer.add(moveImage)
-			})
-			imageSearchDialog.close()
-		}}
-		>
-		</search-character-image>
+			allCharacter={data.allCharacters}
+			characterMe={characterMe}
+			characterOpponent={characterOpponent}
+			onselectImage={(event)=>{
+				const image = event.detail.image as CharacterMoveImageDto;
+				const rec_konve = konvaContainer.getBoundingClientRect();
+				Konva.Image.fromURL(PUBLIC_NESTJS_URL+image.filePath, function(moveImage){
+					moveImage.setAttrs({
+						x: contextMenuPosition.x - rec_konve.left,
+						y: contextMenuPosition.y - rec_konve.top,
+						scaleX: 0.25,
+						scaleY: 0.25,
+						draggable:true
+					});
+					layer.add(moveImage)
+				})
+				imageSearchDialog.close()
+			}}
+			>
+			</search-character-image>		
+		{/key}
 	</dialog>
 </div>
 
@@ -363,24 +374,32 @@
 	#root {
 		width: 100vw;
 		height: 100vh;
-		overflow: hidden;
 		padding: 0;
 		margin: 0;
-		display: grid;
-		grid-template-columns: 1fr;
-		grid-template-rows: 15% 1fr;
+		overflow: hidden;
 	}
 	header {
-		display: flex;
-		justify-content: flex-start;
-		align-items: center;
+		height: 15%;
+		width: 100%;
 		background-color: oklch(0.27 0.02 264.26);
-		img {
+		display: flex;
+		justify-content: center;
+		.header-wrapper{
+			width: 70%;
 			height: 100%;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			img {
+				height: 100%;
+			}
 		}
+		
 	}
 	main {
 		background-color: oklch(0.23 0.01 264.4);
+		height: 85%;
+		width: 100%;
 		display: grid;
 		grid-template-columns: 20% 1fr;
 		grid-template-rows: 1fr;

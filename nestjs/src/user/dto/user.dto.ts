@@ -10,9 +10,9 @@ export class UserDto {
   @ApiProperty({ description: 'User Nickname(Default Google Name)' })
   @Expose()
   nickname!: string;
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'User Google Picture',
-    type: String, 
+    type: String,
     nullable: true,
   })
   @Expose()

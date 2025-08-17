@@ -3,6 +3,10 @@
 	import { characterControllerFindAll } from '$lib/client/sdk.gen';
 	import '$lib/component/SearchCharacterImages.svelte';
 	import '$lib/component/SelectCharacter.svelte';
+	import '$lib/component/SwitchControllerType.svelte'
+	import '$lib/component/NumpadEditor.svelte'
+	import type {UserSettings} from '$lib/userInterface'
+	import { onMount } from 'svelte';
 	let allCharacters = $state<CharacterDto[]>();
 	characterControllerFindAll().then((resp) => {
 		if (resp.data) {
@@ -11,13 +15,26 @@
 			allCharacters = [];
 		}
 	});
+	const SCREEN_WIDTH = screen.width;
+	const SCREEN_HEIGHT = screen.height;
+	const LENGTH_UNIT = SCREEN_WIDTH / 100;
+	const USER_SETTINGS: UserSettings ={
+		viewportWidthUnit: SCREEN_WIDTH/100,
+		viewportHeightUnit: SCREEN_HEIGHT/100,
+		lengthUnit: LENGTH_UNIT,
+		moveImageHeight:5,
+		commandSize:3,
+		defaultControllerType: 'CLASSIC'
+	}
 </script>
 
 <div class="test-container">
-	{#if allCharacters}
-		<search-character-image {allCharacters} 
-		characterMe={allCharacters[0]} characterOpponent={allCharacters[2]}> </search-character-image>
-	{/if}
+	<numpad-editor 
+		userSettings={USER_SETTINGS}
+		onedit={(event) =>{
+			console.log(event.detail);
+		}}>
+	</numpad-editor>
 </div>
 
 <style>
@@ -25,5 +42,9 @@
 		margin: 10vw;
 		width: 50vw;
 		height: 50vh;
+	}
+	numpad-editor{
+		width: 100%;
+		height: 100%;
 	}
 </style>

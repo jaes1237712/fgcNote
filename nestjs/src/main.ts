@@ -22,7 +22,7 @@ async function bootstrap() {
     prefix: '/assets/',
     setHeaders: (res, path) => {
       res.setHeader('Access-Control-Allow-Origin', 'https://localhost:5173');
-    }
+    },
   });
 
   // 配置 Swagger OpenAPI

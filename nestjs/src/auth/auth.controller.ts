@@ -1,7 +1,12 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body,Get, Controller, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
-import { ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiProperty,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UserDto } from 'src/user/dto/user.dto';
 
 class GoogleLoginBody {
@@ -25,7 +30,8 @@ export class AuthController {
   })
   async googleLogin(
     @Body() body: GoogleLoginBody,
-    @Res({ passthrough: true }) res: Response,): Promise<UserDto> {
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<UserDto> {
     const info = await this.authService.verifyGoogleToken(body.id_token);
     const user = await this.authService.createOrGetUserFromGoogle(info);
     const jwt = this.authService.createSessionJwt(user.id);
@@ -37,5 +43,19 @@ export class AuthController {
       maxAge: 60 * 60 * 24 * 7 * 1000,
     });
     return user;
+  }
+
+  @Post('logout')
+  @ApiOperation({ summary: 'Logout and clear session' })
+  @ApiResponse({ status: 200, description: 'Logout successfully' })
+  async logout(@Res({ passthrough: true }) res: Response): Promise<{ success: boolean }> {
+    res.clearCookie('session', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+    });
+    console.log("使用者登出")
+  return { success: true };
   }
 }

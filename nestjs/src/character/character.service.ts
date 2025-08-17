@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Character} from './entities/character.entity';
-import {CharacterDto} from './dtos/character.dto';
-import {CharacterMoveImage} from './entities/character-move-image.entity';
-import {CharacterMoveImageDto} from './dtos/character-move-image.dto';
-
+import { Character } from './entities/character.entity';
+import { CharacterDto } from './dtos/character.dto';
+import { CharacterMoveImage } from './entities/character-move-image.entity';
+import { CharacterMoveImageDto } from './dtos/character-move-image.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class CharacterService {
@@ -20,10 +20,7 @@ export class CharacterService {
     const characters = await this.characterRepository.find({
       order: { name: 'ASC' },
     });
-
-    return characters.map((char) => ({
-      ...char,
-    }));
+    return characters.map((character) => this.toCharacterDto(character));
   }
 
   async findMoveImages(characterId: number): Promise<CharacterMoveImageDto[]> {
@@ -31,11 +28,14 @@ export class CharacterService {
       where: { characterId },
       order: { fileName: 'ASC' },
     });
+    return images.map((image) => this.toCharacterMoveImageDto(image));
+  }
 
-    return images.map((image) => ({
-      fileName: image.fileName,
-      filePath: image.filePath,
-      characterId: image.characterId,
-    }));
+  toCharacterDto(character: Character): CharacterDto{
+    return plainToInstance(CharacterDto, character, {excludeExtraneousValues:true});
+  }
+  
+  toCharacterMoveImageDto(image: CharacterMoveImage): CharacterMoveImageDto{
+    return plainToInstance(CharacterMoveImageDto, image, {excludeExtraneousValues:true})
   }
 }

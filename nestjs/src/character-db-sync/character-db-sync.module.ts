@@ -5,8 +5,8 @@ import { CharacterMoveImage } from 'src/character/entities/character-move-image.
 import { CharacterSyncService } from './character-db-sync.service';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Character, CharacterMoveImage])],
-    providers: [CharacterSyncService],
-    exports: [CharacterSyncService]
+  imports: [TypeOrmModule.forFeature([Character, CharacterMoveImage])],
+  providers: [CharacterSyncService],
+  exports: [CharacterSyncService],
 })
 export class CharacterDbSyncModule {}

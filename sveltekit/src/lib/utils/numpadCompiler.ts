@@ -1,4 +1,5 @@
-import type { CreateImageConfig } from '$lib/utils/canvas';
+import type { CreateNumpadBlockConfig } from '$lib/utils/canvas';
+import type {UserSettings} from '$lib/userInterface'
 
 const COMMON_ACTION = {
 	'1': '/src/lib/images/controller/down_left.png',
@@ -42,7 +43,7 @@ export const NUMPAD_KEYS_SET = {
 	MODERN: new Set(Object.keys(NUMPAD_TO_SRC.MODERN))
 };
 
-export type CONTROLLER_TYPE = keyof typeof NUMPAD_TO_SRC;
+export type CONTROLLER_TYPE = "CLASSIC" | "MODERN"
 
 export type NUMPAD_ACTION_SET_TYPE = {
 	[K in CONTROLLER_TYPE]: keyof (typeof NUMPAD_TO_SRC)[K];
@@ -50,14 +51,13 @@ export type NUMPAD_ACTION_SET_TYPE = {
 
 export interface NumpadCompilerConfig {
 	input: string;
-	type: CONTROLLER_TYPE;
-	length_unit: number;
-	block_height: number;
+	type: CONTROLLER_TYPE,
+	userSettings: UserSettings;
 }
 
 // Helper function to parse input string into valid actions
-function parseInputToActions(input: string, actionSet: Set<string>): string[] {
-	const actions: string[] = [];
+function parseInputToCommands(input: string, actionSet: Set<string>): string[] {
+	const commands: string[] = [];
 	let i = 0;
 
 	// Convert actionSet to lowercase for case-insensitive comparison
@@ -69,7 +69,7 @@ function parseInputToActions(input: string, actionSet: Set<string>): string[] {
 		for (let length = Math.min(5, input.length - i); length >= 1; length--) {
 			const candidate = input.slice(i, i + length);
 			if (lowerActionSet.has(candidate.toLowerCase())) {
-				actions.push(candidate.toLowerCase());
+				commands.push(candidate.toLowerCase());
 				i += length;
 				found = true;
 				break;
@@ -82,37 +82,26 @@ function parseInputToActions(input: string, actionSet: Set<string>): string[] {
 		}
 	}
 
-	return actions;
+	return commands;
 }
 
-export function numpadCompiler(config: NumpadCompilerConfig): CreateImageConfig[] {
-	let return_cofigs: CreateImageConfig[] = [];
-	let action_set;
-	let action_to_src;
+export function numpadInputToCommandImages(config: NumpadCompilerConfig): string[] {
+	let commandImagesSrc: string[] = [];
+	let commandSet;
+	let commandToSrc;
 	if (config.type == 'CLASSIC') {
-		action_set = NUMPAD_KEYS_SET.CLASSIC;
-		action_to_src = NUMPAD_TO_SRC.CLASSIC;
+		commandSet = NUMPAD_KEYS_SET.CLASSIC;
+		commandToSrc = NUMPAD_TO_SRC.CLASSIC;
 	} else {
-		action_set = NUMPAD_KEYS_SET.MODERN;
-		action_to_src = NUMPAD_TO_SRC.MODERN;
+		commandSet = NUMPAD_KEYS_SET.MODERN;
+		commandToSrc = NUMPAD_TO_SRC.MODERN;
 	}
 
-	// Parse input into valid actions
-	const actions = parseInputToActions(config.input, action_set);
+	// Parse input into valid commands
+	const commands = parseInputToCommands(config.input, commandSet);
 
-	let count = 0;
-	let step = 3;
-
-	for (let action of actions) {
-		return_cofigs.push({
-			x: count,
-			y: (config.block_height - step) / 2,
-			width: step,
-			height: step,
-			length_unit: config.length_unit,
-			src: action_to_src[action]
-		});
-		count += step;
+	for (let command of commands) {
+		commandImagesSrc.push(commandToSrc[command]);
 	}
-	return return_cofigs;
+	return commandImagesSrc;
 }
