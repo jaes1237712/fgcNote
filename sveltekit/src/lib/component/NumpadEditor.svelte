@@ -18,11 +18,10 @@
     let previewLayer: Konva.Layer;
     let konvaNumpadPreviewContainer = $state<HTMLDivElement>();
     onMount(()=>{
-        const recKonvaPreview = konvaNumpadPreviewContainer.getBoundingClientRect();
         previewStage = new Konva.Stage({
             container: konvaNumpadPreviewContainer,
-            width: recKonvaPreview.width,
-            height: recKonvaPreview.height
+            width: screen.width/2,
+            height: screen.height/2
         })
         previewLayer = new Konva.Layer();
         previewStage.add(previewLayer);
@@ -120,8 +119,8 @@
                 font-size: x-large;
             }
             .konva-preview{
-                width: 100vw;
-                height: 100vh;
+                width: 50vw;
+                height: 50vh;
                 /* background-color: oklch(0.48 0.03 268.49); */
                 /* border: 2px solid black; */
             }

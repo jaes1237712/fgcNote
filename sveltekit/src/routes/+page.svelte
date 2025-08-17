@@ -2,9 +2,10 @@
 	import logo from '$lib/images/common/logo_mark.png';
 	import { onMount } from 'svelte';
 	import Konva from 'konva';
-	import { createNumpadBlock } from '$lib/utils/canvas';
-	import type { CanvasNumpadBlock, CreateNumpadBlockConfig} from '$lib/utils/canvas';
-	import type {UserSettings} from '$lib/userInterface'
+	import { createCharacterMoveImage, createNumpadBlock } from '$lib/utils/canvas';
+	import type { CanvasNumpadBlock, CreateNumpadBlockConfig,
+				CanvasCharacterMoveImage} from '$lib/utils/canvas';
+	import type {CONTROLLER_TYPE, UserSettings} from '$lib/userInterface'
 	import { PUBLIC_NESTJS_URL } from '$env/static/public';
 	import { Stage } from 'konva/lib/Stage';
 	import { authControllerGoogleLogin, userControllerGetMe, authControllerGoogleLogout } from '$lib/client/sdk.gen';
@@ -12,17 +13,51 @@
 	import { Plus, ImageIcon } from '@lucide/svelte';
 	import type { Layer } from 'konva/lib/Layer';
 	import type { CharacterDto, CharacterMoveImageDto, UserDto } from '$lib/client/types.gen';
-	// import { HandleNumpadEditorDialog } from '$lib/utils/numpadEditorDialog';
 	import '$lib/css/context_menu.css';
 	import '$lib/component/SelectCharacter.svelte';
 	import '$lib/component/SearchCharacterImages.svelte';
+	import '$lib/component/NumpadEditor.svelte'
 	let { data }: PageProps = $props();
+	const SCREEN_WIDTH = screen.width;
+	const SCREEN_HEIGHT = screen.height;
+	const LENGTH_UNIT = SCREEN_WIDTH / 100;
 	let stage: Stage;
 	let layer: Layer;
-	// let preview_group: Group;
-	// let preview_image_configs: CreateImageConfig[];
-	// let handleNumpadEditorDialog = $state<HandleNumpadEditorDialog>();
-	let userSettings = $state<UserSettings>();
+	let userSettings = $state<UserSettings>({
+			viewportHeightUnit: SCREEN_HEIGHT/100,
+			viewportWidthUnit: SCREEN_WIDTH/100,
+			lengthUnit: LENGTH_UNIT,
+			moveImageHeight:5,
+			commandSize:3,
+			defaultControllerType:'CLASSIC'
+		});
+	let numpadEditorValue: {
+		input:string,
+		type:CONTROLLER_TYPE
+	} = $state({
+		input:"",
+		type:'CLASSIC' //之後從data中拿取
+	})
+	let canvasNumpadBlocks = $state<CanvasNumpadBlock[]>([]);
+	let canvasCharacterMoveImages = $state<CanvasCharacterMoveImage[]>([]);
+	$effect(() =>{
+		canvasNumpadBlocks.forEach((block) => {
+			layer.destroyChildren() //需要優化
+			createNumpadBlock({
+				canvasNumpadBlock: block,
+				userSettings: userSettings
+			}, layer)
+		})
+	})
+	$effect(() =>{
+		canvasCharacterMoveImages.forEach((image) => {
+			layer.destroyChildren() //需要優化
+			createCharacterMoveImage({
+				canvasImage: image,
+				userSettings: userSettings
+			}, layer)
+		})
+	})
 
 	// 用戶狀態管理 - 使用響應式變量
 	let currentUser = $state<UserDto>(data?.user);
@@ -42,33 +77,6 @@
 		switch (optionId) {
 			case 'insert-block':
 				numpadEditorDialog.showModal();
-				// if (!preview_stage) {
-				// 	const rec_konva_preview = konvaPreview.getBoundingClientRect();
-				// 	preview_stage = new Konva.Stage({
-				// 		container: konvaPreview,
-				// 		width: rec_konva_preview.width,
-				// 		height: rec_konva_preview.height
-				// 	});
-				// 	preview_layer = new Konva.Layer();
-				// 	preview_stage.add(preview_layer);
-				// 	handleNumpadEditorDialog = new HandleNumpadEditorDialog({
-				// 		previewLayer: preview_layer,
-				// 		previewStage: preview_stage,
-				// 		numpadEditorDialog: numpadEditorDialog,
-				// 		numpadEditorInput: numpadEditorInput,
-				// 		LENGTH_UNIT: LENGTH_UNIT
-				// 	});
-				// 	userSettings = {
-				// 		controllerType: 'CLASSIC',
-				// 		mainStage: stage,
-				// 		mainLayer: layer,
-				// 		mainStageContainer: konvaContainer,
-				// 		contextMenuPosition: contextMenuPosition
-				// 	};
-				// } else {
-				// 	numpadEditorInput.value = '';
-				// 	preview_layer.destroyChildren();
-				// }
 				break
 			case 'insert-image':
 				imageSearchDialog.showModal()
@@ -89,10 +97,6 @@
 			hideContextMenu();
 		}
 	}
-
-	const SCREEN_WIDTH = screen.width;
-	const SCREEN_HEIGHT = screen.height;
-	const LENGTH_UNIT = SCREEN_WIDTH / 100;
 
 	onMount(() => {
 		stage = new Konva.Stage({
@@ -122,52 +126,6 @@
 
 		layer = new Konva.Layer();
 		stage.add(layer);
-		const userSettings: UserSettings= {
-			viewportHeightUnit: SCREEN_HEIGHT/100,
-			viewportWidthUnit: SCREEN_WIDTH/100,
-			lengthUnit: LENGTH_UNIT,
-			moveImageHeight:5,
-			commandSize:3,
-			defaultControllerType:'CLASSIC'
-		}
-		const canvasNumpadBlock: CanvasNumpadBlock = {
-			input:'5hp+236p+throw',
-			type:'CLASSIC',
-			x:0,
-			y:0		
-		}
-		const createNumpadBlockConfig: CreateNumpadBlockConfig ={
-			canvasNumpadBlock: canvasNumpadBlock,
-			userSettings: userSettings
-		}
-		createNumpadBlock(createNumpadBlockConfig, layer);
-		// const background_height = 24;
-		// const tag_empty_space = 8;
-		// const punish_tag = new Konva.Text({
-		// 	x: tag_empty_space,
-		// 	y: -1 * background_height,
-		// 	text: '#PUNISH',
-		// 	fontSize: 24,
-		// 	fill: 'oklch(1 0 0)'
-		// });
-		// const punish_background = new Konva.Rect({
-		// 	x: 0,
-		// 	y: -2 * LENGTH_UNIT,
-		// 	width: 16 * 12,
-		// 	height: 2 * LENGTH_UNIT,
-		// 	fillLinearGradientStartPoint: { x: 0, y: -2 * LENGTH_UNIT },
-		// 	fillLinearGradientEndPoint: { x: 16 * 12, y: -2 * LENGTH_UNIT },
-		// 	fillLinearGradientColorStops: [
-		// 		0,
-		// 		'oklch(0.61 0.13 45.88)',
-		// 		0.5,
-		// 		'oklch(0.54 0.13 47.28)',
-		// 		1,
-		// 		'oklch(0.5 0.05 41.48/0)'
-		// 	]
-		// });
-		
-
 		// 添加全域點擊事件監聽器
 		document.addEventListener('click', handleClickOutside);
 		// 清理函數
@@ -176,10 +134,8 @@
 		};
 	});
 	let numpadEditorDialog = $state<HTMLDialogElement>();
-	let numpadEditorInput = $state<HTMLInputElement>();
 	let imageSearchDialog = $state<HTMLDialogElement>();
 	let konvaContainer = $state<HTMLDivElement>();
-	let konvaPreview = $state<HTMLDivElement>();
 
 	// 登錄狀態
 	let currentCredential: any;
@@ -317,55 +273,57 @@
 		</div>
 	{/if}
 
-	<!-- <dialog id="numpad-editor" bind:this={numpadEditorDialog}>
+	<dialog id="numpad-editor" bind:this={numpadEditorDialog}>
 		<div class="dialog-wrapper">
-			<label>
-				<p>NUMPAD 指令</p>
-				<input
-					type="text"
-					bind:this={numpadEditorInput}
-					oninput={() => handleNumpadEditorDialog.handleInputOninput(userSettings)}
-				/>
-			</label>
-			<div class="preview-block">
-				<p>預覽</p>
-				<div class="konva-preview" bind:this={konvaPreview}></div>
-			</div>
+			<numpad-editor 
+				userSettings={userSettings}
+				onedit={(event)=>{
+					numpadEditorValue = event.detail
+					console.log($state.snapshot(numpadEditorValue))
+				}}
+			>
+			</numpad-editor>
 
 			<div class="btns">
-				<button onclick={() => handleNumpadEditorDialog.handleNumpadDialogPostButton(userSettings)}>
+				<button onclick={()=>{
+					const rec_konva = konvaContainer.getBoundingClientRect();
+					canvasNumpadBlocks.push({
+						input:numpadEditorValue.input,
+						type: numpadEditorValue.type,
+						x: (contextMenuPosition.x - rec_konva.left)/(SCREEN_WIDTH/100),
+						y: (contextMenuPosition.y - rec_konva.top)/(SCREEN_HEIGHT/100)
+					})
+					numpadEditorDialog.close();
+				}}>
 					送出
 				</button>
-				<button onclick={() => handleNumpadEditorDialog.handleNumpadDialogCloseButton()}>
+				<button onclick={()=>{
+					numpadEditorDialog.close();
+				}}>
 					關閉
 				</button>
 			</div>
 		</div>
-	</dialog> -->
+	</dialog>
 
 	<dialog id="search-character-image" bind:this={imageSearchDialog}>
 		{#key [characterMe, characterOpponent]}
 		<search-character-image 
-			allCharacter={data.allCharacters}
+			allCharacters={data.allCharacters}
 			characterMe={characterMe}
 			characterOpponent={characterOpponent}
 			onselectImage={(event)=>{
 				const image = event.detail.image as CharacterMoveImageDto;
-				const rec_konve = konvaContainer.getBoundingClientRect();
-				Konva.Image.fromURL(PUBLIC_NESTJS_URL+image.filePath, function(moveImage){
-					moveImage.setAttrs({
-						x: contextMenuPosition.x - rec_konve.left,
-						y: contextMenuPosition.y - rec_konve.top,
-						scaleX: 0.25,
-						scaleY: 0.25,
-						draggable:true
-					});
-					layer.add(moveImage)
+				const rec_konva = konvaContainer.getBoundingClientRect();
+				canvasCharacterMoveImages.push({
+					image: image,
+					x: (contextMenuPosition.x - rec_konva.left)/(SCREEN_WIDTH/100),
+					y: (contextMenuPosition.y - rec_konva.top)/(SCREEN_HEIGHT/100),
 				})
 				imageSearchDialog.close()
 			}}
 			>
-			</search-character-image>		
+		</search-character-image>		
 		{/key}
 	</dialog>
 </div>
@@ -409,53 +367,28 @@
 		}
 	}
 	dialog {
+		overflow: visible;
 		background-color: oklch(0.25 0.02 264.15);
 	}
 	.dialog-wrapper {
 		display: flex;
 		flex-direction: column;
 		justify-content: space-evenly;
-		width: 40rem;
-		height: 20rem;
+		overflow: hidden;
+		width: 40vw;
+		height: 40vh;
 		padding: 1rem;
-		label {
-			height: 6rem;
+		numpad-editor{
+			width: 100%;
+			height: 60%;
 			color: white;
-			display: flex;
-			flex-direction: column;
-			justify-content: center;
-			p {
-				font-size: large;
-				margin: 0;
-			}
-			input {
-				font-size: x-large;
-				height: 3rem;
-				background-color: oklch(0.9 0.02 264.15);
-				width: 100%;
-			}
 		}
-		.preview-block {
-			height: 6rem;
-			color: white;
-			display: flex;
-			flex-direction: column;
-			justify-content: center;
-			p {
-				font-size: large;
-				margin: 0;
-			}
-			.konva-preview {
-				height: 3rem;
-				background-color: oklch(0.45 0.02 267.56);
-			}
-		}
-
 		.btns {
 			display: flex;
 			flex-direction: row;
 			align-items: center;
 			justify-content: space-evenly;
+			z-index: 999;
 			button {
 				width: 4rem;
 				height: 2rem;

@@ -79,7 +79,7 @@
 	})
 </script>
 
-<div class="search-character-image">
+<div class="search-character-panel">
 	<div class="character-versus">
 		<select-character 
 			allCharacters={allCharacters}
@@ -131,55 +131,63 @@
 </div>
 
 <style>
-	.search-character-image{
+	.search-character-panel{
+		width: 100%;
+		height: 100%;
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
-	}
-
-	.character-versus{
-		display: flex;
-		flex-direction: row;
-		justify-content: space-evenly;
-		align-items: end;
-		font-size: xx-large;
-	}
-	.search-character-image {
-		width: 100%;
-		height: 100%;
-		overflow-y: hidden;
-		overflow-x: hidden;
-		color: white;
-		input{
-			font-size: x-large;
-			height: 3rem;
-			background-color: oklch(0.9 0.02 264.15);
-			width: 100%;
+		.character-versus{
+			display: flex;
+			flex-direction: row;
+			justify-content: space-evenly;
+			align-items: end;
+			font-size: xx-large;
+			height: fit-content;
+			color: white;
 		}
-        ul{
-			list-style: none;
-			padding-left: 0;
-            display: flex;
-            flex-direction: column;
-            overflow-y: scroll;
-			overflow-x: hidden;
-            li{	
-                button{
-					color: white;
-                    width: 100%;
-					height: 15vh;
-                    display: flex;
-					background-color: oklch(0.45 0.02 267.56);	
-                    flex-direction: row;
-                    justify-content: space-between;
-					align-items: center;
-					font-size: x-large;
-					img{
-                	    height: 100%;
-                	}
-                }
+		.search-character-image {
+			width: 100%;
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			min-height: 0; /* 重要：讓 flex 子元素能夠縮小 */
+			/* overflow-y: hidden;
+			overflow-x: hidden; */
+			color: white;
+			input{
+				font-size: x-large;
+				height: 3rem;
+				background-color: oklch(0.9 0.02 264.15);
+				width: 100%;
+			}
+			ul{
+				min-height: 0; /* 重要：讓 flex 子元素能夠縮小 */
+				flex: 1;
+				list-style: none;
+				padding-left: 0;
+				display: flex;
+				flex-direction: column;
+				overflow-y: scroll;
+				overflow-x: hidden;
+				li{	
+					button{
+						color: white;
+						width: 100%;
+						height: 15vh;
+						display: flex;
+						background-color: oklch(0.45 0.02 267.56);	
+						flex-direction: row;
+						justify-content: space-between;
+						align-items: center;
+						font-size: x-large;
+						img{
+							height: 100%;
+						}
+					}
 
-            }
-        }
+				}
+			}
+		}
 	}
 </style>

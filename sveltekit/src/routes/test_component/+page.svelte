@@ -15,6 +15,7 @@
 			allCharacters = [];
 		}
 	});
+	
 	const SCREEN_WIDTH = screen.width;
 	const SCREEN_HEIGHT = screen.height;
 	const LENGTH_UNIT = SCREEN_WIDTH / 100;
@@ -29,12 +30,17 @@
 </script>
 
 <div class="test-container">
-	<numpad-editor 
-		userSettings={USER_SETTINGS}
-		onedit={(event) =>{
-			console.log(event.detail);
-		}}>
-	</numpad-editor>
+	{#if allCharacters}
+	<search-character-image 
+			allCharacters={allCharacters}
+			characterMe={allCharacters[0]}
+			characterOpponent={allCharacters[1]}
+			onselectImage={(event)=>{
+				const image = event.detail.image as CharacterMoveImageDto;
+			}}
+			>
+	</search-character-image>
+	{/if}
 </div>
 
 <style>
@@ -43,8 +49,9 @@
 		width: 50vw;
 		height: 50vh;
 	}
-	numpad-editor{
-		width: 100%;
-		height: 100%;
+	search-character-image {
+		display: block;
+		width: 50vw;
+		height: 50vh;
 	}
 </style>
