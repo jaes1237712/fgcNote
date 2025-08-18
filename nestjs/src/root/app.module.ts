@@ -8,6 +8,8 @@ import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
 import { CharacterModule } from 'src/character/character.module';
 import { CharacterDbSyncModule } from 'src/character-db-sync/character-db-sync.module';
+import { CanvasNumpadBlock } from 'src/canvas/entities/canvas-numpad-block.entity';
+import { CanvasStage } from 'src/canvas/entities/canvas-stage.entity';
 
 @Module({
   imports: [
@@ -16,7 +18,7 @@ import { CharacterDbSyncModule } from 'src/character-db-sync/character-db-sync.m
       useFactory: () => ({
         type: 'sqlite',
         database: process.env.SQLITE_URL,
-        entities: [User, Character, CharacterMoveImage],
+        entities: [User, Character, CharacterMoveImage, CanvasNumpadBlock, CanvasStage],
         synchronize: true,
       }),
     }),

@@ -7,22 +7,19 @@ import {
   OneToMany,
 } from 'typeorm';
 import { CharacterMoveImage } from './character-move-image.entity';
+import { CanvasStage } from 'src/canvas/entities/canvas-stage.entity';
 
 @Entity({ name: 'character' })
 export class Character {
-  // @ApiProperty({ description: 'Primary ID' })
   @PrimaryGeneratedColumn()
   id!: number;
 
-  // @ApiProperty({ description: 'Character Name' })
   @Column({ unique: true })
   name!: string;
 
-  // @ApiProperty({ description: 'Icon Path' })
   @Column({ unique: true })
   iconFilePath!: string;
 
-  // @ApiProperty({ description: 'Portrait Path' })
   @Column({ unique: true })
   portraitFilePath!: string;
 
@@ -31,15 +28,18 @@ export class Character {
   })
   moveImages!: CharacterMoveImage[];
 
-  // @ApiProperty({ description: 'Character Folder' })
+  @OneToMany(() => CanvasStage, (stage) => stage.characterMe)
+  stagesMe: CanvasStage[];
+
+  @OneToMany(() => CanvasStage, (stage) => stage.characterOpponent)
+  stagesOpponent: CanvasStage[];
+
   @Column()
   folderPath!: string;
 
-  // @ApiProperty({ description: 'Created at' })
   @CreateDateColumn()
   createdAt!: Date;
 
-  // @ApiProperty({ description: 'Updated at' })
   @UpdateDateColumn()
   updatedAt!: Date;
 }

@@ -1,4 +1,4 @@
-import { Body,Get, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import {
@@ -7,7 +7,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserDto } from 'src/user/dto/user.dto';
+import { UserDto } from 'src/user/dtos/user.dto';
 
 class GoogleLoginBody {
   @ApiProperty()
@@ -48,14 +48,16 @@ export class AuthController {
   @Post('logout')
   @ApiOperation({ summary: 'Logout and clear session' })
   @ApiResponse({ status: 200, description: 'Logout successfully' })
-  async logout(@Res({ passthrough: true }) res: Response): Promise<{ success: boolean }> {
+  logout(
+    @Res({ passthrough: true }) res: Response,
+  ): { success: boolean } {
     res.clearCookie('session', {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
       path: '/',
     });
-    console.log("使用者登出")
-  return { success: true };
+    console.log('使用者登出');
+    return { success: true };
   }
 }

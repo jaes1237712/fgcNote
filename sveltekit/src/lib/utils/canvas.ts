@@ -9,6 +9,7 @@ import {type UserSettings, LAYOUT_SETTING} from '$lib/userInterface'
 
 
 export interface CanvasNumpadBlock{
+	id: string,
 	input: string,
 	type: CONTROLLER_TYPE,
 	x: number,			// unit:viewportWidthUnit
@@ -36,7 +37,8 @@ export function createNumpadBlock(config: CreateNumpadBlockConfig, layer: Layer 
 		y: canvasNumpadBlock.y*userSettings.viewportHeightUnit,
 		draggable: true,
 		width: blockWidth*LENGTH_UNIT,
-		height: blockHeight*LENGTH_UNIT
+		height: blockHeight*LENGTH_UNIT,
+		id: canvasNumpadBlock.id
 	});
 	commandImagesSrc.forEach((imageSrc,index) => {
 		const imageObj = new Image();
@@ -46,7 +48,7 @@ export function createNumpadBlock(config: CreateNumpadBlockConfig, layer: Layer 
 				y: (blockHeight-userSettings.commandSize)*(LENGTH_UNIT/2),
 				image: imageObj,
 				width: userSettings.commandSize*LENGTH_UNIT,
-				height: userSettings.commandSize*LENGTH_UNIT
+				height: userSettings.commandSize*LENGTH_UNIT,
 			});
 			block.add(konvaCommandImage)
 		};
@@ -59,6 +61,7 @@ export function createNumpadBlock(config: CreateNumpadBlockConfig, layer: Layer 
 	});
 	block.add(blockBackground);
 	layer.add(block);
+	return block
 }
 
 export interface CanvasCharacterMoveImage{

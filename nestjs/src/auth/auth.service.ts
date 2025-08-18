@@ -7,7 +7,7 @@ import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
 import { Algorithm } from 'jsonwebtoken'; // 導入 Algorithm 類型
 import { UserService } from 'src/user/user.service';
-import { UserDto } from 'src/user/dto/user.dto';
+import { UserDto } from 'src/user/dtos/user.dto';
 import { GoogleUserInfo } from './interface/google-user-info.interface';
 
 @Injectable()

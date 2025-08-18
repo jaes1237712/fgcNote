@@ -1,0 +1,1 @@
+export type CONTROLLER_TYPE = "CLASSIC" | "MODERN"

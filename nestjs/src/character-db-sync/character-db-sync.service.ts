@@ -216,7 +216,7 @@ export class CharacterSyncService {
               width = dimensions.width;
               height = dimensions.height;
             } catch (e) {
-              this.logger.warn(`無法取得圖片尺寸: ${filePath}`);
+              this.logger.warn(`無法取得圖片尺寸: ${filePath}, catch${e}`);
             }
             files.push({
               name: entry.name,
@@ -384,6 +384,7 @@ export class CharacterSyncService {
       }
       return `/assets/${relativePath}`;
     } catch (e) {
+      console.log("toStaticPath", e)
       return absolutePath;
     }
   }

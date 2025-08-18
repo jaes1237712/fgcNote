@@ -3,7 +3,6 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { CharacterService } from './character.service';
@@ -17,13 +16,13 @@ export class CharacterController {
 
   @Get()
   @ApiOperation({
-    summary: '獲取所有角色',
-    description: '返回所有活躍的角色列表',
+    description: 'Return all characters',
   })
   @ApiResponse({
     status: 200,
-    description: '成功獲取角色列表',
-    type: [CharacterDto],
+    description: 'Successfully get all characters',
+    type: CharacterDto,
+    isArray: true,
   })
   async findAll(): Promise<CharacterDto[]> {
     return this.characterService.findAll();
@@ -31,14 +30,14 @@ export class CharacterController {
 
   @Get(':id/images')
   @ApiOperation({
-    summary: '獲取角色圖片',
-    description: '獲取特定角色的所有圖片',
+    description: 'Get all the images of certain character',
   })
   @ApiParam({ name: 'id', description: '角色 ID', type: 'number' })
   @ApiResponse({
     status: 200,
-    description: '成功獲取角色圖片',
-    type: [CharacterMoveImageDto],
+    description: 'Successfully get images of character',
+    type: CharacterMoveImageDto,
+    isArray: true,
   })
   async findImages(
     @Param('id', ParseIntPipe) id: number,

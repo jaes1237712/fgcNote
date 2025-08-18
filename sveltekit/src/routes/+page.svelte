@@ -6,6 +6,7 @@
 	import type { CanvasNumpadBlock, CreateNumpadBlockConfig,
 				CanvasCharacterMoveImage} from '$lib/utils/canvas';
 	import type {CONTROLLER_TYPE, UserSettings} from '$lib/userInterface'
+	import { v4 as uuidv4 } from 'uuid';
 	import { PUBLIC_NESTJS_URL } from '$env/static/public';
 	import { Stage } from 'konva/lib/Stage';
 	import { authControllerGoogleLogin, userControllerGetMe, authControllerGoogleLogout } from '$lib/client/sdk.gen';
@@ -38,15 +39,26 @@
 		input:"",
 		type:'CLASSIC' //之後從data中拿取
 	})
-	let canvasNumpadBlocks = $state<CanvasNumpadBlock[]>([]);
+	let canvasNumpadBlocks = $state<Map<string, CanvasNumpadBlock>>(new Map());
 	let canvasCharacterMoveImages = $state<CanvasCharacterMoveImage[]>([]);
 	$effect(() =>{
+		//需要優化方法，不是每次都遍歷
 		canvasNumpadBlocks.forEach((block) => {
-			layer.destroyChildren() //需要優化
-			createNumpadBlock({
+			layer.destroyChildren() 
+			const konvaGroup = createNumpadBlock({
 				canvasNumpadBlock: block,
 				userSettings: userSettings
 			}, layer)
+			konvaGroup.on('dragend',(e)=>{
+				canvasNumpadBlocks.set(konvaGroup.id(),{
+					x: (konvaGroup.x()/userSettings.viewportWidthUnit),
+					y: (konvaGroup.y()/userSettings.viewportHeightUnit),
+					type: block.type,
+					id: block.id,
+					input: block.input
+				})
+				console.log("dragend", canvasNumpadBlocks.get(konvaGroup.id()))
+			})
 		})
 	})
 	$effect(() =>{
@@ -287,12 +299,15 @@
 			<div class="btns">
 				<button onclick={()=>{
 					const rec_konva = konvaContainer.getBoundingClientRect();
-					canvasNumpadBlocks.push({
+					const new_id = uuidv4()
+					canvasNumpadBlocks.set(new_id,{
 						input:numpadEditorValue.input,
 						type: numpadEditorValue.type,
 						x: (contextMenuPosition.x - rec_konva.left)/(SCREEN_WIDTH/100),
-						y: (contextMenuPosition.y - rec_konva.top)/(SCREEN_HEIGHT/100)
+						y: (contextMenuPosition.y - rec_konva.top)/(SCREEN_HEIGHT/100),
+						id: new_id
 					})
+					canvasNumpadBlocks = new Map(canvasNumpadBlocks)
 					numpadEditorDialog.close();
 				}}>
 					送出

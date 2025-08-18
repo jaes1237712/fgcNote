@@ -2,9 +2,12 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { CanvasNumpadBlock } from 'src/canvas/entities/canvas-numpad-block.entity';
+import { CanvasStage } from 'src/canvas/entities/canvas-stage.entity';
 
 @Entity({ name: 'user' })
 export class User {
@@ -31,4 +34,10 @@ export class User {
 
   @UpdateDateColumn({ type: 'datetime' })
   updated_at!: Date;
+
+  @OneToMany(() => CanvasNumpadBlock, (block) => block.user)
+  canvas_numpad_blocks: CanvasNumpadBlock[];
+
+  @OneToMany(() => CanvasStage, (stage) => stage.user)
+  canvas_stages: CanvasStage[];
 }

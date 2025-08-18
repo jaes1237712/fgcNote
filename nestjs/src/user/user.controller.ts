@@ -1,7 +1,7 @@
 import { Controller, Get, UseGuards, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { UserService } from './user.service';
-import { UserDto } from './dto/user.dto';
+import { UserDto } from './dtos/user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { SessionGuard } from 'src/common/session.guard';
@@ -22,7 +22,7 @@ export class UserController {
   @UseGuards(SessionGuard)
   getMe(@Req() req: Request): UserDto | null {
     if (req.user) {
-      return req.user;
+      return this.userService.toUserDto(req.user);
     } else {
       return null;
     }

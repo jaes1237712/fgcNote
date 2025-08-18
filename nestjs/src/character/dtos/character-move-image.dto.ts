@@ -14,11 +14,11 @@ export class CharacterMoveImageDto {
   @Expose()
   characterId!: number;
 
-  @ApiProperty({ description: 'Width of the image in pixels'})
+  @ApiProperty({ description: 'Width of the image in pixels' })
   @Expose()
   width?: number;
 
-  @ApiProperty({ description: 'Height of the image in pixels'})
+  @ApiProperty({ description: 'Height of the image in pixels' })
   @Expose()
   height?: number;
 }

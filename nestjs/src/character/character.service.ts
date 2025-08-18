@@ -31,11 +31,15 @@ export class CharacterService {
     return images.map((image) => this.toCharacterMoveImageDto(image));
   }
 
-  toCharacterDto(character: Character): CharacterDto{
-    return plainToInstance(CharacterDto, character, {excludeExtraneousValues:true});
+  toCharacterDto(character: Character): CharacterDto {
+    return plainToInstance(CharacterDto, character, {
+      excludeExtraneousValues: true,
+    });
   }
-  
-  toCharacterMoveImageDto(image: CharacterMoveImage): CharacterMoveImageDto{
-    return plainToInstance(CharacterMoveImageDto, image, {excludeExtraneousValues:true})
+
+  toCharacterMoveImageDto(image: CharacterMoveImage): CharacterMoveImageDto {
+    return plainToInstance(CharacterMoveImageDto, image, {
+      excludeExtraneousValues: true,
+    });
   }
 }
