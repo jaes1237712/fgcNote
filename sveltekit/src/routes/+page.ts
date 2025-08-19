@@ -1,23 +1,34 @@
 import type { PageLoad } from './$types';
-import { userControllerGetMe, characterControllerFindAll } from '$lib/client/sdk.gen';
+import {
+	userControllerGetMe,
+	characterControllerFindAll,
+	canvasControllerGetAllStage
+} from '$lib/client/sdk.gen';
 
 export const load: PageLoad = async ({}) => {
 	try {
-		const resp = await userControllerGetMe({
+		const userResp = await userControllerGetMe({
 			credentials: 'include'
 		});
 		const allCharacters = await characterControllerFindAll();
-		console.log('Page load response:', resp);
-		if(resp.data){
+		const allStageDtos = await canvasControllerGetAllStage({
+			credentials: 'include'
+		});
+		console.log("allStageDtos", allStageDtos)
+		if (userResp.data) {
 			return {
-				user: resp.data,
-				allCharacters: allCharacters.data ?? []
+				user: userResp.data,
+				allCharacters: allCharacters.data ?? [],
+				allStageDtos: allStageDtos.data ?? []
+			};
+		} else {
+			return {
+				allCharacters: allCharacters.data ?? [],
+				allStageDtos: allStageDtos.data ?? []
 			};
 		}
-		else{return {allCharacters:allCharacters.data}}
 	} catch (error) {
 		console.error('Error loading user data:', error);
-		return {
-		};
+		return {};
 	}
 };

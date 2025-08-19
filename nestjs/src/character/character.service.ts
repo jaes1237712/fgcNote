@@ -31,6 +31,12 @@ export class CharacterService {
     return images.map((image) => this.toCharacterMoveImageDto(image));
   }
 
+  async findCharacter(id:number): Promise<Character|null>{
+    return this.characterRepository.findOneBy({
+      id: id,
+    });
+  }
+
   toCharacterDto(character: Character): CharacterDto {
     return plainToInstance(CharacterDto, character, {
       excludeExtraneousValues: true,

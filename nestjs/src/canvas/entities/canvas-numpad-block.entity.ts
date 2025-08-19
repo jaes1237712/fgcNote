@@ -6,7 +6,7 @@ import {
   PrimaryColumn,
   ManyToOne,
 } from 'typeorm';
-import type { CONTROLLER_TYPE } from '/home/hung/fgcNote/common/interface.ts';
+import type { CONTROLLER_TYPE } from '../../common/interface';
 import { User } from 'src/user/entities/user.entity';
 import { CanvasStage } from './canvas-stage.entity';
 

@@ -3,9 +3,9 @@
 	import { characterControllerFindAll } from '$lib/client/sdk.gen';
 	import '$lib/component/SearchCharacterImages.svelte';
 	import '$lib/component/SelectCharacter.svelte';
-	import '$lib/component/SwitchControllerType.svelte'
-	import '$lib/component/NumpadEditor.svelte'
-	import type {UserSettings} from '$lib/userInterface'
+	import '$lib/component/SwitchControllerType.svelte';
+	import '$lib/component/NumpadEditor.svelte';
+	import type { UserSettings } from '$lib/userInterface';
 	import { onMount } from 'svelte';
 	let allCharacters = $state<CharacterDto[]>();
 	characterControllerFindAll().then((resp) => {
@@ -15,31 +15,31 @@
 			allCharacters = [];
 		}
 	});
-	
+
 	const SCREEN_WIDTH = screen.width;
 	const SCREEN_HEIGHT = screen.height;
 	const LENGTH_UNIT = SCREEN_WIDTH / 100;
-	const USER_SETTINGS: UserSettings ={
-		viewportWidthUnit: SCREEN_WIDTH/100,
-		viewportHeightUnit: SCREEN_HEIGHT/100,
+	const USER_SETTINGS: UserSettings = {
+		viewportWidthUnit: SCREEN_WIDTH / 100,
+		viewportHeightUnit: SCREEN_HEIGHT / 100,
 		lengthUnit: LENGTH_UNIT,
-		moveImageHeight:5,
-		commandSize:3,
+		moveImageHeight: 5,
+		commandSize: 3,
 		defaultControllerType: 'CLASSIC'
-	}
+	};
 </script>
 
 <div class="test-container">
 	{#if allCharacters}
-	<search-character-image 
-			allCharacters={allCharacters}
+		<search-character-image
+			{allCharacters}
 			characterMe={allCharacters[0]}
 			characterOpponent={allCharacters[1]}
-			onselectImage={(event)=>{
+			onselectImage={(event) => {
 				const image = event.detail.image as CharacterMoveImageDto;
 			}}
-			>
-	</search-character-image>
+		>
+		</search-character-image>
 	{/if}
 </div>
 

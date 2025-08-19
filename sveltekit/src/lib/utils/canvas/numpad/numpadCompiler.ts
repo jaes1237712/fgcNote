@@ -1,5 +1,5 @@
 import type { CreateNumpadBlockConfig } from '$lib/utils/canvas';
-import type {UserSettings} from '$lib/userInterface'
+import type { UserSettings } from '$lib/userInterface';
 
 const COMMON_ACTION = {
 	'1': '/src/lib/images/controller/down_left.png',
@@ -43,7 +43,7 @@ export const NUMPAD_KEYS_SET = {
 	MODERN: new Set(Object.keys(NUMPAD_TO_SRC.MODERN))
 };
 
-export type CONTROLLER_TYPE = "CLASSIC" | "MODERN"
+export type CONTROLLER_TYPE = 'CLASSIC' | 'MODERN';
 
 export type NUMPAD_ACTION_SET_TYPE = {
 	[K in CONTROLLER_TYPE]: keyof (typeof NUMPAD_TO_SRC)[K];
@@ -51,7 +51,7 @@ export type NUMPAD_ACTION_SET_TYPE = {
 
 export interface NumpadCompilerConfig {
 	input: string;
-	type: CONTROLLER_TYPE,
+	type: CONTROLLER_TYPE;
 	userSettings: UserSettings;
 }
 

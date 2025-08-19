@@ -6,7 +6,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CanvasNumpadBlock } from './entities/canvas-numpad-block.entity';
-import { CanvasNumpadBlockDto } from './dtos/numpad/canvas-numpad-block.entity.dto';
+import { CanvasNumpadBlockDto } from './dtos/numpad/canvas-numpad-block.dto';
+import {CreateCanvasNumpadBlockDto} from './dtos/numpad/create-canvas-numpad-block.dto'
 import {} from './entities/canvas-character-move-image.entity';
 import {} from './dtos/move_image/canvas-character-move-image.dto';
 import { CanvasStage } from './entities/canvas-stage.entity';
@@ -17,6 +18,7 @@ import { User } from 'src/user/entities/user.entity';
 import { Character } from 'src/character/entities/character.entity';
 import { UpdateCanvasStageDto } from './dtos/stage/update-stage.dto';
 import { DeleteResult } from 'typeorm/browser';
+import { CharacterService } from 'src/character/character.service';
 
 @Injectable()
 export class CanvasService {
@@ -25,16 +27,24 @@ export class CanvasService {
     private canvasNumpadBlockRepository: Repository<CanvasNumpadBlock>,
     @InjectRepository(CanvasStage)
     private canvasStageRepository: Repository<CanvasStage>,
-    @InjectRepository(Character)
-    private characterRepository: Repository<Character>,
+    private characterService: CharacterService, // <--- **注入 CharacterService**
   ) {}
+
+  async getStageWithRelations(stageId: string): Promise<CanvasStage | null> {
+    const stage = await this.canvasStageRepository.findOne({
+      where: { id: stageId },
+      relations: ['numpadBlocks'],
+    });
+    return stage;
+  }
 
   async findAllStage(user: User): Promise<CanvasStageDto[]> {
     const stages = await this.canvasStageRepository.find({
       where: {
-        user: user,
+        user: {id:user.id},
       },
     });
+    // console.log(stages)
     return stages.map((stage) => this.toStageDto(stage));
   }
 
@@ -49,22 +59,41 @@ export class CanvasService {
     return blocks.map((block) => this.toNumpadBlockDto(block));
   }
 
+  async createNumpadBlock(
+    block: CreateCanvasNumpadBlockDto,
+    user: User,
+  ): Promise<CanvasNumpadBlockDto>{
+    const stage = await this.canvasStageRepository.findOne({where:{id:block.stageId}})
+    if(!stage){
+      throw new NotFoundException(`Stage with ID ${block.stageId} not found`)
+    }
+    else{
+      const blockEntity = this.canvasNumpadBlockRepository.create({
+        id: block.id,
+        input: block.input,
+        type: block.type,
+        x:block.x,
+        y: block.y,
+        stage:stage,
+        user:user
+      });
+      const savedBlock = await this.canvasNumpadBlockRepository.save(blockEntity);
+      return this.toNumpadBlockDto(savedBlock);
+    }
+  }
+
   async createStage(
     stage: CreateCanvasStageDto,
     user: User,
   ): Promise<CanvasStageDto> {
-    const characterMe = await this.characterRepository.findOneBy({
-      id: stage.characterMe.id,
-    });
+    const characterMe = await this.characterService.findCharacter(stage.characterMe.id)
     if (!characterMe) {
       throw new NotFoundException(
         `Character with ID ${stage.characterMe.id} not found.`,
       );
     }
 
-    const characterOpponent = await this.characterRepository.findOneBy({
-      id: stage.characterOpponent.id,
-    });
+    const characterOpponent = await this.characterService.findCharacter(stage.characterOpponent.id);
     if (!characterOpponent) {
       throw new NotFoundException(
         `Character with ID ${stage.characterOpponent.id} not found.`,
@@ -85,9 +114,7 @@ export class CanvasService {
     updateCanvasStageDto: UpdateCanvasStageDto,
     user: User,
   ): Promise<CanvasStageDto> {
-    const stageToUpdate = await this.canvasStageRepository.findOneBy({
-      id: updateCanvasStageDto.id,
-    });
+    const stageToUpdate = await this.getStageWithRelations(updateCanvasStageDto.id)
     if (stageToUpdate?.user.id != user.id) {
       throw new UnauthorizedException('The stage not belong to this user');
     }
@@ -106,9 +133,7 @@ export class CanvasService {
   }
 
   async removeStage(stageId: string, user: User): Promise<boolean> {
-    const targetStage = await this.canvasStageRepository.findOneBy({
-      id: stageId,
-    });
+    const targetStage = await this.getStageWithRelations(stageId)
     if (!targetStage) {
       throw new NotFoundException(`Stage with ID "${stageId}" not found`);
     } else if (targetStage.user.id != user.id) {

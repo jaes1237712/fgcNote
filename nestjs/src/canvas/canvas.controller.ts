@@ -13,11 +13,12 @@ import {
 import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { CanvasService } from './canvas.service';
-import { CanvasNumpadBlockDto } from './dtos/numpad/canvas-numpad-block.entity.dto';
+import { CanvasNumpadBlockDto } from './dtos/numpad/canvas-numpad-block.dto';
 import { CanvasStageDto } from './dtos/stage/canvas-stage.dto';
 import { SessionGuard } from 'src/common/session.guard';
 import { CreateCanvasStageDto } from './dtos/stage/create-canvas-stage.dto';
 import { UpdateCanvasStageDto } from './dtos/stage/update-stage.dto';
+import { CreateCanvasNumpadBlockDto } from './dtos/numpad/create-canvas-numpad-block.dto';
 
 @ApiTags('canvas')
 @Controller('canvas')
@@ -37,7 +38,8 @@ export class CanvasController {
   @UseGuards(SessionGuard)
   async getAllStage(@Req() req: Request): Promise<CanvasStageDto[]> {
     if (req.user) {
-      return this.canvasService.findAllStage(req.user);
+      const resp = await this.canvasService.findAllStage(req.user);
+      return resp
     } else {
       return [];
     }
@@ -65,6 +67,32 @@ export class CanvasController {
     return this.canvasService.findAllNumpadBlocksByStage(stageId);
   }
 
+  @Post('numpadBlock/create')
+  @ApiOperation({
+    summary: 'Create Numpad Block',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Create Numpad Block Successfully',
+    type: CanvasNumpadBlockDto,
+  })
+  @ApiResponse({
+    status: 401, 
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async createNumpadBlock(
+    @Body() body: CreateCanvasNumpadBlockDto,
+    @Req() req: Request,
+  ): Promise<CanvasNumpadBlockDto> {
+    if (req.user) {
+      return this.canvasService.createNumpadBlock(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+
   @Post('stage/create')
   @ApiOperation({
     summary: 'Create Stage',
@@ -75,7 +103,7 @@ export class CanvasController {
     type: CanvasStageDto,
   })
   @ApiResponse({
-    status: 401, // 添加 401 響應到 Swagger 文檔
+    status: 401, 
     description: 'Unauthorized',
   })
   @UseGuards(SessionGuard)

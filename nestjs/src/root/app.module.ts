@@ -10,6 +10,7 @@ import { CharacterModule } from 'src/character/character.module';
 import { CharacterDbSyncModule } from 'src/character-db-sync/character-db-sync.module';
 import { CanvasNumpadBlock } from 'src/canvas/entities/canvas-numpad-block.entity';
 import { CanvasStage } from 'src/canvas/entities/canvas-stage.entity';
+import { CanvasModule } from 'src/canvas/canvas.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CanvasStage } from 'src/canvas/entities/canvas-stage.entity';
     UserModule,
     CharacterModule,
     CharacterDbSyncModule,
+    CanvasModule
   ],
 })
 export class AppModule {}

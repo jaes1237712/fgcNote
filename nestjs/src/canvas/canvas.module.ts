@@ -4,11 +4,27 @@ import { CanvasStage } from './entities/canvas-stage.entity';
 import { CanvasNumpadBlock } from './entities/canvas-numpad-block.entity';
 import { CanvasService } from './canvas.service';
 import { CanvasController } from './canvas.controller';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { Algorithm } from 'jsonwebtoken';
+import { CharacterModule } from 'src/character/character.module';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CanvasStage, CanvasNumpadBlock])],
+  imports: [
+    CharacterModule,
+    UserModule,
+    TypeOrmModule.forFeature([CanvasStage, CanvasNumpadBlock]),
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET')!,
+        signOptions: { algorithm: config.get<Algorithm>('JWT_ALGORITHM') },
+      }),
+    }),
+  ],
   controllers: [CanvasController],
   providers: [CanvasService],
   exports: [CanvasService],
 })
-export class CharacterModule {}
+export class CanvasModule {}

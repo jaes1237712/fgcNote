@@ -1,0 +1,4 @@
+export enum CONTROLLER_TYPE {
+    CLASSIC = 'CLASSIC',
+    MODERN = 'MODERN',
+  }

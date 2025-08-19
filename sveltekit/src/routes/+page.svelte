@@ -2,75 +2,74 @@
 	import logo from '$lib/images/common/logo_mark.png';
 	import { onMount } from 'svelte';
 	import Konva from 'konva';
-	import { createCharacterMoveImage, createNumpadBlock } from '$lib/utils/canvas';
-	import type { CanvasNumpadBlock, CreateNumpadBlockConfig,
-				CanvasCharacterMoveImage} from '$lib/utils/canvas';
-	import type {CONTROLLER_TYPE, UserSettings} from '$lib/userInterface'
+	import {createNumpadBlock} from '$lib/utils/canvas';
+	import type {
+		CanvasCharacterMoveImage
+	} from '$lib/utils/canvas-old';
+	import type { CONTROLLER_TYPE, UserSettings } from '$lib/userInterface';
 	import { v4 as uuidv4 } from 'uuid';
-	import { PUBLIC_NESTJS_URL } from '$env/static/public';
-	import { Stage } from 'konva/lib/Stage';
-	import { authControllerGoogleLogin, userControllerGetMe, authControllerGoogleLogout } from '$lib/client/sdk.gen';
+	import {
+		authControllerGoogleLogin,
+		userControllerGetMe,
+		authControllerLogout,
+		canvasControllerCreateStage,
+		canvasControllerUpdateStage,
+		canvasControllerDeleteStage,
+		canvasControllerFindAllBlocks,
+
+		canvasControllerCreateNumpadBlock
+
+	} from '$lib/client';
 	import type { PageProps } from './$types';
 	import { Plus, ImageIcon } from '@lucide/svelte';
-	import type { Layer } from 'konva/lib/Layer';
-	import type { CharacterDto, CharacterMoveImageDto, UserDto } from '$lib/client/types.gen';
+	import type {
+		CanvasNumpadBlockDto,
+		CanvasStageDto,
+		CharacterDto,
+		CharacterMoveImageDto,
+		UserDto
+	} from '$lib/client';
 	import '$lib/css/context_menu.css';
 	import '$lib/component/SelectCharacter.svelte';
 	import '$lib/component/SearchCharacterImages.svelte';
-	import '$lib/component/NumpadEditor.svelte'
+	import '$lib/component/NumpadEditor.svelte';
+	import { createStage} from '$lib/utils/canvas/index';
 	let { data }: PageProps = $props();
 	const SCREEN_WIDTH = screen.width;
 	const SCREEN_HEIGHT = screen.height;
 	const LENGTH_UNIT = SCREEN_WIDTH / 100;
-	let stage: Stage;
-	let layer: Layer;
+	let allStageDtos = $state<CanvasStageDto[]>(data.allStageDtos);
 	let userSettings = $state<UserSettings>({
-			viewportHeightUnit: SCREEN_HEIGHT/100,
-			viewportWidthUnit: SCREEN_WIDTH/100,
-			lengthUnit: LENGTH_UNIT,
-			moveImageHeight:5,
-			commandSize:3,
-			defaultControllerType:'CLASSIC'
-		});
+		viewportHeightUnit: SCREEN_HEIGHT / 100,
+		viewportWidthUnit: SCREEN_WIDTH / 100,
+		lengthUnit: LENGTH_UNIT,
+		moveImageHeight: 5,
+		commandSize: 3,
+		defaultControllerType: 'CLASSIC'
+	});
 	let numpadEditorValue: {
-		input:string,
-		type:CONTROLLER_TYPE
+		input: string;
+		type: CONTROLLER_TYPE;
 	} = $state({
-		input:"",
-		type:'CLASSIC' //之後從data中拿取
-	})
-	let canvasNumpadBlocks = $state<Map<string, CanvasNumpadBlock>>(new Map());
-	let canvasCharacterMoveImages = $state<CanvasCharacterMoveImage[]>([]);
-	$effect(() =>{
-		//需要優化方法，不是每次都遍歷
-		canvasNumpadBlocks.forEach((block) => {
-			layer.destroyChildren() 
-			const konvaGroup = createNumpadBlock({
-				canvasNumpadBlock: block,
-				userSettings: userSettings
-			}, layer)
-			konvaGroup.on('dragend',(e)=>{
-				canvasNumpadBlocks.set(konvaGroup.id(),{
-					x: (konvaGroup.x()/userSettings.viewportWidthUnit),
-					y: (konvaGroup.y()/userSettings.viewportHeightUnit),
-					type: block.type,
-					id: block.id,
-					input: block.input
-				})
-				console.log("dragend", canvasNumpadBlocks.get(konvaGroup.id()))
-			})
-		})
-	})
-	$effect(() =>{
-		canvasCharacterMoveImages.forEach((image) => {
-			layer.destroyChildren() //需要優化
-			createCharacterMoveImage({
-				canvasImage: image,
-				userSettings: userSettings
-			}, layer)
-		})
-	})
-
+		input: '',
+		type: 'CLASSIC' //之後從data中拿取
+	});
+	let currentStage = $state<Konva.Stage>();
+	let currentLayer = $state<Konva.Layer>();
+	let currentStageDto = $state<CanvasStageDto>();
+	let characterMe = $state<CharacterDto>(data.allCharacters[0]);
+	let characterOpponent = $state<CharacterDto>(data.allCharacters[1]);
+	let numpadBlocksDtos = $state<Map<string, CanvasNumpadBlockDto>>(new Map());
+	let characterMoveImages = $state<CanvasCharacterMoveImage[]>([]);
+	let currentStageDtos = $derived.by<CanvasStageDto[]>(()=>{
+		if(characterMe.id && characterOpponent.id){
+			return allStageDtos.filter((stageDto)=>
+						stageDto.characterMe.id === characterMe.id &&
+						stageDto.characterOpponent.id === characterOpponent.id
+					);
+		}
+		return [];
+	});
 	// 用戶狀態管理 - 使用響應式變量
 	let currentUser = $state<UserDto>(data?.user);
 
@@ -78,6 +77,10 @@
 	let contextMenuVisible = $state(false);
 	let contextMenuPosition = $state({ x: 0, y: 0 });
 
+	function onContextMenu(position: { x: number; y: number }) {
+		contextMenuPosition = position;
+		contextMenuVisible = true;
+	}
 	// 右鍵選單選項
 	const contextMenuOptions = [
 		{ id: 'insert-block', label: '插入區塊', icon: Plus },
@@ -89,10 +92,10 @@
 		switch (optionId) {
 			case 'insert-block':
 				numpadEditorDialog.showModal();
-				break
+				break;
 			case 'insert-image':
-				imageSearchDialog.showModal()
-				break
+				imageSearchDialog.showModal();
+				break;
 		}
 		hideContextMenu();
 	}
@@ -110,37 +113,137 @@
 		}
 	}
 
-	onMount(() => {
-		stage = new Konva.Stage({
-			container: 'konva-container',
-			width: SCREEN_WIDTH,
-			height: SCREEN_HEIGHT
-		});
+	async function createNewStage() {
+		const userInput = prompt('輸入canvas的名稱', 'temporary');
+		if (userInput !== null && userInput.trim() !== '') {
+			const stageId = uuidv4();
+			const canvasStage = await canvasControllerCreateStage({
+				body: {
+					id: stageId,
+					characterMe: characterMe,
+					characterOpponent: characterOpponent,
+					name: userInput
+				},
+				credentials: 'include'
+			});
+			if (canvasStage.data) {
+				allStageDtos.push(canvasStage.data);
+				const { stage, layer } = createStage({
+					stageDto: canvasStage.data,
+					container: konvaContainer,
+					onContextMenu: onContextMenu,
+					onClick: hideContextMenu
+				});
+				currentStage = stage;
+				currentLayer = layer;
+				currentStageDto = canvasStage.data;
+				console.log("stageDto",currentStageDtos)
+			} else {
+				alert('something in server side create stage went wrong');
+			}
+		} else if (userInput === null) {
+			alert('null');
+		}
+	}
 
-		// 處理右鍵選單
-		stage.on('contextmenu', (event) => {
-			event.evt.preventDefault(); // 阻止瀏覽器預設右鍵選單
-			const mousePos = stage.getPointerPosition();
-			if (mousePos && konvaContainer) {
-				const rec_konva = konvaContainer.getBoundingClientRect();
-				contextMenuPosition = {
-					x: mousePos.x + rec_konva.left,
-					y: mousePos.y + rec_konva.top
-				};
-				contextMenuVisible = true;
+	async function createExistedStage(stageDto: CanvasStageDto) {
+		const { stage, layer } = createStage({
+			stageDto: stageDto,
+			container: konvaContainer,
+			onContextMenu: onContextMenu,
+			onClick: hideContextMenu
+		});
+		currentStage = stage;
+		currentLayer = layer;
+		currentStageDto = stageDto
+		const simpleText = new Konva.Text({
+			x: 0,
+			y: 0,
+			text: `Stage:${stageDto.name}`,
+			fontSize: 48,
+			fill: 'white'
+		});
+		currentLayer.add(simpleText);
+		const resp = await canvasControllerFindAllBlocks({
+			path:{
+				stageId: stageDto.id
+			}
+		})
+		if(resp.data){
+			resp.data.forEach((block)=>{
+				createNumpadBlock({
+					canvasNumpadBlock:{
+						id:block.id,
+						input:block.input,
+						type:block.type,
+						x:block.x,
+						y:block.y
+					},
+					userSettings:userSettings
+				}, currentLayer)
+			})
+		}
+	}
+
+	async function renameExistedStage(stageDto: CanvasStageDto) {
+		const userInput = prompt('Enter new name of stage');
+		canvasControllerUpdateStage({
+			body: {
+				id: stageDto.id,
+				name: userInput
+			},
+			credentials: 'include'
+		}).then((resp) => {
+			if (resp.data) {
+				const newStages = allStageDtos.map((iterStage) => {
+					if (iterStage.id === stageDto.id) {
+						return resp.data;
+					}
+					return iterStage;
+				});
+				allStageDtos = newStages;
+			} else {
+				alert('something went wrong');
 			}
 		});
+	}
 
-		// 點擊舞台時隱藏選單
-		stage.on('click', () => {
-			hideContextMenu();
+	async function deleteExistedStage(stageDto: CanvasStageDto) {
+		await canvasControllerDeleteStage({
+			path: { stageId: stageDto.id },
+			credentials: 'include'
+		}).then((resp) => {
+			if (!resp.data) {
+				alert('Something went wrong');
+			} else {
+				const newStages = allStageDtos.filter((stage) => stage.id !== stageDto.id);
+				allStageDtos = newStages;
+			}
 		});
+	}
 
-		layer = new Konva.Layer();
-		stage.add(layer);
-		// 添加全域點擊事件監聽器
+	async function createNewNumpadBlock(numpadBlockDto:CanvasNumpadBlockDto) {
+		const createResp = await canvasControllerCreateNumpadBlock({
+			body: {
+				...numpadBlockDto,
+				stageId:currentStageDto.id
+			},
+			credentials:'include'
+		})
+		if(createResp.data){
+			createNumpadBlock({
+				canvasNumpadBlock: numpadBlockDto,
+				userSettings: userSettings
+			}, currentLayer)
+			numpadBlocksDtos.set(numpadBlockDto.id, numpadBlockDto);
+			numpadBlocksDtos = new Map(numpadBlocksDtos);
+		}
+		else{
+			alert("Server side: Something went wrong at create numpad block")
+		}
+	}
+	onMount(() => {
 		document.addEventListener('click', handleClickOutside);
-		// 清理函數
 		return () => {
 			document.removeEventListener('click', handleClickOutside);
 		};
@@ -196,9 +299,6 @@
 			alert(`登錄失敗: ${error}`);
 		}
 	}
-
-	let characterMe = $state<CharacterDto>(data.allCharacters[0]);
-	let characterOpponent = $state<CharacterDto>(data.allCharacters[1]);
 </script>
 
 <svelte:head>
@@ -215,10 +315,10 @@
 					<button
 						class="btn-logout"
 						onclick={async () => {
-							authControllerGoogleLogout({
+							authControllerLogout({
 								credentials: 'include'
-							})
-							currentUser = null
+							});
+							currentUser = null;
 						}}
 					>
 						Log out
@@ -242,30 +342,57 @@
 					</button>
 				{/if}
 			</div>
-		</div>	
+		</div>
 	</header>
 
 	<main>
 		<div class="left-panel">
-			<div class="user-character">
+			<div class="canvas-character">
 				<select-character
 					allCharacters={data.allCharacters}
 					defaultCharacter={data.allCharacters[0]}
 					onselectCharacter={(event) => {
 						characterMe = event.detail.character;
 					}}
+					size="6vw"
 				>
 				</select-character>
+				<span>vs.</span>
 				<select-character
 					allCharacters={data.allCharacters}
 					defaultCharacter={data.allCharacters[1]}
 					onselectCharacter={(event) => {
 						characterOpponent = event.detail.character;
 					}}
+					size="6vw"
 				>
 				</select-character>
 			</div>
-			<div></div>
+			<hr class="primary-hr" />
+			<div class="canvas-panel">
+				<div class="canvas-panel-header">
+					<span>Canvas</span>
+					<button onclick={createNewStage}>create</button>
+				</div>
+			</div>
+			<hr class="second-hr" />
+			<div class="canvas-stages">
+				{#key currentStageDtos}
+					{#each currentStageDtos as stageDto}
+						<div class="stage-item">
+							<button onclick={() => createExistedStage(stageDto)} class="btn-stage">
+								{stageDto.name}
+							</button>
+							<button onclick={() => renameExistedStage(stageDto)} class="btn-rename">
+								修改
+							</button>
+							<button onclick={() => deleteExistedStage(stageDto)} class="btn-delete">
+								刪除
+							</button>
+						</div>
+					{/each}
+				{/key}
+			</div>
 		</div>
 		<div id="konva-container" bind:this={konvaContainer}></div>
 	</main>
@@ -287,34 +414,38 @@
 
 	<dialog id="numpad-editor" bind:this={numpadEditorDialog}>
 		<div class="dialog-wrapper">
-			<numpad-editor 
-				userSettings={userSettings}
-				onedit={(event)=>{
-					numpadEditorValue = event.detail
-					console.log($state.snapshot(numpadEditorValue))
+			<numpad-editor
+				{userSettings}
+				onedit={(event) => {
+					numpadEditorValue = event.detail;
+					console.log($state.snapshot(numpadEditorValue));
 				}}
 			>
 			</numpad-editor>
 
 			<div class="btns">
-				<button onclick={()=>{
-					const rec_konva = konvaContainer.getBoundingClientRect();
-					const new_id = uuidv4()
-					canvasNumpadBlocks.set(new_id,{
-						input:numpadEditorValue.input,
-						type: numpadEditorValue.type,
-						x: (contextMenuPosition.x - rec_konva.left)/(SCREEN_WIDTH/100),
-						y: (contextMenuPosition.y - rec_konva.top)/(SCREEN_HEIGHT/100),
-						id: new_id
-					})
-					canvasNumpadBlocks = new Map(canvasNumpadBlocks)
-					numpadEditorDialog.close();
-				}}>
+				<button
+					onclick={() => {
+						const rec_konva = konvaContainer.getBoundingClientRect();
+						const new_id = uuidv4();
+						const newNumpadBlockDto = {
+							input: numpadEditorValue.input,
+							type: numpadEditorValue.type,
+							x: (contextMenuPosition.x - rec_konva.left) / (SCREEN_WIDTH / 100),
+							y: (contextMenuPosition.y - rec_konva.top) / (SCREEN_HEIGHT / 100),
+							id: new_id
+						}
+						createNewNumpadBlock(newNumpadBlockDto)
+						numpadEditorDialog.close();
+					}}
+				>
 					送出
 				</button>
-				<button onclick={()=>{
-					numpadEditorDialog.close();
-				}}>
+				<button
+					onclick={() => {
+						numpadEditorDialog.close();
+					}}
+				>
 					關閉
 				</button>
 			</div>
@@ -323,22 +454,22 @@
 
 	<dialog id="search-character-image" bind:this={imageSearchDialog}>
 		{#key [characterMe, characterOpponent]}
-		<search-character-image 
-			allCharacters={data.allCharacters}
-			characterMe={characterMe}
-			characterOpponent={characterOpponent}
-			onselectImage={(event)=>{
-				const image = event.detail.image as CharacterMoveImageDto;
-				const rec_konva = konvaContainer.getBoundingClientRect();
-				canvasCharacterMoveImages.push({
-					image: image,
-					x: (contextMenuPosition.x - rec_konva.left)/(SCREEN_WIDTH/100),
-					y: (contextMenuPosition.y - rec_konva.top)/(SCREEN_HEIGHT/100),
-				})
-				imageSearchDialog.close()
-			}}
+			<search-character-image
+				allCharacters={data.allCharacters}
+				{characterMe}
+				{characterOpponent}
+				onselectImage={(event) => {
+					const image = event.detail.image as CharacterMoveImageDto;
+					const rec_konva = konvaContainer.getBoundingClientRect();
+					characterMoveImages.push({
+						image: image,
+						x: (contextMenuPosition.x - rec_konva.left) / (SCREEN_WIDTH / 100),
+						y: (contextMenuPosition.y - rec_konva.top) / (SCREEN_HEIGHT / 100)
+					});
+					imageSearchDialog.close();
+				}}
 			>
-		</search-character-image>		
+			</search-character-image>
 		{/key}
 	</dialog>
 </div>
@@ -357,7 +488,7 @@
 		background-color: oklch(0.27 0.02 264.26);
 		display: flex;
 		justify-content: center;
-		.header-wrapper{
+		.header-wrapper {
 			width: 70%;
 			height: 100%;
 			display: flex;
@@ -367,7 +498,6 @@
 				height: 100%;
 			}
 		}
-		
 	}
 	main {
 		background-color: oklch(0.23 0.01 264.4);
@@ -379,6 +509,51 @@
 		.left-panel {
 			background-color: oklch(0.21 0.01 258.37);
 			padding: 1rem;
+			hr.primary-hr {
+				border: none;
+				height: 0.25vh;
+				background-color: oklch(0.8 0.02 262.99);
+			}
+			.canvas-character {
+				display: flex;
+				flex-direction: row;
+				justify-content: space-evenly;
+				align-items: end;
+				span {
+					font-size: x-large;
+				}
+			}
+			.canvas-panel {
+				.canvas-panel-header {
+					display: flex;
+					flex-direction: row;
+					justify-content: space-between;
+					font-size: x-large;
+				}
+			}
+			hr.second-hr {
+				border: none;
+				height: 0.25vh;
+				background-color: oklch(0.4 0.02 262.99);
+			}
+			.canvas-stages {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+				.stage-item {
+					display: flex;
+					flex-direction: row;
+					.btn-stage {
+						width: 70%;
+					}
+					.btn-rename {
+						width: 15%;
+					}
+					.btn-delete {
+						width: 15%;
+					}
+				}
+			}
 		}
 	}
 	dialog {
@@ -393,7 +568,7 @@
 		width: 40vw;
 		height: 40vh;
 		padding: 1rem;
-		numpad-editor{
+		numpad-editor {
 			width: 100%;
 			height: 60%;
 			color: white;
@@ -410,7 +585,7 @@
 			}
 		}
 	}
-	search-character-image{
+	search-character-image {
 		display: block;
 		width: 50vw;
 		height: 80vh;

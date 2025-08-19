@@ -2,15 +2,18 @@
 
 <script lang="ts">
 	import type { CharacterDto } from '$lib/client/types.gen';
-	const { allCharacters, defaultCharacter, size = '8vw'}: {
-		 allCharacters: CharacterDto[], 
-		 defaultCharacter: CharacterDto
-		 size?: string 
+	const {
+		allCharacters,
+		defaultCharacter,
+		size = '8vw'
+	}: {
+		allCharacters: CharacterDto[];
+		defaultCharacter: CharacterDto;
+		size?: string;
 	} = $props();
 	import { PUBLIC_NESTJS_URL } from '$env/static/public';
 	let isGridVisible = $state<boolean>(false);
 	let selectCharacter = $state<CharacterDto>(defaultCharacter);
-
 
 	const gridWidth = `calc(${size}*7)`;
 </script>
@@ -39,10 +42,7 @@
 				}
 			}}
 		></div>
-		<div 
-			class="grid-select-character"
-			style="top: {size}; width:{gridWidth}"
-		>
+		<div class="grid-select-character" style="top: {size}; width:{gridWidth}">
 			{#each allCharacters as character}
 				<button
 					class="btn-character"

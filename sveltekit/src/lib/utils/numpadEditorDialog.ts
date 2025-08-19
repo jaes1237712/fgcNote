@@ -1,7 +1,7 @@
 import Konva from 'konva';
 import type { CreateNumpadBlockConfig } from '$lib/utils/canvas';
 import { createNumpadBlock } from '$lib/utils/canvas';
-import type { CONTROLLER_TYPE } from '$lib/utils/numpadCompiler';
+import type { CONTROLLER_TYPE } from '$lib/utils/canvas/numpad/numpadCompiler';
 import { LAYOUT_SETTING } from '$lib/userInterface';
 
 interface NumpadEditorDialogDependencies {

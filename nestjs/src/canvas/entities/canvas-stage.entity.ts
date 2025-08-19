@@ -16,10 +16,14 @@ export class CanvasStage {
   @PrimaryColumn()
   id!: string; // Generate from client
 
-  @ManyToOne(() => Character, (character) => character.stagesMe)
+  @ManyToOne(() => Character, (character) => character.stagesMe,{
+    eager:true
+  })
   characterMe: Character;
 
-  @ManyToOne(() => Character, (character) => character.stagesOpponent)
+  @ManyToOne(() => Character, (character) => character.stagesOpponent,{
+    eager:true
+  })
   characterOpponent: Character;
 
   @Column()
@@ -27,6 +31,7 @@ export class CanvasStage {
 
   @ManyToOne(() => User, (user) => user.canvas_stages, {
     cascade: true,
+    eager: true
   })
   user!: User;
 

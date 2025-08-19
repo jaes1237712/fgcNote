@@ -65,6 +65,94 @@ export type CharacterMoveImageDto = {
     height: number;
 };
 
+export type CanvasStageDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * UUIDv4, generate by client
+     */
+    characterMe: CharacterDto;
+    /**
+     * UUIDv4, generate by client
+     */
+    characterOpponent: CharacterDto;
+    /**
+     * Stage Name
+     */
+    name: string;
+    /**
+     * who create this stage
+     */
+    user: UserDto;
+};
+
+export type CanvasNumpadBlockDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * Numpad Input, like 623p
+     */
+    input: string;
+    /**
+     * CONTROLLER_TYPE, modern or classic
+     */
+    type: 'CLASSIC' | 'MODERN';
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
+};
+
+export type CreateCanvasNumpadBlockDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * Numpad Input, like 623p
+     */
+    input: string;
+    /**
+     * CONTROLLER_TYPE, modern or classic
+     */
+    type: 'CLASSIC' | 'MODERN';
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
+    /**
+     * belong to what stage
+     */
+    stageId: string;
+};
+
+export type CreateCanvasStageDto = {
+    id: string;
+    characterMe: CharacterDto;
+    characterOpponent: CharacterDto;
+    name: string;
+};
+
+export type UpdateCanvasStageDto = {
+    id: string;
+    /**
+     * The updated name of the stage
+     */
+    name: string;
+};
+
 export type AuthControllerGoogleLoginData = {
     body: GoogleLoginBody;
     path?: never;
@@ -81,14 +169,14 @@ export type AuthControllerGoogleLoginResponses = {
 
 export type AuthControllerGoogleLoginResponse = AuthControllerGoogleLoginResponses[keyof AuthControllerGoogleLoginResponses];
 
-export type AuthControllerGoogleLogoutData = {
+export type AuthControllerLogoutData = {
     body?: never;
     path?: never;
     query?: never;
     url: '/auth/logout';
 };
 
-export type AuthControllerGoogleLogoutResponses = {
+export type AuthControllerLogoutResponses = {
     /**
      * Logout successfully
      */
@@ -117,7 +205,7 @@ export type CharacterControllerFindAllData = {
 
 export type CharacterControllerFindAllResponses = {
     /**
-     * 成功獲取角色列表
+     * Successfully get all characters
      */
     200: Array<CharacterDto>;
 };
@@ -138,12 +226,146 @@ export type CharacterControllerFindImagesData = {
 
 export type CharacterControllerFindImagesResponses = {
     /**
-     * 成功獲取角色圖片
+     * Successfully get images of character
      */
     200: Array<CharacterMoveImageDto>;
 };
 
 export type CharacterControllerFindImagesResponse = CharacterControllerFindImagesResponses[keyof CharacterControllerFindImagesResponses];
+
+export type CanvasControllerGetAllStageData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/canvas/stage';
+};
+
+export type CanvasControllerGetAllStageResponses = {
+    /**
+     * Successfully get all stage
+     */
+    200: Array<CanvasStageDto>;
+};
+
+export type CanvasControllerGetAllStageResponse = CanvasControllerGetAllStageResponses[keyof CanvasControllerGetAllStageResponses];
+
+export type CanvasControllerFindAllBlocksData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/{stageId}/numpadBlocks';
+};
+
+export type CanvasControllerFindAllBlocksResponses = {
+    /**
+     * Successfully get all blocks
+     */
+    200: Array<CanvasNumpadBlockDto>;
+};
+
+export type CanvasControllerFindAllBlocksResponse = CanvasControllerFindAllBlocksResponses[keyof CanvasControllerFindAllBlocksResponses];
+
+export type CanvasControllerCreateNumpadBlockData = {
+    body: CreateCanvasNumpadBlockDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/numpadBlock/create';
+};
+
+export type CanvasControllerCreateNumpadBlockErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerCreateNumpadBlockResponses = {
+    /**
+     * Create Numpad Block Successfully
+     */
+    200: CanvasNumpadBlockDto;
+};
+
+export type CanvasControllerCreateNumpadBlockResponse = CanvasControllerCreateNumpadBlockResponses[keyof CanvasControllerCreateNumpadBlockResponses];
+
+export type CanvasControllerCreateStageData = {
+    body: CreateCanvasStageDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/stage/create';
+};
+
+export type CanvasControllerCreateStageErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerCreateStageResponses = {
+    /**
+     * Create Stage Successfully
+     */
+    200: CanvasStageDto;
+};
+
+export type CanvasControllerCreateStageResponse = CanvasControllerCreateStageResponses[keyof CanvasControllerCreateStageResponses];
+
+export type CanvasControllerUpdateStageData = {
+    body: UpdateCanvasStageDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/stage/update';
+};
+
+export type CanvasControllerUpdateStageErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerUpdateStageResponses = {
+    /**
+     * Update Stage Successfully
+     */
+    200: CanvasStageDto;
+};
+
+export type CanvasControllerUpdateStageResponse = CanvasControllerUpdateStageResponses[keyof CanvasControllerUpdateStageResponses];
+
+export type CanvasControllerDeleteStageData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/stage/{stageId}';
+};
+
+export type CanvasControllerDeleteStageErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteStageResponses = {
+    /**
+     * Successfully delete stage
+     */
+    200: boolean;
+};
+
+export type CanvasControllerDeleteStageResponse = CanvasControllerDeleteStageResponses[keyof CanvasControllerDeleteStageResponses];
 
 export type ClientOptions = {
     baseUrl: 'https://localhost:3000' | (string & {});

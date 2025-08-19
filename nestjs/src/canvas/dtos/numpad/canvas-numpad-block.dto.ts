@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import type { CONTROLLER_TYPE } from '/home/hung/fgcNote/common/interface.ts';
-import { UserDto } from 'src/user/dtos/user.dto';
+import { CONTROLLER_TYPE } from '../../../common/interface';
 
 export class CanvasNumpadBlockDto {
   @ApiProperty({ description: 'UUIDv4, generate by client' })
@@ -12,7 +11,11 @@ export class CanvasNumpadBlockDto {
   @Expose()
   input!: string;
 
-  @ApiProperty({ description: 'CONTROLLER_TYPE, modern or classic' })
+  @ApiProperty({ 
+    description: 'CONTROLLER_TYPE, modern or classic',
+    enum: CONTROLLER_TYPE,
+    example: CONTROLLER_TYPE.MODERN, 
+  })
   @Expose()
   type!: CONTROLLER_TYPE;
 
@@ -23,8 +26,4 @@ export class CanvasNumpadBlockDto {
   @ApiProperty({ description: 'y, unit: viewportHeightUnit' })
   @Expose()
   y: number; // unit:viewportHeightUnit
-
-  @ApiProperty({ description: 'who create this block' })
-  @Expose()
-  user: UserDto;
 }
