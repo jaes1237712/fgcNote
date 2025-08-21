@@ -16,9 +16,10 @@ import { CreateCanvasStageDto } from './dtos/stage/create-canvas-stage.dto';
 import { plainToInstance } from 'class-transformer';
 import { User } from 'src/user/entities/user.entity';
 import { Character } from 'src/character/entities/character.entity';
-import { UpdateCanvasStageDto } from './dtos/stage/update-stage.dto';
+import { UpdateCanvasStageDto } from './dtos/stage/update-canvas-stage.dto';
 import { DeleteResult } from 'typeorm/browser';
 import { CharacterService } from 'src/character/character.service';
+import { UpdateCanvasNumpadBlockDto } from './dtos/numpad/update-canvas-numpad-block.dto';
 
 @Injectable()
 export class CanvasService {
@@ -57,6 +58,35 @@ export class CanvasService {
       },
     });
     return blocks.map((block) => this.toNumpadBlockDto(block));
+  }
+
+  async updateNumpadBlock(
+    block: UpdateCanvasNumpadBlockDto,
+    user: User,
+  ): Promise<CanvasNumpadBlockDto>{
+    const stage = await this.canvasStageRepository.findOne({where:{id:block.stageId}})
+    const targetBlock = await this.canvasNumpadBlockRepository.findOne({where:{id:block.id}})
+    
+    if(!stage){
+      throw new NotFoundException(`Stage with ID ${block.stageId} not found`)
+    }
+    if(!targetBlock){
+      throw new NotFoundException(`Block with ID ${block.id} not found`)
+    }
+    if(user.id !== stage.user.id){
+      throw new UnauthorizedException("Stage don't belong to this user.")
+    }
+
+    // 3. Update the properties of the found entity
+    targetBlock.input = block.input;
+    targetBlock.type = block.type;
+    targetBlock.x = block.x;
+    targetBlock.y = block.y;
+    // Assign the found stage entity to the block's stage relationship
+    targetBlock.stage = stage;
+    const savedBlock = await this.canvasNumpadBlockRepository.save(targetBlock);
+    return this.toNumpadBlockDto(savedBlock);
+    
   }
 
   async createNumpadBlock(
@@ -130,6 +160,23 @@ export class CanvasService {
     return this.toStageDto(
       await this.canvasStageRepository.save(stageToUpdate),
     );
+  }
+
+  async removeNumpadBlock(blockId: string, user: User): Promise<boolean>{
+    const targetBlock = await this.canvasNumpadBlockRepository.findOneBy({
+      id:blockId
+    })
+    if(!targetBlock){
+      throw new NotFoundException(`Block with ID ${blockId} not found`);
+    }
+    if (targetBlock.user.id != user.id) {
+      throw new UnauthorizedException('The block not belong to this user');
+    }
+    const deleteResult: DeleteResult = await this.canvasNumpadBlockRepository.delete(blockId);
+    if (deleteResult.affected === 0) {
+      throw new NotFoundException(`Stage with ID "${blockId}" not found`);
+    }
+    return true;
   }
 
   async removeStage(stageId: string, user: User): Promise<boolean> {

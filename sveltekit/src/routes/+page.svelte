@@ -375,7 +375,7 @@
 					<button onclick={createNewStage}>create</button>
 				</div>
 			</div>
-			<hr class="second-hr" />
+			<hr class="secondary-hr" />
 			<div class="canvas-stages">
 				{#key currentStageDtos}
 					{#each currentStageDtos as stageDto}
@@ -531,7 +531,7 @@
 					font-size: x-large;
 				}
 			}
-			hr.second-hr {
+			hr.secondary-hr {
 				border: none;
 				height: 0.25vh;
 				background-color: oklch(0.4 0.02 262.99);

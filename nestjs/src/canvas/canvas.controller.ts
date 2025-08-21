@@ -9,6 +9,7 @@ import {
   Body,
   UnauthorizedException,
   Delete,
+  Patch,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
@@ -17,8 +18,9 @@ import { CanvasNumpadBlockDto } from './dtos/numpad/canvas-numpad-block.dto';
 import { CanvasStageDto } from './dtos/stage/canvas-stage.dto';
 import { SessionGuard } from 'src/common/session.guard';
 import { CreateCanvasStageDto } from './dtos/stage/create-canvas-stage.dto';
-import { UpdateCanvasStageDto } from './dtos/stage/update-stage.dto';
+import { UpdateCanvasStageDto } from './dtos/stage/update-canvas-stage.dto';
 import { CreateCanvasNumpadBlockDto } from './dtos/numpad/create-canvas-numpad-block.dto';
+import { UpdateCanvasNumpadBlockDto } from './dtos/numpad/update-canvas-numpad-block.dto';
 
 @ApiTags('canvas')
 @Controller('canvas')
@@ -45,7 +47,7 @@ export class CanvasController {
     }
   }
 
-  @Get(':stageId/numpadBlocks')
+  @Get('numpadBlock/get/:stageId')
   @ApiOperation({
     description: 'Get all blocks of certain stage',
   })
@@ -66,6 +68,8 @@ export class CanvasController {
   ): Promise<CanvasNumpadBlockDto[]> {
     return this.canvasService.findAllNumpadBlocksByStage(stageId);
   }
+
+  
 
   @Post('numpadBlock/create')
   @ApiOperation({
@@ -118,7 +122,7 @@ export class CanvasController {
     }
   }
 
-  @Post('stage/update')
+  @Patch('stage/update')
   @ApiOperation({
     summary: 'Update Stage',
   })
@@ -143,7 +147,32 @@ export class CanvasController {
     }
   }
 
-  @Delete('stage/:stageId')
+  @Patch('numpadBlock/update')
+  @ApiOperation({
+    summary: 'Update numpadBlock',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Update numpadBlock Successfully',
+    type: CanvasNumpadBlockDto,
+  })
+  @ApiResponse({
+    status: 401, // 添加 401 響應到 Swagger 文檔
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async updateNumpadBlock(
+    @Body() body: UpdateCanvasNumpadBlockDto,
+    @Req() req: Request,
+  ): Promise<CanvasNumpadBlockDto> {
+    if (req.user) {
+      return this.canvasService.updateNumpadBlock(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Delete('stage/delete/:stageId')
   @ApiOperation({
     description: 'Delete Certain stage',
   })
@@ -169,6 +198,37 @@ export class CanvasController {
   ): Promise<boolean> {
     if (req.user) {
       return this.canvasService.removeStage(stageId, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Delete('numpadBlock/delete/:blockId')
+  @ApiOperation({
+    description: 'Delete Certain block',
+  })
+  @ApiParam({
+    name: 'blockId',
+    description: 'UUID of block',
+    type: 'string',
+    format: 'uuidV4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully delete block',
+    type: Boolean,
+  })
+  @ApiResponse({
+    status: 401, // 添加 401 響應到 Swagger 文檔
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async deleteBlock(
+    @Param('blockId', ParseUUIDPipe) blockId: string,
+    @Req() req: Request,
+  ): Promise<boolean> {
+    if (req.user) {
+      return this.canvasService.removeNumpadBlock(blockId, req.user);
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
