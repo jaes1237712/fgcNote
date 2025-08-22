@@ -2,6 +2,7 @@ import type {CanvasNumpadBlockDto} from '$lib/client';
 import { type UserSettings, LAYOUT_SETTING } from '$lib/userInterface';
 import { numpadInputToCommandImages } from '$lib/utils/canvas/numpad/numpadCompiler';
 import Konva from 'konva';
+import {contextMenuState} from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte'
 
 export interface CreateNumpadBlockConfig {
 	canvasNumpadBlock: CanvasNumpadBlockDto;
@@ -9,8 +10,7 @@ export interface CreateNumpadBlockConfig {
 }
 
 export function createNumpadBlock(config: CreateNumpadBlockConfig, layer: Konva.Layer | Konva.Group) {
-	const canvasNumpadBlock = config.canvasNumpadBlock;
-	const userSettings = config.userSettings;
+	const {canvasNumpadBlock, userSettings} = config
 	const commandImagesSrc = numpadInputToCommandImages({
 		input: canvasNumpadBlock.input,
 		type: canvasNumpadBlock.type,
@@ -48,6 +48,17 @@ export function createNumpadBlock(config: CreateNumpadBlockConfig, layer: Konva.
 		height: blockHeight * LENGTH_UNIT,
 		fill: 'oklch(0.45 0.02 264.15)'
 	});
+	block.on('contextmenu', (event) => {
+		event.evt.preventDefault();
+		event.cancelBubble = true; // 阻止事件向上冒泡到 Stage
+		console.log("contextmenu:block")
+		contextMenuState.show(
+			event.evt.clientX,
+			event.evt.clientY,
+			'block',
+			block.id()
+		)
+	})
 	block.add(blockBackground);
 	layer.add(block);
 	return block;

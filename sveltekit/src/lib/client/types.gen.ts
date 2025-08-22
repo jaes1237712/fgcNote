@@ -153,6 +153,33 @@ export type UpdateCanvasStageDto = {
     name: string;
 };
 
+export type UpdateCanvasNumpadBlockDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * Numpad Input, like 623p
+     */
+    input: string;
+    /**
+     * CONTROLLER_TYPE, modern or classic
+     */
+    type: 'CLASSIC' | 'MODERN';
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
+    /**
+     * belong to what stage
+     */
+    stageId: string;
+};
+
 export type AuthControllerGoogleLoginData = {
     body: GoogleLoginBody;
     path?: never;
@@ -258,7 +285,7 @@ export type CanvasControllerFindAllBlocksData = {
         stageId: string;
     };
     query?: never;
-    url: '/canvas/{stageId}/numpadBlocks';
+    url: '/canvas/numpadBlock/get/{stageId}';
 };
 
 export type CanvasControllerFindAllBlocksResponses = {
@@ -339,6 +366,29 @@ export type CanvasControllerUpdateStageResponses = {
 
 export type CanvasControllerUpdateStageResponse = CanvasControllerUpdateStageResponses[keyof CanvasControllerUpdateStageResponses];
 
+export type CanvasControllerUpdateNumpadBlockData = {
+    body: UpdateCanvasNumpadBlockDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/numpadBlock/update';
+};
+
+export type CanvasControllerUpdateNumpadBlockErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerUpdateNumpadBlockResponses = {
+    /**
+     * Update numpadBlock Successfully
+     */
+    200: CanvasNumpadBlockDto;
+};
+
+export type CanvasControllerUpdateNumpadBlockResponse = CanvasControllerUpdateNumpadBlockResponses[keyof CanvasControllerUpdateNumpadBlockResponses];
+
 export type CanvasControllerDeleteStageData = {
     body?: never;
     path: {
@@ -348,7 +398,7 @@ export type CanvasControllerDeleteStageData = {
         stageId: string;
     };
     query?: never;
-    url: '/canvas/stage/{stageId}';
+    url: '/canvas/stage/delete/{stageId}';
 };
 
 export type CanvasControllerDeleteStageErrors = {
@@ -366,6 +416,34 @@ export type CanvasControllerDeleteStageResponses = {
 };
 
 export type CanvasControllerDeleteStageResponse = CanvasControllerDeleteStageResponses[keyof CanvasControllerDeleteStageResponses];
+
+export type CanvasControllerDeleteBlockData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of block
+         */
+        blockId: string;
+    };
+    query?: never;
+    url: '/canvas/numpadBlock/delete/{blockId}';
+};
+
+export type CanvasControllerDeleteBlockErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteBlockResponses = {
+    /**
+     * Successfully delete block
+     */
+    200: boolean;
+};
+
+export type CanvasControllerDeleteBlockResponse = CanvasControllerDeleteBlockResponses[keyof CanvasControllerDeleteBlockResponses];
 
 export type ClientOptions = {
     baseUrl: 'https://localhost:3000' | (string & {});

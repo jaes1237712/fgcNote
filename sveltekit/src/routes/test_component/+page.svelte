@@ -29,29 +29,8 @@
 	};
 </script>
 
-<div class="test-container">
-	{#if allCharacters}
-		<search-character-image
-			{allCharacters}
-			characterMe={allCharacters[0]}
-			characterOpponent={allCharacters[1]}
-			onselectImage={(event) => {
-				const image = event.detail.image as CharacterMoveImageDto;
-			}}
-		>
-		</search-character-image>
-	{/if}
+<div>
+
 </div>
 
-<style>
-	.test-container {
-		margin: 10vw;
-		width: 50vw;
-		height: 50vh;
-	}
-	search-character-image {
-		display: block;
-		width: 50vw;
-		height: 50vh;
-	}
-</style>
+

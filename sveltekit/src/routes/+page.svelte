@@ -16,9 +16,7 @@
 		canvasControllerUpdateStage,
 		canvasControllerDeleteStage,
 		canvasControllerFindAllBlocks,
-
 		canvasControllerCreateNumpadBlock
-
 	} from '$lib/client';
 	import type { PageProps } from './$types';
 	import { Plus, ImageIcon } from '@lucide/svelte';
@@ -34,6 +32,7 @@
 	import '$lib/component/SearchCharacterImages.svelte';
 	import '$lib/component/NumpadEditor.svelte';
 	import { createStage} from '$lib/utils/canvas/index';
+	import {contextMenuState} from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte'
 	let { data }: PageProps = $props();
 	const SCREEN_WIDTH = screen.width;
 	const SCREEN_HEIGHT = screen.height;
@@ -73,20 +72,6 @@
 	// 用戶狀態管理 - 使用響應式變量
 	let currentUser = $state<UserDto>(data?.user);
 
-	// 右鍵選單狀態
-	let contextMenuVisible = $state(false);
-	let contextMenuPosition = $state({ x: 0, y: 0 });
-
-	function onContextMenu(position: { x: number; y: number }) {
-		contextMenuPosition = position;
-		contextMenuVisible = true;
-	}
-	// 右鍵選單選項
-	const contextMenuOptions = [
-		{ id: 'insert-block', label: '插入區塊', icon: Plus },
-		{ id: 'insert-image', label: '插入圖片', icon: ImageIcon }
-	];
-
 	// 處理右鍵選單選項點擊
 	function handleContextMenuOption(optionId: string) {
 		switch (optionId) {
@@ -102,7 +87,7 @@
 
 	// 隱藏右鍵選單
 	function hideContextMenu() {
-		contextMenuVisible = false;
+		contextMenuState.hide();
 	}
 
 	// 處理點擊外部關閉選單
@@ -130,9 +115,7 @@
 				allStageDtos.push(canvasStage.data);
 				const { stage, layer } = createStage({
 					stageDto: canvasStage.data,
-					container: konvaContainer,
-					onContextMenu: onContextMenu,
-					onClick: hideContextMenu
+					container: konvaContainer
 				});
 				currentStage = stage;
 				currentLayer = layer;
@@ -149,9 +132,7 @@
 	async function createExistedStage(stageDto: CanvasStageDto) {
 		const { stage, layer } = createStage({
 			stageDto: stageDto,
-			container: konvaContainer,
-			onContextMenu: onContextMenu,
-			onClick: hideContextMenu
+			container: konvaContainer
 		});
 		currentStage = stage;
 		currentLayer = layer;
@@ -398,12 +379,12 @@
 	</main>
 
 	<!-- 自定義右鍵選單 -->
-	{#if contextMenuVisible}
+	{#if contextMenuState.visible}
 		<div
 			class="context-menu"
-			style="left: {contextMenuPosition.x}px; top: {contextMenuPosition.y}px;"
+			style="left: {contextMenuState.position.x}px; top: {contextMenuState.position.y}px;"
 		>
-			{#each contextMenuOptions as option}
+			{#each contextMenuState.options as option}
 				<button class="context-menu-item" onclick={() => handleContextMenuOption(option.id)}>
 					{option.label}
 					<option.icon />
@@ -431,8 +412,8 @@
 						const newNumpadBlockDto = {
 							input: numpadEditorValue.input,
 							type: numpadEditorValue.type,
-							x: (contextMenuPosition.x - rec_konva.left) / (SCREEN_WIDTH / 100),
-							y: (contextMenuPosition.y - rec_konva.top) / (SCREEN_HEIGHT / 100),
+							x: (contextMenuState.position.x - rec_konva.left) / (SCREEN_WIDTH / 100),
+							y: (contextMenuState.position.y - rec_konva.top) / (SCREEN_HEIGHT / 100),
 							id: new_id
 						}
 						createNewNumpadBlock(newNumpadBlockDto)
@@ -463,8 +444,8 @@
 					const rec_konva = konvaContainer.getBoundingClientRect();
 					characterMoveImages.push({
 						image: image,
-						x: (contextMenuPosition.x - rec_konva.left) / (SCREEN_WIDTH / 100),
-						y: (contextMenuPosition.y - rec_konva.top) / (SCREEN_HEIGHT / 100)
+						x: (contextMenuState.position.x - rec_konva.left) / (SCREEN_WIDTH / 100),
+						y: (contextMenuState.position.y - rec_konva.top) / (SCREEN_HEIGHT / 100)
 					});
 					imageSearchDialog.close();
 				}}
