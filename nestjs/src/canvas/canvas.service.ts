@@ -64,17 +64,11 @@ export class CanvasService {
     block: UpdateCanvasNumpadBlockDto,
     user: User,
   ): Promise<CanvasNumpadBlockDto>{
-    const stage = await this.canvasStageRepository.findOne({where:{id:block.stageId}})
     const targetBlock = await this.canvasNumpadBlockRepository.findOne({where:{id:block.id}})
     
-    if(!stage){
-      throw new NotFoundException(`Stage with ID ${block.stageId} not found`)
-    }
+
     if(!targetBlock){
       throw new NotFoundException(`Block with ID ${block.id} not found`)
-    }
-    if(user.id !== stage.user.id){
-      throw new UnauthorizedException("Stage don't belong to this user.")
     }
 
     // 3. Update the properties of the found entity
@@ -83,7 +77,6 @@ export class CanvasService {
     targetBlock.x = block.x;
     targetBlock.y = block.y;
     // Assign the found stage entity to the block's stage relationship
-    targetBlock.stage = stage;
     const savedBlock = await this.canvasNumpadBlockRepository.save(targetBlock);
     return this.toNumpadBlockDto(savedBlock);
     

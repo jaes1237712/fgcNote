@@ -20,7 +20,4 @@ export class UpdateCanvasNumpadBlockDto {
   
     @ApiProperty({ description: 'y, unit: viewportHeightUnit' })
     y: number; // unit:viewportHeightUnit
-
-    @ApiProperty({ description: 'belong to what stage' })
-    stageId: string
   }

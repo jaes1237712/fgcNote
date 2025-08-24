@@ -7,14 +7,12 @@ import {
 
 export const load: PageLoad = async ({}) => {
 	try {
-		const userResp = await userControllerGetMe({
-			credentials: 'include'
-		});
+		const userResp = await userControllerGetMe({});
 		const allCharacters = await characterControllerFindAll();
-		const allStageDtos = await canvasControllerGetAllStage({
-			credentials: 'include'
-		});
+		const allStageDtos = await canvasControllerGetAllStage();
+		console.log("allCharacter", allCharacters)
 		console.log("allStageDtos", allStageDtos)
+		
 		if (userResp.data) {
 			return {
 				user: userResp.data,

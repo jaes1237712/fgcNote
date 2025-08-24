@@ -1,6 +1,6 @@
 import { DeleteIcon, EditIcon, ImageIcon, Plus} from "@lucide/svelte";
 
-type ContextMenuOption = {
+export type ContextMenuOption = {
     id: string;
     label: string;
     icon: typeof Plus;
@@ -13,9 +13,9 @@ class ContextMenuStore {
     // 這裡的 $state 是一個 "rune"，用來標記這個 class 屬性是響應式的。
     visible = $state(false);
     position = $state({ x: 0, y: 0 });
-    targetType = $state<ContextMenuTargetType>('stage'); // 明確指定型別並賦予初始值
+    targetType = $state<ContextMenuTargetType>('block'); // 明確指定型別並賦予初始值
     targetId = $state(''); // 初始值為空字串
-
+    
     // 使用 $derived() 來宣告響應式衍生值
     // 它會自動追蹤 this.targetType 的變化並重新計算
     options = $derived(getContextMenuOptions(this.targetType));
@@ -29,10 +29,7 @@ class ContextMenuStore {
     }
 
     hide() {
-        this.visible = false;     // 觸發響應式更新
-        // 可選：重置其他狀態
-        this.targetType = 'stage';
-        this.targetId = '';
+        this.visible = false;   
     }
 }
 

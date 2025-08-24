@@ -18,6 +18,7 @@ export function createStage(config: createStageConfig): { stage: Konva.Stage; la
 
 	stage.on('contextmenu', (event) => {
 		event.evt.preventDefault();
+		console.log("stage on contextmenu");
 		contextMenuState.show(
 			event.evt.clientX,
 			event.evt.clientY,

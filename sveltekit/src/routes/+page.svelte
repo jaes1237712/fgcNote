@@ -2,7 +2,7 @@
 	import logo from '$lib/images/common/logo_mark.png';
 	import { onMount } from 'svelte';
 	import Konva from 'konva';
-	import {createNumpadBlock} from '$lib/utils/canvas';
+	import {createNumpadBlock, deleteNumpadBlock, type OnBlockDragEndCallback} from '$lib/utils/canvas';
 	import type {
 		CanvasCharacterMoveImage
 	} from '$lib/utils/canvas-old';
@@ -16,15 +16,19 @@
 		canvasControllerUpdateStage,
 		canvasControllerDeleteStage,
 		canvasControllerFindAllBlocks,
-		canvasControllerCreateNumpadBlock
+		canvasControllerCreateNumpadBlock,
+		canvasControllerUpdateNumpadBlock,
+		canvasControllerDeleteBlock
+
 	} from '$lib/client';
 	import type { PageProps } from './$types';
-	import { Plus, ImageIcon } from '@lucide/svelte';
 	import type {
 		CanvasNumpadBlockDto,
 		CanvasStageDto,
 		CharacterDto,
 		CharacterMoveImageDto,
+		CreateCanvasNumpadBlockDto,
+		UpdateCanvasNumpadBlockDto,
 		UserDto
 	} from '$lib/client';
 	import '$lib/css/context_menu.css';
@@ -61,7 +65,7 @@
 	let numpadBlocksDtos = $state<Map<string, CanvasNumpadBlockDto>>(new Map());
 	let characterMoveImages = $state<CanvasCharacterMoveImage[]>([]);
 	let currentStageDtos = $derived.by<CanvasStageDto[]>(()=>{
-		if(characterMe.id && characterOpponent.id){
+		if(characterMe.id && characterOpponent.id && allStageDtos.length>0){
 			return allStageDtos.filter((stageDto)=>
 						stageDto.characterMe.id === characterMe.id &&
 						stageDto.characterOpponent.id === characterOpponent.id
@@ -73,14 +77,20 @@
 	let currentUser = $state<UserDto>(data?.user);
 
 	// 處理右鍵選單選項點擊
-	function handleContextMenuOption(optionId: string) {
+	function handleContextMenuOption(optionId:string ) {
 		switch (optionId) {
 			case 'insert-block':
 				numpadEditorDialog.showModal();
 				break;
+			case 'edit-block':
+				numpadEditorDialog.showModal();
+				break
 			case 'insert-image':
 				imageSearchDialog.showModal();
 				break;
+			case 'delete-block':
+				deleteExistedNumpadBlock(contextMenuState.targetId);
+
 		}
 		hideContextMenu();
 	}
@@ -108,8 +118,7 @@
 					characterMe: characterMe,
 					characterOpponent: characterOpponent,
 					name: userInput
-				},
-				credentials: 'include'
+				}			
 			});
 			if (canvasStage.data) {
 				allStageDtos.push(canvasStage.data);
@@ -153,15 +162,11 @@
 		if(resp.data){
 			resp.data.forEach((block)=>{
 				createNumpadBlock({
-					canvasNumpadBlock:{
-						id:block.id,
-						input:block.input,
-						type:block.type,
-						x:block.x,
-						y:block.y
-					},
-					userSettings:userSettings
+					canvasNumpadBlock:block,
+					userSettings:userSettings,
+					dragEndHandler: handelDragendBlockEvent
 				}, currentLayer)
+				numpadBlocksDtos.set(block.id, block);
 			})
 		}
 	}
@@ -172,8 +177,7 @@
 			body: {
 				id: stageDto.id,
 				name: userInput
-			},
-			credentials: 'include'
+			}
 		}).then((resp) => {
 			if (resp.data) {
 				const newStages = allStageDtos.map((iterStage) => {
@@ -192,7 +196,6 @@
 	async function deleteExistedStage(stageDto: CanvasStageDto) {
 		await canvasControllerDeleteStage({
 			path: { stageId: stageDto.id },
-			credentials: 'include'
 		}).then((resp) => {
 			if (!resp.data) {
 				alert('Something went wrong');
@@ -203,18 +206,18 @@
 		});
 	}
 
-	async function createNewNumpadBlock(numpadBlockDto:CanvasNumpadBlockDto) {
+	async function createNewNumpadBlock(numpadBlockDto:CreateCanvasNumpadBlockDto) {
 		const createResp = await canvasControllerCreateNumpadBlock({
 			body: {
 				...numpadBlockDto,
 				stageId:currentStageDto.id
-			},
-			credentials:'include'
+			}
 		})
 		if(createResp.data){
 			createNumpadBlock({
 				canvasNumpadBlock: numpadBlockDto,
-				userSettings: userSettings
+				userSettings: userSettings,
+				dragEndHandler: handelDragendBlockEvent
 			}, currentLayer)
 			numpadBlocksDtos.set(numpadBlockDto.id, numpadBlockDto);
 			numpadBlocksDtos = new Map(numpadBlocksDtos);
@@ -222,6 +225,88 @@
 		else{
 			alert("Server side: Something went wrong at create numpad block")
 		}
+	}
+
+	async function editExistedBlock(block:UpdateCanvasNumpadBlockDto) {
+		const updateResp = await canvasControllerUpdateNumpadBlock({body:block})
+		if(updateResp.data){
+			deleteNumpadBlock(block.id, currentLayer);
+			createNumpadBlock({canvasNumpadBlock: block,userSettings:userSettings, dragEndHandler:handelDragendBlockEvent}, currentLayer)
+		}else{
+			alert("Server side: Something went wrong at update numpad block")
+		}
+	}
+
+	async function updateExistedBlock(block:UpdateCanvasNumpadBlockDto){
+		
+	}
+
+	const handelDragendBlockEvent: OnBlockDragEndCallback = async(blockId:string, x:number, y:number) => {
+		const targetBlock = numpadBlocksDtos.get(blockId);
+        if (!targetBlock) {
+            console.error(`Block with ID ${blockId} not found in state.`);
+            return;
+        }
+		const updatedBlockDto:UpdateCanvasNumpadBlockDto = { ...targetBlock, x, y};
+        numpadBlocksDtos.set(blockId, updatedBlockDto);
+		try{
+			const updateResp = await canvasControllerUpdateNumpadBlock({body:updatedBlockDto})
+			if(!updateResp.response.ok){
+				throw new Error(`Failed to update block ${blockId} on server`);
+			}
+			if(updateResp.data){
+				console.log('Backend updated successfully:', updateResp.data);
+			}
+			else{
+				throw new Error(`Failed to update block ${blockId} on server`);
+			}
+		}catch(error){
+			alert(`Error updating block position on backend.`)
+		}
+	}
+
+	async function deleteExistedNumpadBlock(blockId:string) {
+		const canvasResp = deleteNumpadBlock(blockId, currentLayer);
+		if(canvasResp){
+			const serverResp = await canvasControllerDeleteBlock({
+				path:{blockId:blockId},
+				
+			});
+			if(serverResp.data){
+				console.log("delete Successfully")
+			}else{
+				alert("Server side: Something went wrong at delete numpad block")
+			}
+		}
+	}
+
+	async function numpadDialogCreateBlock(){
+		console.log("numpad dialog contextMenu Stage", contextMenuState)
+		if(contextMenuState.targetType === 'stage'){
+			const rec_konva = konvaContainer.getBoundingClientRect();
+			const new_id = uuidv4();
+			const newNumpadBlockDto:CreateCanvasNumpadBlockDto = {
+				input: numpadEditorValue.input,
+				type: numpadEditorValue.type,
+				x: (contextMenuState.position.x-rec_konva.left)/userSettings.viewportWidthUnit,
+				y: (contextMenuState.position.y-rec_konva.top)/userSettings.viewportHeightUnit,
+				id: new_id,
+				stageId: contextMenuState.targetId
+			}
+			createNewNumpadBlock(newNumpadBlockDto)
+		}
+		else if (contextMenuState.targetType ==='block'){
+			console.log("edit block")
+			const updateBlock: UpdateCanvasNumpadBlockDto ={
+				id: contextMenuState.targetId,
+				input: numpadEditorValue.input,
+				type: numpadEditorValue.type,
+				x: numpadBlocksDtos.get(contextMenuState.targetId).x,
+				y: numpadBlocksDtos.get(contextMenuState.targetId).y
+			}
+			editExistedBlock(updateBlock)
+		}						
+		numpadEditorDialog.close();
 	}
 	onMount(() => {
 		document.addEventListener('click', handleClickOutside);
@@ -255,16 +340,13 @@
 				body: {
 					id_token: currentCredential.token
 				},
-				credentials: 'include'
 			});
 
 			if (loginResponse.response) {
 				console.log('登錄成功，正在獲取用戶信息...');
 
 				// 2) call protected endpoint; cookie will be sent automatically
-				const userResponse = await userControllerGetMe({
-					credentials: 'include'
-				});
+				const userResponse = await userControllerGetMe();
 
 				if (userResponse.data) {
 					currentUser = userResponse.data;
@@ -296,9 +378,7 @@
 					<button
 						class="btn-logout"
 						onclick={async () => {
-							authControllerLogout({
-								credentials: 'include'
-							});
+							authControllerLogout();
 							currentUser = null;
 						}}
 					>
@@ -403,24 +483,13 @@
 				}}
 			>
 			</numpad-editor>
-
 			<div class="btns">
-				<button
+				<button class="btn-create"
 					onclick={() => {
-						const rec_konva = konvaContainer.getBoundingClientRect();
-						const new_id = uuidv4();
-						const newNumpadBlockDto = {
-							input: numpadEditorValue.input,
-							type: numpadEditorValue.type,
-							x: (contextMenuState.position.x - rec_konva.left) / (SCREEN_WIDTH / 100),
-							y: (contextMenuState.position.y - rec_konva.top) / (SCREEN_HEIGHT / 100),
-							id: new_id
-						}
-						createNewNumpadBlock(newNumpadBlockDto)
-						numpadEditorDialog.close();
+						numpadDialogCreateBlock();
 					}}
 				>
-					送出
+					創建
 				</button>
 				<button
 					onclick={() => {
@@ -432,6 +501,7 @@
 			</div>
 		</div>
 	</dialog>
+
 
 	<dialog id="search-character-image" bind:this={imageSearchDialog}>
 		{#key [characterMe, characterOpponent]}

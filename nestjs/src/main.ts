@@ -7,6 +7,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { readFileSync } from 'fs';
+import { LoggerInterceptor } from 'src/common/interceptors/logger.interceptor'; // 引入你的 Interceptor
 
 async function bootstrap() {
   const httpsOptions = {
@@ -52,12 +53,12 @@ async function bootstrap() {
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   app.use(cookieParser());
-
+  app.useGlobalInterceptors(new LoggerInterceptor());
   const port = configService.get<number>('PORT') ?? 3000;
   await app.listen(port);
 

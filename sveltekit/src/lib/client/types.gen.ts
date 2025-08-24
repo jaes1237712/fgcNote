@@ -174,10 +174,6 @@ export type UpdateCanvasNumpadBlockDto = {
      * y, unit: viewportHeightUnit
      */
     y: number;
-    /**
-     * belong to what stage
-     */
-    stageId: string;
 };
 
 export type AuthControllerGoogleLoginData = {
