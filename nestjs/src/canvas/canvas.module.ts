@@ -9,12 +9,17 @@ import { ConfigService } from '@nestjs/config';
 import { Algorithm } from 'jsonwebtoken';
 import { CharacterModule } from 'src/character/character.module';
 import { UserModule } from 'src/user/user.module';
+import { CanvasCharacterMoveImage } from './entities/canvas-character-move-image.entity';
 
 @Module({
   imports: [
     CharacterModule,
     UserModule,
-    TypeOrmModule.forFeature([CanvasStage, CanvasNumpadBlock]),
+    TypeOrmModule.forFeature([
+      CanvasStage,
+      CanvasNumpadBlock,
+      CanvasCharacterMoveImage,
+    ]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({

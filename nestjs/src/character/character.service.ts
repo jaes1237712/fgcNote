@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Character } from './entities/character.entity';
@@ -13,7 +13,7 @@ export class CharacterService {
     @InjectRepository(Character)
     private characterRepository: Repository<Character>,
     @InjectRepository(CharacterMoveImage)
-    private imageRepository: Repository<CharacterMoveImage>,
+    private characterMoveImageRepository: Repository<CharacterMoveImage>,
   ) {}
 
   async findAll(): Promise<CharacterDto[]> {
@@ -24,17 +24,31 @@ export class CharacterService {
   }
 
   async findMoveImages(characterId: number): Promise<CharacterMoveImageDto[]> {
-    const images = await this.imageRepository.find({
+    const images = await this.characterMoveImageRepository.find({
       where: { characterId },
       order: { fileName: 'ASC' },
     });
     return images.map((image) => this.toCharacterMoveImageDto(image));
   }
 
-  async findCharacter(id:number): Promise<Character|null>{
+  async findCharacter(id: number): Promise<Character | null> {
     return this.characterRepository.findOneBy({
       id: id,
     });
+  }
+
+  async findCharacterMoveImageByFileName(
+    fileName: string,
+  ): Promise<CharacterMoveImage> {
+    const image = await this.characterMoveImageRepository.findOne({
+      where: {
+        fileName: fileName,
+      },
+    });
+    if (!image) {
+      throw new NotFoundException(`File with Filename ${fileName} not found`);
+    }
+    return image;
   }
 
   toCharacterDto(character: Character): CharacterDto {

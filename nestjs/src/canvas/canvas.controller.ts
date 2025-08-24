@@ -21,6 +21,9 @@ import { CreateCanvasStageDto } from './dtos/stage/create-canvas-stage.dto';
 import { UpdateCanvasStageDto } from './dtos/stage/update-canvas-stage.dto';
 import { CreateCanvasNumpadBlockDto } from './dtos/numpad/create-canvas-numpad-block.dto';
 import { UpdateCanvasNumpadBlockDto } from './dtos/numpad/update-canvas-numpad-block.dto';
+import { CanvasCharacterMoveImageDto } from './dtos/move_image/canvas-character-move-image.dto';
+import { CreateCanvasCharacterMoveImageDto } from './dtos/move_image/create-canvas-character-move-image.dto';
+import { UpdateCanvasCharacterMoveImageDto } from './dtos/move_image/update-canvas-character-move-image.dto';
 
 @ApiTags('canvas')
 @Controller('canvas')
@@ -41,7 +44,7 @@ export class CanvasController {
   async getAllStage(@Req() req: Request): Promise<CanvasStageDto[]> {
     if (req.user) {
       const resp = await this.canvasService.findAllStage(req.user);
-      return resp
+      return resp;
     } else {
       return [];
     }
@@ -69,7 +72,27 @@ export class CanvasController {
     return this.canvasService.findAllNumpadBlocksByStage(stageId);
   }
 
-  
+  @Get('characterMoveImage/get/:stageId')
+  @ApiOperation({
+    description: 'Get all characterMoveImage of certain stage',
+  })
+  @ApiParam({
+    name: 'stageId',
+    description: 'UUID of stage',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully get all characterMoveImages',
+    type: CanvasCharacterMoveImageDto,
+    isArray: true,
+  })
+  async findAllCharacterMoveImages(
+    @Param('stageId', ParseUUIDPipe) stageId: string,
+  ): Promise<CanvasCharacterMoveImageDto[]> {
+    return this.canvasService.findAllCharacterMoveImageByStage(stageId);
+  }
 
   @Post('numpadBlock/create')
   @ApiOperation({
@@ -81,7 +104,7 @@ export class CanvasController {
     type: CanvasNumpadBlockDto,
   })
   @ApiResponse({
-    status: 401, 
+    status: 401,
     description: 'Unauthorized',
   })
   @UseGuards(SessionGuard)
@@ -96,6 +119,30 @@ export class CanvasController {
     }
   }
 
+  @Post('characterMoveImage/create')
+  @ApiOperation({
+    summary: 'Create characterMoveImage',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Create characterMoveImage Successfully',
+    type: CanvasCharacterMoveImageDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async createCharacterMoveImage(
+    @Body() body: CreateCanvasCharacterMoveImageDto,
+    @Req() req: Request,
+  ): Promise<CanvasCharacterMoveImageDto> {
+    if (req.user) {
+      return this.canvasService.createCanvasCharacterMoveImage(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
 
   @Post('stage/create')
   @ApiOperation({
@@ -107,7 +154,7 @@ export class CanvasController {
     type: CanvasStageDto,
   })
   @ApiResponse({
-    status: 401, 
+    status: 401,
     description: 'Unauthorized',
   })
   @UseGuards(SessionGuard)
@@ -172,6 +219,31 @@ export class CanvasController {
     }
   }
 
+  @Patch('characterMoveImage/update')
+  @ApiOperation({
+    summary: 'Update characterMoveImage',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Update characterMoveImage Successfully',
+    type: CanvasCharacterMoveImageDto,
+  })
+  @ApiResponse({
+    status: 401, // 添加 401 響應到 Swagger 文檔
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async updateCharacterMoveImage(
+    @Body() body: UpdateCanvasCharacterMoveImageDto,
+    @Req() req: Request,
+  ): Promise<CanvasCharacterMoveImageDto> {
+    if (req.user) {
+      return this.canvasService.updateCharacterMoveImage(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
   @Delete('stage/delete/:stageId')
   @ApiOperation({
     description: 'Delete Certain stage',
@@ -229,6 +301,40 @@ export class CanvasController {
   ): Promise<boolean> {
     if (req.user) {
       return this.canvasService.removeNumpadBlock(blockId, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Delete('characterMoveImage/delete/:blockId')
+  @ApiOperation({
+    description: 'Delete Certain CanvasCharacterMoveImage',
+  })
+  @ApiParam({
+    name: 'CanvasCharacterMoveImage UUID',
+    type: 'string',
+    format: 'uuidV4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully delete CanvasCharacterMoveImage',
+    type: Boolean,
+  })
+  @ApiResponse({
+    status: 401, // 添加 401 響應到 Swagger 文檔
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async deleteCharacterMoveImage(
+    @Param('CanvasCharacterMoveImage ID', ParseUUIDPipe)
+    characterMoveId: string,
+    @Req() req: Request,
+  ): Promise<boolean> {
+    if (req.user) {
+      return this.canvasService.removeCharacterMoveImage(
+        characterMoveId,
+        req.user,
+      );
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }

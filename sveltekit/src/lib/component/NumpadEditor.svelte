@@ -1,9 +1,9 @@
 <svelte:options customElement="numpad-editor" />
 
 <script lang="ts">
-	import { createNumpadBlock } from '$lib/utils/canvas';
-	import type {CanvasNumpadBlockDto} from '$lib/client';
-	import type {CreateNumpadBlockConfig } from '$lib/utils/canvas';
+	import { drawNumpadBlock } from '$lib/utils/canvas';
+	import type { CanvasNumpadBlockDto } from '$lib/client';
+	import type { DrawNumpadBlockConfig } from '$lib/utils/canvas';
 	import type { UserSettings } from '$lib/userInterface';
 	import { LAYOUT_SETTING } from '$lib/userInterface';
 	import type { CONTROLLER_TYPE } from '$lib/utils/canvas/numpad/numpadCompiler';
@@ -40,11 +40,11 @@
 				bind:value={inputValue}
 				oninput={() => {
 					previewLayer.destroyChildren();
-					const previewId = "preview";
-					createNumpadBlock(
+					const previewId = 'preview';
+					drawNumpadBlock(
 						{
 							canvasNumpadBlock: {
-								id:previewId,
+								id: previewId,
 								input: inputValue,
 								type: controllerType,
 								x: 0,
@@ -70,11 +70,11 @@
 			onswitchControllerType={(event) => {
 				controllerType = event.detail.controllerType;
 				previewLayer.destroyChildren();
-				const previewId = "preview"
-				createNumpadBlock(
+				const previewId = 'preview';
+				drawNumpadBlock(
 					{
 						canvasNumpadBlock: {
-							id:previewId,
+							id: previewId,
 							input: inputValue,
 							type: controllerType,
 							x: 0,

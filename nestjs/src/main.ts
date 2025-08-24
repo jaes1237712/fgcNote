@@ -21,7 +21,7 @@ async function bootstrap() {
   // 配置靜態檔案服務
   app.useStaticAssets(join(__dirname, '..', 'assets'), {
     prefix: '/assets/',
-    setHeaders: (res, path) => {
+    setHeaders: (res) => {
       res.setHeader('Access-Control-Allow-Origin', 'https://localhost:5173');
     },
   });

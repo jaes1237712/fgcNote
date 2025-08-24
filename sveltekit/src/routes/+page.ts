@@ -10,9 +10,9 @@ export const load: PageLoad = async ({}) => {
 		const userResp = await userControllerGetMe({});
 		const allCharacters = await characterControllerFindAll();
 		const allStageDtos = await canvasControllerGetAllStage();
-		console.log("allCharacter", allCharacters)
-		console.log("allStageDtos", allStageDtos)
-		
+		console.log('allCharacter', allCharacters);
+		console.log('allStageDtos', allStageDtos);
+
 		if (userResp.data) {
 			return {
 				user: userResp.data,

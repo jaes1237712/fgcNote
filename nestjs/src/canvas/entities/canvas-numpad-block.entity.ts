@@ -21,23 +21,23 @@ export class CanvasNumpadBlock {
   @Column()
   type!: CONTROLLER_TYPE;
 
-  @Column({type:'float'})
+  @Column({ type: 'float' })
   x: number; // unit:viewportWidthUnit
 
-  @Column({type:'float'})
+  @Column({ type: 'float' })
   y: number; // unit:viewportHeightUnit
 
   @ManyToOne(() => User, (user) => user.canvas_numpad_blocks, {
     cascade: true,
     onDelete: 'CASCADE',
-    eager:true
+    eager: true,
   })
   user: User;
 
   @ManyToOne(() => CanvasStage, (stage) => stage.numpadBlocks, {
     cascade: true,
     onDelete: 'CASCADE',
-    eager:true
+    eager: true,
   })
   stage: CanvasStage;
 

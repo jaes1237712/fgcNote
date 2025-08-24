@@ -1,19 +1,18 @@
-import type {CanvasNumpadBlockDto} from '$lib/client';
+import type { CanvasNumpadBlockDto } from '$lib/client';
 import { type UserSettings, LAYOUT_SETTING } from '$lib/userInterface';
 import { numpadInputToCommandImages } from '$lib/utils/canvas/numpad/numpadCompiler';
 import Konva from 'konva';
-import {contextMenuState} from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte'
+import { contextMenuState } from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte';
 export type OnBlockDragEndCallback = (blockId: string, x: number, y: number) => void;
 
-
-export interface CreateNumpadBlockConfig {
+export interface DrawNumpadBlockConfig {
 	canvasNumpadBlock: CanvasNumpadBlockDto;
 	userSettings: UserSettings;
-	dragEndHandler: OnBlockDragEndCallback;
+	dragEndHandler?: OnBlockDragEndCallback;
 }
 
-export function createNumpadBlock(config: CreateNumpadBlockConfig, layer: Konva.Layer | Konva.Group) {
-	const {canvasNumpadBlock, userSettings, dragEndHandler} = config
+export function drawNumpadBlock(config: DrawNumpadBlockConfig, layer: Konva.Layer | Konva.Group) {
+	const { canvasNumpadBlock, userSettings, dragEndHandler } = config;
 	const commandImagesSrc = numpadInputToCommandImages({
 		input: canvasNumpadBlock.input,
 		type: canvasNumpadBlock.type,
@@ -54,43 +53,44 @@ export function createNumpadBlock(config: CreateNumpadBlockConfig, layer: Konva.
 	block.on('contextmenu', (event) => {
 		event.evt.preventDefault();
 		event.cancelBubble = true; // 阻止事件向上冒泡到 Stage
-		contextMenuState.show(
-			event.evt.clientX,
-			event.evt.clientY,
-			'block',
-			block.id()
-		)
-		console.log(canvasNumpadBlock.x, block.x()/userSettings.viewportWidthUnit);
-		console.log(contextMenuState)
-	})
-	block.on('dragend', ()=>{
-		dragEndHandler(block.id(),block.x()/userSettings.viewportWidthUnit, block.y()/userSettings.viewportHeightUnit)
-	})
+		contextMenuState.show(event.evt.clientX, event.evt.clientY, 'numpadBlock', block.id());
+		console.log(canvasNumpadBlock.x, block.x() / userSettings.viewportWidthUnit);
+		console.log(contextMenuState);
+	});
+	if (dragEndHandler) {
+		block.on('dragend', () => {
+			dragEndHandler(
+				block.id(),
+				block.x() / userSettings.viewportWidthUnit,
+				block.y() / userSettings.viewportHeightUnit
+			);
+		});
+	}
+
 	block.add(blockBackground);
 	layer.add(block);
 	return block;
 }
 
-export function deleteNumpadBlock(blockId:string, layer: Konva.Layer | Konva.Group){
+export function eraseNumpadBlock(blockId: string, layer: Konva.Layer | Konva.Group) {
 	// 在當前 layer 或其子節點中尋找指定 ID 的節點
-    const nodeToDelete = layer.findOne(`#${blockId}`); // 使用 `#` 前綴表示 ID 選擇器
+	const nodeToDelete = layer.findOne(`#${blockId}`); // 使用 `#` 前綴表示 ID 選擇器
 
-    if (nodeToDelete) {
-        nodeToDelete.destroy(); // 刪除節點
+	if (nodeToDelete) {
+		nodeToDelete.destroy(); // 刪除節點
 
-        if (layer instanceof Konva.Layer) {
-            layer.draw();
-        } else {
-            const parentLayer = nodeToDelete.getLayer();
-            if (parentLayer) {
-                parentLayer.draw();
-            }
-        }
-        console.log(`Node with ID ${blockId} deleted.`);
-		return true
-    } else {
-        console.warn(`Node with ID ${blockId} not found for deletion.`);
-		return false
-    }
-	
+		if (layer instanceof Konva.Layer) {
+			layer.draw();
+		} else {
+			const parentLayer = nodeToDelete.getLayer();
+			if (parentLayer) {
+				parentLayer.draw();
+			}
+		}
+		console.log(`Node with ID ${blockId} deleted.`);
+		return true;
+	} else {
+		console.warn(`Node with ID ${blockId} not found for deletion.`);
+		return false;
+	}
 }

@@ -11,10 +11,10 @@ export class CanvasNumpadBlockDto {
   @Expose()
   input!: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'CONTROLLER_TYPE, modern or classic',
     enum: CONTROLLER_TYPE,
-    example: CONTROLLER_TYPE.MODERN, 
+    example: CONTROLLER_TYPE.MODERN,
   })
   @Expose()
   type!: CONTROLLER_TYPE;

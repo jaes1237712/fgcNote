@@ -48,9 +48,7 @@ export class AuthController {
   @Post('logout')
   @ApiOperation({ summary: 'Logout and clear session' })
   @ApiResponse({ status: 200, description: 'Logout successfully' })
-  logout(
-    @Res({ passthrough: true }) res: Response,
-  ): { success: boolean } {
+  logout(@Res({ passthrough: true }) res: Response): { success: boolean } {
     res.clearCookie('session', {
       httpOnly: true,
       secure: true,

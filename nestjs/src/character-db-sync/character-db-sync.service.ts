@@ -384,7 +384,7 @@ export class CharacterSyncService {
       }
       return `/assets/${relativePath}`;
     } catch (e) {
-      console.log("toStaticPath", e)
+      console.log('toStaticPath', e);
       return absolutePath;
     }
   }

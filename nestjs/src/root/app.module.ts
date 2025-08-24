@@ -10,6 +10,7 @@ import { CharacterModule } from 'src/character/character.module';
 import { CharacterDbSyncModule } from 'src/character-db-sync/character-db-sync.module';
 import { CanvasNumpadBlock } from 'src/canvas/entities/canvas-numpad-block.entity';
 import { CanvasStage } from 'src/canvas/entities/canvas-stage.entity';
+import { CanvasCharacterMoveImage } from 'src/canvas/entities/canvas-character-move-image.entity';
 import { CanvasModule } from 'src/canvas/canvas.module';
 
 @Module({
@@ -19,7 +20,14 @@ import { CanvasModule } from 'src/canvas/canvas.module';
       useFactory: () => ({
         type: 'sqlite',
         database: process.env.SQLITE_URL,
-        entities: [User, Character, CharacterMoveImage, CanvasNumpadBlock, CanvasStage],
+        entities: [
+          User,
+          Character,
+          CharacterMoveImage,
+          CanvasNumpadBlock,
+          CanvasStage,
+          CanvasCharacterMoveImage,
+        ],
         synchronize: true,
       }),
     }),
@@ -27,7 +35,7 @@ import { CanvasModule } from 'src/canvas/canvas.module';
     UserModule,
     CharacterModule,
     CharacterDbSyncModule,
-    CanvasModule
+    CanvasModule,
   ],
 })
 export class AppModule {}

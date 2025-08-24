@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { CanvasNumpadBlock } from 'src/canvas/entities/canvas-numpad-block.entity';
 import { CanvasStage } from 'src/canvas/entities/canvas-stage.entity';
+import { CanvasCharacterMoveImage } from 'src/canvas/entities/canvas-character-move-image.entity';
 
 @Entity({ name: 'user' })
 export class User {
@@ -40,4 +41,7 @@ export class User {
 
   @OneToMany(() => CanvasStage, (stage) => stage.user)
   canvas_stages: CanvasStage[];
+
+  @OneToMany(() => CanvasCharacterMoveImage, (image) => image.user)
+  canvas_character_move_images: CanvasCharacterMoveImage[];
 }

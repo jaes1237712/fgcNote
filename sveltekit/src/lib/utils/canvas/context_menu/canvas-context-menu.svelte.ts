@@ -1,65 +1,64 @@
-import { DeleteIcon, EditIcon, ImageIcon, Plus} from "@lucide/svelte";
+import { DeleteIcon, EditIcon, ImageIcon, Plus } from '@lucide/svelte';
 
 export type ContextMenuOption = {
-    id: string;
-    label: string;
-    icon: typeof Plus;
-}
+	id: string;
+	label: string;
+	icon: typeof Plus;
+};
 
-export type ContextMenuTargetType = 'stage' | 'block';
+export type ContextMenuTargetType = 'stage' | 'numpadBlock' | 'characterMoveImage';
 
 class ContextMenuStore {
-    // 使用 $state() 來宣告響應式狀態變數 (類似 Vue 的 ref 或 React 的 useState)
-    // 這裡的 $state 是一個 "rune"，用來標記這個 class 屬性是響應式的。
-    visible = $state(false);
-    position = $state({ x: 0, y: 0 });
-    targetType = $state<ContextMenuTargetType>('block'); // 明確指定型別並賦予初始值
-    targetId = $state(''); // 初始值為空字串
-    
-    // 使用 $derived() 來宣告響應式衍生值
-    // 它會自動追蹤 this.targetType 的變化並重新計算
-    options = $derived(getContextMenuOptions(this.targetType));
+	// 使用 $state() 來宣告響應式狀態變數 (類似 Vue 的 ref 或 React 的 useState)
+	// 這裡的 $state 是一個 "rune"，用來標記這個 class 屬性是響應式的。
+	visible = $state(false);
+	position = $state({ x: 0, y: 0 });
+	targetType = $state<ContextMenuTargetType>('stage'); // 明確指定型別並賦予初始值
+	targetId = $state(''); // 初始值為空字串
 
-    // 你可以添加方法來修改狀態，這些方法會觸發 UI 更新
-    show(x: number, y: number, type: ContextMenuTargetType, id?: string) {
-        this.position = { x, y }; // 觸發響應式更新
-        this.targetType = type;   // 觸發響應式更新
-        this.targetId = id || ''; // 觸發響應式更新
-        this.visible = true;      // 觸發響應式更新
-    }
+	// 使用 $derived() 來宣告響應式衍生值
+	// 它會自動追蹤 this.targetType 的變化並重新計算
+	options = $derived(getContextMenuOptions(this.targetType));
 
-    hide() {
-        this.visible = false;   
-    }
+	// 你可以添加方法來修改狀態，這些方法會觸發 UI 更新
+	show(x: number, y: number, type: ContextMenuTargetType, id?: string) {
+		this.position = { x, y }; // 觸發響應式更新
+		this.targetType = type; // 觸發響應式更新
+		this.targetId = id || ''; // 觸發響應式更新
+		this.visible = true; // 觸發響應式更新
+	}
+
+	hide() {
+		this.visible = false;
+	}
 }
 
-const STAGE_OPTIONS:ContextMenuOption[] = [
-    { id: 'insert-block', label: '插入區塊', icon: Plus },
-    { id: 'insert-image', label: '插入圖片', icon: ImageIcon },
+const STAGE_OPTIONS: ContextMenuOption[] = [
+	{ id: 'insert-block', label: '插入區塊', icon: Plus },
+	{ id: 'insert-image', label: '插入圖片', icon: ImageIcon }
 ];
 
-const BLOCK_OPTIONS:ContextMenuOption[] = [
-    { id: 'edit-block', label: '編輯區塊', icon: EditIcon},
-    { id: 'delete-block', label:'刪除區塊', icon: DeleteIcon},
-]
+const NUMPAD_BLOCK_OPTIONS: ContextMenuOption[] = [
+	{ id: 'edit-block', label: '編輯區塊', icon: EditIcon },
+	{ id: 'delete-block', label: '刪除區塊', icon: DeleteIcon }
+];
 
-const IMAGE_OPTIONS:ContextMenuOption[] = [
-    { id: 'edit-image', label:'編輯圖片', icon: EditIcon},
-    { id: 'delete-image', label:'刪除圖片', icon: DeleteIcon},
-]
+const CHARACTER_MOVE_IMAGES_OPTIONS: ContextMenuOption[] = [
+	{ id: 'edit-image', label: '編輯圖片', icon: EditIcon },
+	{ id: 'delete-image', label: '刪除圖片', icon: DeleteIcon }
+];
 
+function getContextMenuOptions(targetType: ContextMenuTargetType) {
+	switch (targetType) {
+		case 'stage':
+			return STAGE_OPTIONS;
 
+		case 'numpadBlock':
+			return NUMPAD_BLOCK_OPTIONS;
 
-function getContextMenuOptions(
-    targetType: ContextMenuTargetType
-){
-    switch (targetType){
-        case 'stage':
-            return STAGE_OPTIONS
-            
-        case 'block':
-            return BLOCK_OPTIONS
-    }
+		case 'characterMoveImage':
+			return CHARACTER_MOVE_IMAGES_OPTIONS;
+	}
 }
 
 export const contextMenuState = new ContextMenuStore();

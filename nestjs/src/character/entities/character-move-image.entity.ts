@@ -5,8 +5,10 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Character } from './character.entity';
+import { CanvasCharacterMoveImage } from 'src/canvas/entities/canvas-character-move-image.entity';
 
 @Entity({ name: 'character_move_image' })
 export class CharacterMoveImage {
@@ -36,6 +38,12 @@ export class CharacterMoveImage {
   })
   @JoinColumn({ name: 'characterId' })
   character!: Character;
+
+  @OneToMany(
+    () => CanvasCharacterMoveImage,
+    (canvasImage) => canvasImage.characterMoveImage,
+  )
+  canvasCharacterMoveImage: CanvasCharacterMoveImage[];
 
   @Column()
   characterId!: number;

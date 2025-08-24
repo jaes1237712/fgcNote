@@ -1,22 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose, Type } from 'class-transformer';
 import { CharacterMoveImageDto } from 'src/character/dtos/character-move-image.dto';
 
-export class CanvasCharacterMoveImageDto {
+export class UpdateCanvasCharacterMoveImageDto {
   @ApiProperty({ description: 'UUIDv4, generate by client' })
-  @Expose()
   id!: string;
 
   @ApiProperty({ description: 'x, unit: viewportWidthUnit' })
-  @Expose()
   x: number; // unit:viewportWidthUnit
 
   @ApiProperty({ description: 'y, unit: viewportHeightUnit' })
-  @Expose()
   y: number; // unit:viewportHeightUnit
 
   @ApiProperty()
-  @Expose()
-  @Type(() => CharacterMoveImageDto)
   characterMoveImage: CharacterMoveImageDto;
 }
