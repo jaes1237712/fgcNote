@@ -306,12 +306,12 @@ export class CanvasController {
     }
   }
 
-  @Delete('characterMoveImage/delete/:blockId')
+  @Delete('characterMoveImage/delete/:canvasCharacterMoveImageID')
   @ApiOperation({
     description: 'Delete Certain CanvasCharacterMoveImage',
   })
   @ApiParam({
-    name: 'CanvasCharacterMoveImage UUID',
+    name: 'canvasCharacterMoveImageID',
     type: 'string',
     format: 'uuidV4',
   })
@@ -326,13 +326,12 @@ export class CanvasController {
   })
   @UseGuards(SessionGuard)
   async deleteCharacterMoveImage(
-    @Param('CanvasCharacterMoveImage ID', ParseUUIDPipe)
-    characterMoveId: string,
+    @Param('canvasCharacterMoveImageID', ParseUUIDPipe) canvasCharacterMoveImageID: string,
     @Req() req: Request,
   ): Promise<boolean> {
     if (req.user) {
       return this.canvasService.removeCharacterMoveImage(
-        characterMoveId,
+        canvasCharacterMoveImageID,
         req.user,
       );
     } else {

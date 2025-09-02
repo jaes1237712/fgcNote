@@ -44,7 +44,6 @@ const NUMPAD_BLOCK_OPTIONS: ContextMenuOption[] = [
 ];
 
 const CHARACTER_MOVE_IMAGES_OPTIONS: ContextMenuOption[] = [
-	{ id: 'edit-image', label: '編輯圖片', icon: EditIcon },
 	{ id: 'delete-image', label: '刪除圖片', icon: DeleteIcon }
 ];
 

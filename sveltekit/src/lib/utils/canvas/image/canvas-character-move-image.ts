@@ -2,13 +2,13 @@ import type { CanvasCharacterMoveImageDto } from '$lib/client';
 import { type UserSettings } from '$lib/userInterface';
 import Konva from 'konva';
 import { contextMenuState } from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte';
-export type OnBlockDragEndCallback = (characterMoveImageId: string, x: number, y: number) => void;
+export type OnImageDragEndCallback = (characterMoveImageId: string, x: number, y: number) => void;
 import { PUBLIC_NESTJS_URL } from '$env/static/public';
 
 export interface DrawCharacterMoveImageConfig {
 	canvasCharacterMoveImage: CanvasCharacterMoveImageDto;
 	userSettings: UserSettings;
-	dragEndHandler: OnBlockDragEndCallback;
+	dragEndHandler: OnImageDragEndCallback;
 }
 
 export function drawCharacterMoveImage(
@@ -50,4 +50,27 @@ export function drawCharacterMoveImage(
 			layer.add(image);
 		}
 	);
+}
+
+export function eraseCharacterMoveImage(imageId: string, layer: Konva.Layer | Konva.Group) {
+	// 在當前 layer 或其子節點中尋找指定 ID 的節點
+	const nodeToDelete = layer.findOne(`#${imageId}`); // 使用 `#` 前綴表示 ID 選擇器
+
+	if (nodeToDelete) {
+		nodeToDelete.destroy(); // 刪除節點
+
+		if (layer instanceof Konva.Layer) {
+			layer.draw();
+		} else {
+			const parentLayer = nodeToDelete.getLayer();
+			if (parentLayer) {
+				parentLayer.draw();
+			}
+		}
+		console.log(`Node with ID ${imageId} deleted.`);
+		return true;
+	} else {
+		console.warn(`Node with ID ${imageId} not found for deletion.`);
+		return false;
+	}
 }
