@@ -1,1 +1,1207 @@
-{"openapi":"3.0.0","paths":{"/auth/google-login":{"post":{"operationId":"AuthController_googleLogin","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/GoogleLoginBody"}}}},"responses":{"200":{"description":"Login and Create Session successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/UserDto"}}}}},"summary":"Google login and Create session","tags":["auth"]}},"/auth/logout":{"post":{"operationId":"AuthController_logout","parameters":[],"responses":{"200":{"description":"Logout successfully"}},"summary":"Logout and clear session","tags":["auth"]}},"/user/me":{"get":{"description":"Get user data from cookies","operationId":"UserController_getMe","parameters":[],"responses":{"200":{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/UserDto"}}}}},"summary":"","tags":["User"]}},"/characters":{"get":{"description":"Return all characters","operationId":"CharacterController_findAll","parameters":[],"responses":{"200":{"description":"Successfully get all characters","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/CharacterDto"}}}}}},"summary":"","tags":["characters"]}},"/characters/{id}/images":{"get":{"description":"Get all the images of certain character","operationId":"CharacterController_findImages","parameters":[{"name":"id","required":true,"in":"path","description":"角色 ID","schema":{"type":"number"}}],"responses":{"200":{"description":"Successfully get images of character","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/CharacterMoveImageDto"}}}}}},"summary":"","tags":["characters"]}},"/canvas/stage":{"get":{"description":"Get all stage of certain user","operationId":"CanvasController_getAllStage","parameters":[],"responses":{"200":{"description":"Successfully get all stage","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/CanvasStageDto"}}}}}},"summary":"","tags":["canvas"]}},"/canvas/numpadBlock/get/{stageId}":{"get":{"description":"Get all blocks of certain stage","operationId":"CanvasController_findAllBlocks","parameters":[{"name":"stageId","required":true,"in":"path","description":"UUID of stage","schema":{"format":"uuid","type":"string"}}],"responses":{"200":{"description":"Successfully get all blocks","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/CanvasNumpadBlockDto"}}}}}},"summary":"","tags":["canvas"]}},"/canvas/characterMoveImage/get/{stageId}":{"get":{"description":"Get all characterMoveImage of certain stage","operationId":"CanvasController_findAllCharacterMoveImages","parameters":[{"name":"stageId","required":true,"in":"path","description":"UUID of stage","schema":{"format":"uuid","type":"string"}}],"responses":{"200":{"description":"Successfully get all characterMoveImages","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/CanvasCharacterMoveImageDto"}}}}}},"summary":"","tags":["canvas"]}},"/canvas/numpadBlock/create":{"post":{"operationId":"CanvasController_createNumpadBlock","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateCanvasNumpadBlockDto"}}}},"responses":{"200":{"description":"Create Numpad Block Successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/CanvasNumpadBlockDto"}}}},"401":{"description":"Unauthorized"}},"summary":"Create Numpad Block","tags":["canvas"]}},"/canvas/characterMoveImage/create":{"post":{"operationId":"CanvasController_createCharacterMoveImage","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateCanvasCharacterMoveImageDto"}}}},"responses":{"200":{"description":"Create characterMoveImage Successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/CanvasCharacterMoveImageDto"}}}},"401":{"description":"Unauthorized"}},"summary":"Create characterMoveImage","tags":["canvas"]}},"/canvas/stage/create":{"post":{"operationId":"CanvasController_createStage","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateCanvasStageDto"}}}},"responses":{"200":{"description":"Create Stage Successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/CanvasStageDto"}}}},"401":{"description":"Unauthorized"}},"summary":"Create Stage","tags":["canvas"]}},"/canvas/stage/update":{"patch":{"operationId":"CanvasController_updateStage","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateCanvasStageDto"}}}},"responses":{"200":{"description":"Update Stage Successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/CanvasStageDto"}}}},"401":{"description":"Unauthorized"}},"summary":"Update Stage","tags":["canvas"]}},"/canvas/numpadBlock/update":{"patch":{"operationId":"CanvasController_updateNumpadBlock","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateCanvasNumpadBlockDto"}}}},"responses":{"200":{"description":"Update numpadBlock Successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/CanvasNumpadBlockDto"}}}},"401":{"description":"Unauthorized"}},"summary":"Update numpadBlock","tags":["canvas"]}},"/canvas/characterMoveImage/update":{"patch":{"operationId":"CanvasController_updateCharacterMoveImage","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateCanvasCharacterMoveImageDto"}}}},"responses":{"200":{"description":"Update characterMoveImage Successfully","content":{"application/json":{"schema":{"$ref":"#/components/schemas/CanvasCharacterMoveImageDto"}}}},"401":{"description":"Unauthorized"}},"summary":"Update characterMoveImage","tags":["canvas"]}},"/canvas/stage/delete/{stageId}":{"delete":{"description":"Delete Certain stage","operationId":"CanvasController_deleteStage","parameters":[{"name":"stageId","required":true,"in":"path","description":"UUID of stage","schema":{"format":"uuidV4","type":"string"}}],"responses":{"200":{"description":"Successfully delete stage","content":{"application/json":{"schema":{"type":"boolean"}}}},"401":{"description":"Unauthorized"}},"summary":"","tags":["canvas"]}},"/canvas/numpadBlock/delete/{blockId}":{"delete":{"description":"Delete Certain block","operationId":"CanvasController_deleteBlock","parameters":[{"name":"blockId","required":true,"in":"path","description":"UUID of block","schema":{"format":"uuidV4","type":"string"}}],"responses":{"200":{"description":"Successfully delete block","content":{"application/json":{"schema":{"type":"boolean"}}}},"401":{"description":"Unauthorized"}},"summary":"","tags":["canvas"]}},"/canvas/characterMoveImage/delete/{canvasCharacterMoveImageID}":{"delete":{"description":"Delete Certain CanvasCharacterMoveImage","operationId":"CanvasController_deleteCharacterMoveImage","parameters":[{"name":"canvasCharacterMoveImageID","required":true,"in":"path","schema":{"format":"uuidV4","type":"string"}}],"responses":{"200":{"description":"Successfully delete CanvasCharacterMoveImage","content":{"application/json":{"schema":{"type":"boolean"}}}},"401":{"description":"Unauthorized"}},"summary":"","tags":["canvas"]}}},"info":{"title":"FGC Note API","description":"FGC Note 角色管理系統 API 文檔","version":"1.0","contact":{}},"tags":[{"name":"characters","description":"角色管理"},{"name":"admin","description":"管理員功能"}],"servers":[{"url":"https://localhost:3000","description":"Local Development Server"}],"components":{"schemas":{"GoogleLoginBody":{"type":"object","properties":{"id_token":{"type":"string"}},"required":["id_token"]},"UserDto":{"type":"object","properties":{"id":{"type":"string","description":"User ID"},"email":{"type":"string","description":"User Email"},"nickname":{"type":"string","description":"User Nickname(Default Google Name)"},"picture":{"type":"string","description":"User Google Picture","nullable":true}},"required":["id","email","nickname","picture"]},"CharacterDto":{"type":"object","properties":{"id":{"type":"number","description":"Primary ID"},"name":{"type":"string","description":"Character Name"},"iconFilePath":{"type":"string","description":"Icon Path"},"portraitFilePath":{"type":"string","description":"Portrait Path"}},"required":["id","name","iconFilePath","portraitFilePath"]},"CharacterMoveImageDto":{"type":"object","properties":{"fileName":{"type":"string","description":"File name of the image"},"filePath":{"type":"string","description":"File path of the image"},"characterId":{"type":"number","description":"ID of the associated character"},"width":{"type":"number","description":"Width of the image in pixels"},"height":{"type":"number","description":"Height of the image in pixels"}},"required":["fileName","filePath","characterId","width","height"]},"CanvasStageDto":{"type":"object","properties":{"id":{"type":"string","description":"UUIDv4, generate by client"},"characterMe":{"description":"UUIDv4, generate by client","allOf":[{"$ref":"#/components/schemas/CharacterDto"}]},"characterOpponent":{"description":"UUIDv4, generate by client","allOf":[{"$ref":"#/components/schemas/CharacterDto"}]},"name":{"type":"string","description":"Stage Name"},"user":{"description":"who create this stage","allOf":[{"$ref":"#/components/schemas/UserDto"}]}},"required":["id","characterMe","characterOpponent","name","user"]},"CanvasNumpadBlockDto":{"type":"object","properties":{"id":{"type":"string","description":"UUIDv4, generate by client"},"input":{"type":"string","description":"Numpad Input, like 623p"},"type":{"type":"string","description":"CONTROLLER_TYPE, modern or classic","enum":["CLASSIC","MODERN"],"example":"MODERN"},"x":{"type":"number","description":"x, unit: viewportWidthUnit"},"y":{"type":"number","description":"y, unit: viewportHeightUnit"}},"required":["id","input","type","x","y"]},"CanvasCharacterMoveImageDto":{"type":"object","properties":{"id":{"type":"string","description":"UUIDv4, generate by client"},"x":{"type":"number","description":"x, unit: viewportWidthUnit"},"y":{"type":"number","description":"y, unit: viewportHeightUnit"},"characterMoveImage":{"$ref":"#/components/schemas/CharacterMoveImageDto"}},"required":["id","x","y","characterMoveImage"]},"CreateCanvasNumpadBlockDto":{"type":"object","properties":{"id":{"type":"string","description":"UUIDv4, generate by client"},"input":{"type":"string","description":"Numpad Input, like 623p"},"type":{"type":"string","description":"CONTROLLER_TYPE, modern or classic","enum":["CLASSIC","MODERN"],"example":"MODERN"},"x":{"type":"number","description":"x, unit: viewportWidthUnit"},"y":{"type":"number","description":"y, unit: viewportHeightUnit"},"stageId":{"type":"string","description":"belong to which stage"}},"required":["id","input","type","x","y","stageId"]},"CreateCanvasCharacterMoveImageDto":{"type":"object","properties":{"id":{"type":"string","description":"UUIDv4, generate by client"},"x":{"type":"number","description":"x, unit: viewportWidthUnit"},"y":{"type":"number","description":"y, unit: viewportHeightUnit"},"characterMoveImage":{"$ref":"#/components/schemas/CharacterMoveImageDto"},"stageId":{"type":"string","description":"belong to which stage"}},"required":["id","x","y","characterMoveImage","stageId"]},"CreateCanvasStageDto":{"type":"object","properties":{"id":{"type":"string"},"characterMe":{"$ref":"#/components/schemas/CharacterDto"},"characterOpponent":{"$ref":"#/components/schemas/CharacterDto"},"name":{"type":"string"}},"required":["id","characterMe","characterOpponent","name"]},"UpdateCanvasStageDto":{"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string","description":"The updated name of the stage"}},"required":["id","name"]},"UpdateCanvasNumpadBlockDto":{"type":"object","properties":{"id":{"type":"string","description":"UUIDv4, generate by client"},"input":{"type":"string","description":"Numpad Input, like 623p"},"type":{"type":"string","description":"CONTROLLER_TYPE, modern or classic","enum":["CLASSIC","MODERN"],"example":"MODERN"},"x":{"type":"number","description":"x, unit: viewportWidthUnit"},"y":{"type":"number","description":"y, unit: viewportHeightUnit"}},"required":["id","input","type","x","y"]},"UpdateCanvasCharacterMoveImageDto":{"type":"object","properties":{"id":{"type":"string","description":"UUIDv4, generate by client"},"x":{"type":"number","description":"x, unit: viewportWidthUnit"},"y":{"type":"number","description":"y, unit: viewportHeightUnit"},"characterMoveImage":{"$ref":"#/components/schemas/CharacterMoveImageDto"}},"required":["id","x","y","characterMoveImage"]}}}}
+{
+    "openapi": "3.0.0",
+    "paths": {
+        "/auth/google-login": {
+            "post": {
+                "operationId": "AuthController_googleLogin",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GoogleLoginBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login and Create Session successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Google login and Create session",
+                "tags": [
+                    "auth"
+                ]
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "operationId": "AuthController_logout",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Logout successfully"
+                    }
+                },
+                "summary": "Logout and clear session",
+                "tags": [
+                    "auth"
+                ]
+            }
+        },
+        "/user/me": {
+            "get": {
+                "description": "Get user data from cookies",
+                "operationId": "UserController_getMe",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "",
+                "tags": [
+                    "User"
+                ]
+            }
+        },
+        "/characters": {
+            "get": {
+                "description": "Return all characters",
+                "operationId": "CharacterController_findAll",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successfully get all characters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CharacterDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "",
+                "tags": [
+                    "characters"
+                ]
+            }
+        },
+        "/characters/{id}/images": {
+            "get": {
+                "description": "Get all the images of certain character",
+                "operationId": "CharacterController_findImages",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "角色 ID",
+                        "schema": {
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully get images of character",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CharacterMoveImageDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "",
+                "tags": [
+                    "characters"
+                ]
+            }
+        },
+        "/canvas/stage": {
+            "get": {
+                "description": "Get all stage of certain user",
+                "operationId": "CanvasController_getAllStage",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successfully get all stage",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CanvasStageDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/numpadBlock/get/{stageId}": {
+            "get": {
+                "description": "Get all blocks of certain stage",
+                "operationId": "CanvasController_findAllBlocks",
+                "parameters": [
+                    {
+                        "name": "stageId",
+                        "required": true,
+                        "in": "path",
+                        "description": "UUID of stage",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully get all blocks",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CanvasNumpadBlockDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/characterMoveImage/get/{stageId}": {
+            "get": {
+                "description": "Get all characterMoveImage of certain stage",
+                "operationId": "CanvasController_findAllCharacterMoveImages",
+                "parameters": [
+                    {
+                        "name": "stageId",
+                        "required": true,
+                        "in": "path",
+                        "description": "UUID of stage",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully get all characterMoveImages",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CanvasCharacterMoveImageDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/arrow/get/{stageId}": {
+            "get": {
+                "description": "Get all arrows of certain stage",
+                "operationId": "CanvasController_findAllArrows",
+                "parameters": [
+                    {
+                        "name": "stageId",
+                        "required": true,
+                        "in": "path",
+                        "description": "UUID of stage",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully get all arrows",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CanvasArrowDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/numpadBlock/create": {
+            "post": {
+                "operationId": "CanvasController_createNumpadBlock",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateCanvasNumpadBlockDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Create Numpad Block Successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CanvasNumpadBlockDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "Create Numpad Block",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/characterMoveImage/create": {
+            "post": {
+                "operationId": "CanvasController_createCharacterMoveImage",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateCanvasCharacterMoveImageDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Create characterMoveImage Successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CanvasCharacterMoveImageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "Create characterMoveImage",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/arrow/create": {
+            "post": {
+                "operationId": "CanvasController_createArrow",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateCanvasArrowDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Create arrow Successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CanvasArrowDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "Create arrow",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/stage/create": {
+            "post": {
+                "operationId": "CanvasController_createStage",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateCanvasStageDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Create Stage Successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CanvasStageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "Create Stage",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/stage/update": {
+            "patch": {
+                "operationId": "CanvasController_updateStage",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateCanvasStageDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Update Stage Successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CanvasStageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "Update Stage",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/numpadBlock/update": {
+            "patch": {
+                "operationId": "CanvasController_updateNumpadBlock",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateCanvasNumpadBlockDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Update numpadBlock Successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CanvasNumpadBlockDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "Update numpadBlock",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/characterMoveImage/update": {
+            "patch": {
+                "operationId": "CanvasController_updateCharacterMoveImage",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateCanvasCharacterMoveImageDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Update characterMoveImage Successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CanvasCharacterMoveImageDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "Update characterMoveImage",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/arrow/update": {
+            "patch": {
+                "operationId": "CanvasController_updateArrow",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateCanvasArrowDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Update arrow Successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CanvasArrowDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "Update arrow",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/stage/delete/{stageId}": {
+            "delete": {
+                "description": "Delete Certain stage",
+                "operationId": "CanvasController_deleteStage",
+                "parameters": [
+                    {
+                        "name": "stageId",
+                        "required": true,
+                        "in": "path",
+                        "description": "UUID of stage",
+                        "schema": {
+                            "format": "uuidV4",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully delete stage",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/numpadBlock/delete/{blockId}": {
+            "delete": {
+                "description": "Delete Certain block",
+                "operationId": "CanvasController_deleteBlock",
+                "parameters": [
+                    {
+                        "name": "blockId",
+                        "required": true,
+                        "in": "path",
+                        "description": "UUID of block",
+                        "schema": {
+                            "format": "uuidV4",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully delete block",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/characterMoveImage/delete/{canvasCharacterMoveImageID}": {
+            "delete": {
+                "description": "Delete Certain CanvasCharacterMoveImage",
+                "operationId": "CanvasController_deleteCharacterMoveImage",
+                "parameters": [
+                    {
+                        "name": "canvasCharacterMoveImageID",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "format": "uuidV4",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully delete CanvasCharacterMoveImage",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        },
+        "/canvas/arrow/delete/{arrowId}": {
+            "delete": {
+                "description": "Delete Certain arrow",
+                "operationId": "CanvasController_deleteArrow",
+                "parameters": [
+                    {
+                        "name": "arrowId",
+                        "required": true,
+                        "in": "path",
+                        "description": "UUID of arrow",
+                        "schema": {
+                            "format": "uuidV4",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully delete arrow",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "",
+                "tags": [
+                    "canvas"
+                ]
+            }
+        }
+    },
+    "info": {
+        "title": "FGC Note API",
+        "description": "FGC Note 角色管理系統 API 文檔",
+        "version": "1.0",
+        "contact": {}
+    },
+    "tags": [
+        {
+            "name": "characters",
+            "description": "角色管理"
+        },
+        {
+            "name": "admin",
+            "description": "管理員功能"
+        }
+    ],
+    "servers": [
+        {
+            "url": "https://localhost:3000",
+            "description": "Local Development Server"
+        }
+    ],
+    "components": {
+        "schemas": {
+            "GoogleLoginBody": {
+                "type": "object",
+                "properties": {
+                    "id_token": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id_token"
+                ]
+            },
+            "UserDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "User ID"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "User Email"
+                    },
+                    "nickname": {
+                        "type": "string",
+                        "description": "User Nickname(Default Google Name)"
+                    },
+                    "picture": {
+                        "type": "string",
+                        "description": "User Google Picture",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "email",
+                    "nickname",
+                    "picture"
+                ]
+            },
+            "CharacterDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "number",
+                        "description": "Primary ID"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Character Name"
+                    },
+                    "iconFilePath": {
+                        "type": "string",
+                        "description": "Icon Path"
+                    },
+                    "portraitFilePath": {
+                        "type": "string",
+                        "description": "Portrait Path"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "iconFilePath",
+                    "portraitFilePath"
+                ]
+            },
+            "CharacterMoveImageDto": {
+                "type": "object",
+                "properties": {
+                    "fileName": {
+                        "type": "string",
+                        "description": "File name of the image"
+                    },
+                    "filePath": {
+                        "type": "string",
+                        "description": "File path of the image"
+                    },
+                    "characterId": {
+                        "type": "number",
+                        "description": "ID of the associated character"
+                    },
+                    "width": {
+                        "type": "number",
+                        "description": "Width of the image in pixels"
+                    },
+                    "height": {
+                        "type": "number",
+                        "description": "Height of the image in pixels"
+                    }
+                },
+                "required": [
+                    "fileName",
+                    "filePath",
+                    "characterId",
+                    "width",
+                    "height"
+                ]
+            },
+            "CanvasStageDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "UUIDv4, generate by client"
+                    },
+                    "characterMe": {
+                        "description": "UUIDv4, generate by client",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CharacterDto"
+                            }
+                        ]
+                    },
+                    "characterOpponent": {
+                        "description": "UUIDv4, generate by client",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CharacterDto"
+                            }
+                        ]
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Stage Name"
+                    },
+                    "user": {
+                        "description": "who create this stage",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/UserDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "characterMe",
+                    "characterOpponent",
+                    "name",
+                    "user"
+                ]
+            },
+            "CanvasNumpadBlockDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "UUIDv4, generate by client"
+                    },
+                    "input": {
+                        "type": "string",
+                        "description": "Numpad Input, like 623p"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "CONTROLLER_TYPE, modern or classic",
+                        "enum": [
+                            "CLASSIC",
+                            "MODERN"
+                        ],
+                        "example": "MODERN"
+                    },
+                    "x": {
+                        "type": "number",
+                        "description": "x, unit: viewportWidthUnit"
+                    },
+                    "y": {
+                        "type": "number",
+                        "description": "y, unit: viewportHeightUnit"
+                    }
+                },
+                "required": [
+                    "id",
+                    "input",
+                    "type",
+                    "x",
+                    "y"
+                ]
+            },
+            "CanvasCharacterMoveImageDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "UUIDv4, generate by client"
+                    },
+                    "x": {
+                        "type": "number",
+                        "description": "x, unit: viewportWidthUnit"
+                    },
+                    "y": {
+                        "type": "number",
+                        "description": "y, unit: viewportHeightUnit"
+                    },
+                    "characterMoveImage": {
+                        "$ref": "#/components/schemas/CharacterMoveImageDto"
+                    }
+                },
+                "required": [
+                    "id",
+                    "x",
+                    "y",
+                    "characterMoveImage"
+                ]
+            },
+            "CanvasArrowDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "UUIDv4, generate by client"
+                    },
+                    "startNodeId": {
+                        "type": "string",
+                        "description": " other canvas entity primary ID"
+                    },
+                    "endNodeId": {
+                        "type": "string",
+                        "description": "other canvas entity primary ID"
+                    },
+                    "points": {
+                        "description": "Konva arrow attrs points",
+                        "items": {
+                            "type": "array"
+                        },
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "id",
+                    "startNodeId",
+                    "endNodeId",
+                    "points"
+                ]
+            },
+            "CreateCanvasNumpadBlockDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "UUIDv4, generate by client"
+                    },
+                    "input": {
+                        "type": "string",
+                        "description": "Numpad Input, like 623p"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "CONTROLLER_TYPE, modern or classic",
+                        "enum": [
+                            "CLASSIC",
+                            "MODERN"
+                        ],
+                        "example": "MODERN"
+                    },
+                    "x": {
+                        "type": "number",
+                        "description": "x, unit: viewportWidthUnit"
+                    },
+                    "y": {
+                        "type": "number",
+                        "description": "y, unit: viewportHeightUnit"
+                    },
+                    "stageId": {
+                        "type": "string",
+                        "description": "belong to which stage"
+                    }
+                },
+                "required": [
+                    "id",
+                    "input",
+                    "type",
+                    "x",
+                    "y",
+                    "stageId"
+                ]
+            },
+            "CreateCanvasCharacterMoveImageDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "UUIDv4, generate by client"
+                    },
+                    "x": {
+                        "type": "number",
+                        "description": "x, unit: viewportWidthUnit"
+                    },
+                    "y": {
+                        "type": "number",
+                        "description": "y, unit: viewportHeightUnit"
+                    },
+                    "characterMoveImage": {
+                        "$ref": "#/components/schemas/CharacterMoveImageDto"
+                    },
+                    "stageId": {
+                        "type": "string",
+                        "description": "belong to which stage"
+                    }
+                },
+                "required": [
+                    "id",
+                    "x",
+                    "y",
+                    "characterMoveImage",
+                    "stageId"
+                ]
+            },
+            "CreateCanvasArrowDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "UUIDv4, generate by client"
+                    },
+                    "startNodeId": {
+                        "type": "string",
+                        "description": " other canvas entity primary ID"
+                    },
+                    "endNodeId": {
+                        "type": "string",
+                        "description": "other canvas entity primary ID"
+                    },
+                    "points": {
+                        "description": "Konva arrow attrs points",
+                        "items": {
+                            "type": "array"
+                        },
+                        "type": "array"
+                    },
+                    "stageId": {
+                        "type": "string",
+                        "description": "belong to which stage"
+                    }
+                },
+                "required": [
+                    "id",
+                    "startNodeId",
+                    "endNodeId",
+                    "points",
+                    "stageId"
+                ]
+            },
+            "CreateCanvasStageDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "characterMe": {
+                        "$ref": "#/components/schemas/CharacterDto"
+                    },
+                    "characterOpponent": {
+                        "$ref": "#/components/schemas/CharacterDto"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "characterMe",
+                    "characterOpponent",
+                    "name"
+                ]
+            },
+            "UpdateCanvasStageDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The updated name of the stage"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
+                ]
+            },
+            "UpdateCanvasNumpadBlockDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "UUIDv4, generate by client"
+                    },
+                    "input": {
+                        "type": "string",
+                        "description": "Numpad Input, like 623p"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "CONTROLLER_TYPE, modern or classic",
+                        "enum": [
+                            "CLASSIC",
+                            "MODERN"
+                        ],
+                        "example": "MODERN"
+                    },
+                    "x": {
+                        "type": "number",
+                        "description": "x, unit: viewportWidthUnit"
+                    },
+                    "y": {
+                        "type": "number",
+                        "description": "y, unit: viewportHeightUnit"
+                    }
+                },
+                "required": [
+                    "id",
+                    "input",
+                    "type",
+                    "x",
+                    "y"
+                ]
+            },
+            "UpdateCanvasCharacterMoveImageDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "UUIDv4, generate by client"
+                    },
+                    "x": {
+                        "type": "number",
+                        "description": "x, unit: viewportWidthUnit"
+                    },
+                    "y": {
+                        "type": "number",
+                        "description": "y, unit: viewportHeightUnit"
+                    },
+                    "characterMoveImage": {
+                        "$ref": "#/components/schemas/CharacterMoveImageDto"
+                    }
+                },
+                "required": [
+                    "id",
+                    "x",
+                    "y",
+                    "characterMoveImage"
+                ]
+            },
+            "UpdateCanvasArrowDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "UUIDv4, generate by client"
+                    },
+                    "startNodeId": {
+                        "type": "string",
+                        "description": " other canvas entity primary ID"
+                    },
+                    "endNodeId": {
+                        "type": "string",
+                        "description": "other canvas entity primary ID"
+                    },
+                    "points": {
+                        "description": "Konva arrow attrs points",
+                        "items": {
+                            "type": "array"
+                        },
+                        "type": "array"
+                    },
+                    "stageId": {
+                        "type": "string",
+                        "description": "belong to which stage"
+                    }
+                },
+                "required": [
+                    "id",
+                    "startNodeId",
+                    "endNodeId",
+                    "points",
+                    "stageId"
+                ]
+            }
+        }
+    }
+}

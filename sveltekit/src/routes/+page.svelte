@@ -21,15 +21,9 @@
 		canvasControllerUpdateNumpadBlock,
 		canvasControllerDeleteBlock,
 		canvasControllerCreateCharacterMoveImage,
-
 		canvasControllerFindAllCharacterMoveImages,
-
 		canvasControllerDeleteCharacterMoveImage,
-
 		canvasControllerUpdateCharacterMoveImage
-
-
-
 	} from '$lib/client';
 	import type { PageProps } from './$types';
 	import type {
@@ -51,6 +45,7 @@
 	import { createStage } from '$lib/utils/canvas/index';
 	import { contextMenuState } from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte';
 	import { drawCharacterMoveImage, eraseCharacterMoveImage, type OnImageDragEndCallback } from '$lib/utils/canvas/image/canvas-character-move-image';
+	import { drawAnchorPoint, drawArrow, type DrawArrowConfig } from '$lib/utils/canvas/arrow/canvas-arrow';
 	let { data }: PageProps = $props();
 	const SCREEN_WIDTH = screen.width;
 	const SCREEN_HEIGHT = screen.height;
@@ -143,7 +138,8 @@
 				allStageDtos.push(canvasStage.data);
 				const { stage, layer } = createStage({
 					stageDto: canvasStage.data,
-					container: konvaContainer
+					container: konvaContainer,
+					transformer: currentTransformer
 				});
 				currentStage = stage;
 				currentLayer = layer;
@@ -158,23 +154,54 @@
 	}
 
 	async function createExistedStage(stageDto: CanvasStageDto) {
+		currentTransformer = new Konva.Transformer();
 		const { stage, layer } = createStage({
 			stageDto: stageDto,
-			container: konvaContainer
+			container: konvaContainer,
+			transformer: currentTransformer
 		});
 		currentStage = stage;
 		currentLayer = layer;
 		currentStageDto = stageDto;
-		currentTransformer = new Konva.Transformer();
 		currentLayer.add(currentTransformer);
 		const simpleText = new Konva.Text({
 			x: 0,
 			y: 0,
 			text: `Stage:${stageDto.name}`,
 			fontSize: 48,
-			fill: 'white'
+			fill: 'white',
+			id:'simple-text'
 		});
+		const simpleCircle = new Konva.Circle({
+			x: currentStage.width()/2,
+			y: currentStage.height()/2,
+			radius: 10,
+			fill: 'white',
+			id: 'circle1'
+		})
+		const simpleCircle2 = new Konva.Circle({
+			x: currentStage.width()/3,
+			y: currentStage.height()/2,
+			radius: 10,
+			fill: 'white',
+			id: 'circle2'
+		})
+		simpleText.on('click', function(event){
+			drawAnchorPoint(this.id(), currentLayer, currentStage)
+		})
+		currentLayer.add(simpleCircle);
+		currentLayer.add(simpleCircle2);
 		currentLayer.add(simpleText);
+		drawArrow({
+			canvasArrow:{
+				startNodeId: 'circle1',
+				endNodeId: 'circle2',
+				id: 'test-arrow',
+				points:[]
+			},
+			relativeStartPosition:{x:0,y:0},
+			relativeEndPosition:{x:0,y:0}
+		}, currentLayer)
 		const blockResp = await canvasControllerFindAllBlocks({
 			path: {
 				stageId: stageDto.id
@@ -187,9 +214,10 @@
 						canvasNumpadBlock: block,
 						userSettings: userSettings,
 						dragEndHandler: handelDragEndBlockEvent,
-						tr:currentTransformer
-					},
-					currentLayer
+						stage: currentStage,
+						layer: currentLayer,
+						transformer:currentTransformer
+					}
 				);
 				numpadBlockDtos.set(block.id, block);
 				numpadBlockDtos = new Map(numpadBlockDtos);
@@ -206,7 +234,8 @@
 					{
 						canvasCharacterMoveImage: image,
 						userSettings: userSettings,
-						dragEndHandler: handelDragEndCharacterMoveImageEvent
+						dragEndHandler: handelDragEndCharacterMoveImageEvent,
+						transformer:currentTransformer
 					},
 					currentLayer
 				);
@@ -265,9 +294,10 @@
 					canvasNumpadBlock: numpadBlockDto,
 					userSettings: userSettings,
 					dragEndHandler: handelDragEndBlockEvent,
-					tr: currentTransformer
-				},
-				currentLayer
+					stage: currentStage,
+					layer: currentLayer,
+					transformer: currentTransformer
+				}
 			);
 			numpadBlockDtos.set(numpadBlockDto.id, numpadBlockDto);
 			numpadBlockDtos = new Map(numpadBlockDtos);
@@ -289,7 +319,8 @@
 				{
 					canvasCharacterMoveImage: CharacterMoveImageDto,
 					userSettings: userSettings,
-					dragEndHandler: handelDragEndCharacterMoveImageEvent
+					dragEndHandler: handelDragEndCharacterMoveImageEvent,
+					transformer: currentTransformer
 				},
 				currentLayer
 			);
@@ -310,9 +341,10 @@
 					canvasNumpadBlock: block,
 					userSettings: userSettings,
 					dragEndHandler: handelDragEndBlockEvent,
-					tr: currentTransformer
-				},
-				currentLayer
+					stage: currentStage,
+					layer: currentLayer,
+					transformer: currentTransformer
+				}
 			);
 			targetBlock.x = block.x;
 			targetBlock.y = block.y;

@@ -24,6 +24,9 @@ import { UpdateCanvasNumpadBlockDto } from './dtos/numpad/update-canvas-numpad-b
 import { CanvasCharacterMoveImageDto } from './dtos/move_image/canvas-character-move-image.dto';
 import { CreateCanvasCharacterMoveImageDto } from './dtos/move_image/create-canvas-character-move-image.dto';
 import { UpdateCanvasCharacterMoveImageDto } from './dtos/move_image/update-canvas-character-move-image.dto';
+import { CanvasArrowDto } from './dtos/arrow/canvas-arrow.dto';
+import { CreateCanvasArrowDto } from './dtos/arrow/create-arrow.dto';
+import { UpdateCanvasArrowDto } from './dtos/arrow/update-arrow.dto';
 
 @ApiTags('canvas')
 @Controller('canvas')
@@ -94,6 +97,28 @@ export class CanvasController {
     return this.canvasService.findAllCharacterMoveImageByStage(stageId);
   }
 
+  @Get('arrow/get/:stageId')
+  @ApiOperation({
+    description: 'Get all arrows of certain stage',
+  })
+  @ApiParam({
+    name: 'stageId',
+    description: 'UUID of stage',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully get all arrows',
+    type: CanvasArrowDto,
+    isArray: true,
+  })
+  async findAllArrows(
+    @Param('stageId', ParseUUIDPipe) stageId: string,
+  ): Promise<CanvasArrowDto[]> {
+    return this.canvasService.findAllArrowsByStage(stageId);
+  }
+
   @Post('numpadBlock/create')
   @ApiOperation({
     summary: 'Create Numpad Block',
@@ -139,6 +164,31 @@ export class CanvasController {
   ): Promise<CanvasCharacterMoveImageDto> {
     if (req.user) {
       return this.canvasService.createCanvasCharacterMoveImage(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Post('arrow/create')
+  @ApiOperation({
+    summary: 'Create arrow',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Create arrow Successfully',
+    type: CanvasArrowDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async createArrow(
+    @Body() body: CreateCanvasArrowDto,
+    @Req() req: Request,
+  ): Promise<CanvasArrowDto> {
+    if (req.user) {
+      return this.canvasService.createCanvasArrow(body, req.user);
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
@@ -244,6 +294,31 @@ export class CanvasController {
     }
   }
 
+  @Patch('arrow/update')
+  @ApiOperation({
+    summary: 'Update arrow',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Update arrow Successfully',
+    type: CanvasArrowDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async updateArrow(
+    @Body() body: UpdateCanvasArrowDto,
+    @Req() req: Request,
+  ): Promise<CanvasArrowDto> {
+    if (req.user) {
+      return this.canvasService.updateArrow(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
   @Delete('stage/delete/:stageId')
   @ApiOperation({
     description: 'Delete Certain stage',
@@ -326,7 +401,8 @@ export class CanvasController {
   })
   @UseGuards(SessionGuard)
   async deleteCharacterMoveImage(
-    @Param('canvasCharacterMoveImageID', ParseUUIDPipe) canvasCharacterMoveImageID: string,
+    @Param('canvasCharacterMoveImageID', ParseUUIDPipe)
+    canvasCharacterMoveImageID: string,
     @Req() req: Request,
   ): Promise<boolean> {
     if (req.user) {
@@ -334,6 +410,37 @@ export class CanvasController {
         canvasCharacterMoveImageID,
         req.user,
       );
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Delete('arrow/delete/:arrowId')
+  @ApiOperation({
+    description: 'Delete Certain arrow',
+  })
+  @ApiParam({
+    name: 'arrowId',
+    description: 'UUID of arrow',
+    type: 'string',
+    format: 'uuidV4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully delete arrow',
+    type: Boolean,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async deleteArrow(
+    @Param('arrowId', ParseUUIDPipe) arrowId: string,
+    @Req() req: Request,
+  ): Promise<boolean> {
+    if (req.user) {
+      return this.canvasService.removeArrow(arrowId, req.user);
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }

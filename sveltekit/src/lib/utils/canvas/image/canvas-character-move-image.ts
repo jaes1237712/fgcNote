@@ -4,18 +4,20 @@ import Konva from 'konva';
 import { contextMenuState } from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte';
 export type OnImageDragEndCallback = (characterMoveImageId: string, x: number, y: number) => void;
 import { PUBLIC_NESTJS_URL } from '$env/static/public';
+import { featureManager, type IFeature } from '../canvas-feature-manager';
 
 export interface DrawCharacterMoveImageConfig {
 	canvasCharacterMoveImage: CanvasCharacterMoveImageDto;
 	userSettings: UserSettings;
 	dragEndHandler: OnImageDragEndCallback;
+	transformer: Konva.Transformer;
 }
 
 export function drawCharacterMoveImage(
 	config: DrawCharacterMoveImageConfig,
-	layer: Konva.Layer | Konva.Group
+	layer: Konva.Layer
 ) {
-	const { canvasCharacterMoveImage, userSettings, dragEndHandler } = config;
+	const { canvasCharacterMoveImage, userSettings, dragEndHandler, transformer } = config;
 	const scale =
 		(userSettings.viewportHeightUnit * userSettings.moveImageHeight) /
 		canvasCharacterMoveImage.characterMoveImage.height;
@@ -30,6 +32,20 @@ export function drawCharacterMoveImage(
 				scaleY: scale,
 				id: canvasCharacterMoveImage.id
 			});
+			image.on('click tap', function (e){
+				e.cancelBubble = true;
+				const context: ImageTransformerContext = {
+					imageNode: this,
+					layer: layer
+				}
+				const feature = new ImageTransformerFeature()
+				featureManager.activate<ImageTransformerContext>(
+					'transformer',
+					image.id(),
+					feature,
+					context
+				)
+			})
 			image.on('contextmenu', (event) => {
 				event.evt.preventDefault();
 				event.cancelBubble = true;
@@ -47,6 +63,9 @@ export function drawCharacterMoveImage(
 					image.y() / userSettings.viewportHeightUnit
 				);
 			});
+			image.on('transformend', function(e){
+				console.log(this.attrs)
+			})
 			layer.add(image);
 		}
 	);
@@ -72,5 +91,25 @@ export function eraseCharacterMoveImage(imageId: string, layer: Konva.Layer | Ko
 	} else {
 		console.warn(`Node with ID ${imageId} not found for deletion.`);
 		return false;
+	}
+}
+
+export interface ImageTransformerContext {
+	imageNode: Konva.Image;
+	layer: Konva.Layer;
+}
+
+export class ImageTransformerFeature implements IFeature<ImageTransformerContext> {
+	onActivated(context: ImageTransformerContext): () => void {
+		const tr = new Konva.Transformer;
+		tr.nodes([context.imageNode])
+		context.layer.add(tr);
+		context.layer.draw();
+		const cleanup = () => {
+			tr.destroy()
+			context.layer.draw();
+			console.log("clean up")
+		}
+		return cleanup
 	}
 }

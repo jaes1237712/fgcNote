@@ -3,17 +3,20 @@ import { type UserSettings, LAYOUT_SETTING } from '$lib/userInterface';
 import { numpadInputToCommandImages } from '$lib/utils/canvas/numpad/numpadCompiler';
 import Konva from 'konva';
 import { contextMenuState } from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte';
+import { drawAnchorPoint, removeAnchorPoint } from '../arrow/canvas-arrow';
 export type OnBlockDragEndCallback = (blockId: string, x: number, y: number) => void;
 
 export interface DrawNumpadBlockConfig {
 	canvasNumpadBlock: CanvasNumpadBlockDto;
 	userSettings: UserSettings;
 	dragEndHandler?: OnBlockDragEndCallback;
-	tr: Konva.Transformer
+	stage: Konva.Stage;
+	layer:Konva.Layer;
+	transformer: Konva.Transformer;
 }
 
-export function drawNumpadBlock(config: DrawNumpadBlockConfig, layer: Konva.Layer | Konva.Group) {
-	const { canvasNumpadBlock, userSettings, dragEndHandler, tr} = config;
+export function drawNumpadBlock(config: DrawNumpadBlockConfig) {
+	const { canvasNumpadBlock, userSettings, dragEndHandler,stage , layer, transformer} = config;
 	const commandImagesSrc = numpadInputToCommandImages({
 		input: canvasNumpadBlock.input,
 		type: canvasNumpadBlock.type,
@@ -30,8 +33,7 @@ export function drawNumpadBlock(config: DrawNumpadBlockConfig, layer: Konva.Laye
 		draggable: true,
 		width: blockWidth * LENGTH_UNIT,
 		height: blockHeight * LENGTH_UNIT,
-		id: canvasNumpadBlock.id,
-		name: 'transformable'
+		id: canvasNumpadBlock.id
 	});
 	commandImagesSrc.forEach((imageSrc, index) => {
 		const imageObj = new Image();
@@ -52,26 +54,9 @@ export function drawNumpadBlock(config: DrawNumpadBlockConfig, layer: Konva.Laye
 		height: blockHeight * LENGTH_UNIT,
 		fill: 'oklch(0.45 0.02 264.15)'
 	});
-	block.on('click tap', function (e){
-		if (e.target !== this) { // 'this' 在 Konva 事件中指向監聽器附加的節點 (即 block)
-            // 如果點擊的是 Group 內部的元素，且不是 Group 本身，
-            // 則停止事件冒泡，因為我們已經處理了選中整個 Group
-            e.cancelBubble = true;
-        }
-		const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey;
-		const isSelected = tr.nodes().indexOf(this) >= 0; // 'this' 就是這個 block (Group)
-	
-		if (!metaPressed && !isSelected) {
-			tr.nodes([this]);
-		} else if (metaPressed && isSelected) {
-			const nodes = tr.nodes().slice();
-			nodes.splice(nodes.indexOf(this), 1);
-			tr.nodes(nodes);
-		} else if (metaPressed && !isSelected) {
-			const nodes = tr.nodes().concat([this]);
-			tr.nodes(nodes);
-		}
-		layer.draw();
+
+	block.on('click', function(event){
+		drawAnchorPoint(block.id(), layer,stage)
 	})
 
 	block.on('contextmenu', (event) => {

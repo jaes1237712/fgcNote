@@ -10,6 +10,7 @@ import { Algorithm } from 'jsonwebtoken';
 import { CharacterModule } from 'src/character/character.module';
 import { UserModule } from 'src/user/user.module';
 import { CanvasCharacterMoveImage } from './entities/canvas-character-move-image.entity';
+import { CanvasArrow } from './entities/canvas-arrow.entity';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CanvasCharacterMoveImage } from './entities/canvas-character-move-image
       CanvasStage,
       CanvasNumpadBlock,
       CanvasCharacterMoveImage,
+      CanvasArrow
     ]),
     JwtModule.registerAsync({
       inject: [ConfigService],

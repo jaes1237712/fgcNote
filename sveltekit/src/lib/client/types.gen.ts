@@ -127,6 +127,25 @@ export type CanvasCharacterMoveImageDto = {
     characterMoveImage: CharacterMoveImageDto;
 };
 
+export type CanvasArrowDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     *  other canvas entity primary ID
+     */
+    startNodeId: string;
+    /**
+     * other canvas entity primary ID
+     */
+    endNodeId: string;
+    /**
+     * Konva arrow attrs points
+     */
+    points: Array<Array<unknown>>;
+};
+
 export type CreateCanvasNumpadBlockDto = {
     /**
      * UUIDv4, generate by client
@@ -168,6 +187,29 @@ export type CreateCanvasCharacterMoveImageDto = {
      */
     y: number;
     characterMoveImage: CharacterMoveImageDto;
+    /**
+     * belong to which stage
+     */
+    stageId: string;
+};
+
+export type CreateCanvasArrowDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     *  other canvas entity primary ID
+     */
+    startNodeId: string;
+    /**
+     * other canvas entity primary ID
+     */
+    endNodeId: string;
+    /**
+     * Konva arrow attrs points
+     */
+    points: Array<Array<unknown>>;
     /**
      * belong to which stage
      */
@@ -226,6 +268,29 @@ export type UpdateCanvasCharacterMoveImageDto = {
      */
     y: number;
     characterMoveImage: CharacterMoveImageDto;
+};
+
+export type UpdateCanvasArrowDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     *  other canvas entity primary ID
+     */
+    startNodeId: string;
+    /**
+     * other canvas entity primary ID
+     */
+    endNodeId: string;
+    /**
+     * Konva arrow attrs points
+     */
+    points: Array<Array<unknown>>;
+    /**
+     * belong to which stage
+     */
+    stageId: string;
 };
 
 export type AuthControllerGoogleLoginData = {
@@ -366,6 +431,27 @@ export type CanvasControllerFindAllCharacterMoveImagesResponses = {
 
 export type CanvasControllerFindAllCharacterMoveImagesResponse = CanvasControllerFindAllCharacterMoveImagesResponses[keyof CanvasControllerFindAllCharacterMoveImagesResponses];
 
+export type CanvasControllerFindAllArrowsData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/arrow/get/{stageId}';
+};
+
+export type CanvasControllerFindAllArrowsResponses = {
+    /**
+     * Successfully get all arrows
+     */
+    200: Array<CanvasArrowDto>;
+};
+
+export type CanvasControllerFindAllArrowsResponse = CanvasControllerFindAllArrowsResponses[keyof CanvasControllerFindAllArrowsResponses];
+
 export type CanvasControllerCreateNumpadBlockData = {
     body: CreateCanvasNumpadBlockDto;
     path?: never;
@@ -411,6 +497,29 @@ export type CanvasControllerCreateCharacterMoveImageResponses = {
 };
 
 export type CanvasControllerCreateCharacterMoveImageResponse = CanvasControllerCreateCharacterMoveImageResponses[keyof CanvasControllerCreateCharacterMoveImageResponses];
+
+export type CanvasControllerCreateArrowData = {
+    body: CreateCanvasArrowDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/arrow/create';
+};
+
+export type CanvasControllerCreateArrowErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerCreateArrowResponses = {
+    /**
+     * Create arrow Successfully
+     */
+    200: CanvasArrowDto;
+};
+
+export type CanvasControllerCreateArrowResponse = CanvasControllerCreateArrowResponses[keyof CanvasControllerCreateArrowResponses];
 
 export type CanvasControllerCreateStageData = {
     body: CreateCanvasStageDto;
@@ -504,6 +613,29 @@ export type CanvasControllerUpdateCharacterMoveImageResponses = {
 
 export type CanvasControllerUpdateCharacterMoveImageResponse = CanvasControllerUpdateCharacterMoveImageResponses[keyof CanvasControllerUpdateCharacterMoveImageResponses];
 
+export type CanvasControllerUpdateArrowData = {
+    body: UpdateCanvasArrowDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/arrow/update';
+};
+
+export type CanvasControllerUpdateArrowErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerUpdateArrowResponses = {
+    /**
+     * Update arrow Successfully
+     */
+    200: CanvasArrowDto;
+};
+
+export type CanvasControllerUpdateArrowResponse = CanvasControllerUpdateArrowResponses[keyof CanvasControllerUpdateArrowResponses];
+
 export type CanvasControllerDeleteStageData = {
     body?: never;
     path: {
@@ -584,6 +716,34 @@ export type CanvasControllerDeleteCharacterMoveImageResponses = {
 };
 
 export type CanvasControllerDeleteCharacterMoveImageResponse = CanvasControllerDeleteCharacterMoveImageResponses[keyof CanvasControllerDeleteCharacterMoveImageResponses];
+
+export type CanvasControllerDeleteArrowData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of arrow
+         */
+        arrowId: string;
+    };
+    query?: never;
+    url: '/canvas/arrow/delete/{arrowId}';
+};
+
+export type CanvasControllerDeleteArrowErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteArrowResponses = {
+    /**
+     * Successfully delete arrow
+     */
+    200: boolean;
+};
+
+export type CanvasControllerDeleteArrowResponse = CanvasControllerDeleteArrowResponses[keyof CanvasControllerDeleteArrowResponses];
 
 export type ClientOptions = {
     baseUrl: 'https://localhost:3000' | (string & {});

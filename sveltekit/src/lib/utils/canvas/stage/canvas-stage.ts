@@ -1,14 +1,16 @@
 import type { CanvasStageDto, CharacterDto } from '$lib/client';
 import Konva from 'konva';
 import { contextMenuState } from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte';
+import { featureManager } from '../canvas-feature-manager';
 
 export interface createStageConfig {
 	stageDto: CanvasStageDto;
 	container: HTMLDivElement;
+	transformer: Konva.Transformer;
 }
 
 export function createStage(config: createStageConfig): { stage: Konva.Stage; layer: Konva.Layer } {
-	const { stageDto, container } = config;
+	const { stageDto, container, transformer } = config;
 	const stage = new Konva.Stage({
 		container: container,
 		width: container.clientWidth,
@@ -22,10 +24,14 @@ export function createStage(config: createStageConfig): { stage: Konva.Stage; la
 		contextMenuState.show(event.evt.clientX, event.evt.clientY, 'stage', stage.id());
 	});
 
-	stage.on('click', () => {
+	stage.on('click tap', () => {
 		contextMenuState.visible = false;
+		featureManager.deactivate();
 	});
-	const layer = new Konva.Layer();
+	const layer = new Konva.Layer({
+		width: container.clientWidth,
+		height: container.clientHeight,
+	});
 	stage.add(layer);
 	return { stage: stage, layer: layer };
 }

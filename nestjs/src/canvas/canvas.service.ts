@@ -21,6 +21,10 @@ import { UpdateCanvasStageDto } from './dtos/stage/update-canvas-stage.dto';
 import { DeleteResult } from 'typeorm/browser';
 import { CharacterService } from 'src/character/character.service';
 import { UpdateCanvasNumpadBlockDto } from './dtos/numpad/update-canvas-numpad-block.dto';
+import { CanvasArrow } from './entities/canvas-arrow.entity';
+import { CreateCanvasArrowDto } from './dtos/arrow/create-arrow.dto';
+import { CanvasArrowDto } from './dtos/arrow/canvas-arrow.dto';
+import { UpdateCanvasArrowDto } from './dtos/arrow/update-arrow.dto';
 
 @Injectable()
 export class CanvasService {
@@ -31,6 +35,8 @@ export class CanvasService {
     private canvasStageRepository: Repository<CanvasStage>,
     @InjectRepository(CanvasCharacterMoveImage)
     private canvasCharacterMoveImageRepository: Repository<CanvasCharacterMoveImage>,
+    @InjectRepository(CanvasArrow)
+    private canvasArrowRepository: Repository<CanvasArrow>,
     private characterService: CharacterService,
   ) {}
 
@@ -125,6 +131,29 @@ export class CanvasService {
     return this.toCanvasCharacterImageDto(savedImage);
   }
 
+  async createCanvasArrow(
+    arrow: CreateCanvasArrowDto,
+    user: User,
+  ): Promise<CanvasArrowDto> {
+    const stage = await this.canvasStageRepository.findOne({
+      where: { id: arrow.stageId },
+    });
+    if (!stage) {
+      throw new NotFoundException(`Stage with ID ${arrow.stageId} not found`);
+    } else {
+      const arrowEntity = this.canvasArrowRepository.create({
+        id: arrow.id,
+        startNodeId: arrow.startNodeId,
+        endNodeId: arrow.endNodeId,
+        points: arrow.points,
+        stage: stage,
+        user: user,
+      });
+      const savedArrow = await this.canvasArrowRepository.save(arrowEntity);
+      return this.toArrowDto(savedArrow);
+    }
+  }
+
   async findAllStage(user: User): Promise<CanvasStageDto[]> {
     const stages = await this.canvasStageRepository.find({
       where: {
@@ -155,6 +184,15 @@ export class CanvasService {
       },
     });
     return images.map((images) => this.toCanvasCharacterImageDto(images));
+  }
+
+  async findAllArrowsByStage(stageId: string): Promise<CanvasArrowDto[]> {
+    const arrows = await this.canvasArrowRepository.find({
+      where: {
+        stage: { id: stageId },
+      },
+    });
+    return arrows.map((arrow) => this.toArrowDto(arrow));
   }
 
   async updateNumpadBlock(
@@ -203,6 +241,26 @@ export class CanvasService {
     const savedImage =
       await this.canvasCharacterMoveImageRepository.save(targetImage);
     return this.toCanvasCharacterImageDto(savedImage);
+  }
+
+  async updateArrow(
+    arrow: UpdateCanvasArrowDto,
+    user: User,
+  ): Promise<CanvasArrowDto> {
+    const targetArrow = await this.canvasArrowRepository.findOne({
+      where: { id: arrow.id },
+    });
+
+    if (!targetArrow) {
+      throw new NotFoundException(`Arrow with ID ${arrow.id} not found`);
+    }
+
+    targetArrow.startNodeId = arrow.startNodeId;
+    targetArrow.endNodeId = arrow.endNodeId;
+    targetArrow.points = arrow.points;
+
+    const savedArrow = await this.canvasArrowRepository.save(targetArrow);
+    return this.toArrowDto(savedArrow);
   }
 
   async updateStage(
@@ -286,6 +344,24 @@ export class CanvasService {
     return true;
   }
 
+  async removeArrow(arrowId: string, user: User): Promise<boolean> {
+    const targetArrow = await this.canvasArrowRepository.findOneBy({
+      id: arrowId,
+    });
+    if (!targetArrow) {
+      throw new NotFoundException(`Arrow with ID ${arrowId} not found`);
+    }
+    if (targetArrow.user.id != user.id) {
+      throw new UnauthorizedException('The arrow not belong to this user');
+    }
+    const deleteResult: DeleteResult =
+      await this.canvasArrowRepository.delete(arrowId);
+    if (deleteResult.affected === 0) {
+      throw new NotFoundException(`Arrow with ID "${arrowId}" not found`);
+    }
+    return true;
+  }
+
   toStageDto(stage: CanvasStage): CanvasStageDto {
     return plainToInstance(CanvasStageDto, stage, {
       excludeExtraneousValues: true,
@@ -302,6 +378,12 @@ export class CanvasService {
     image: CanvasCharacterMoveImage,
   ): CanvasCharacterMoveImageDto {
     return plainToInstance(CanvasCharacterMoveImageDto, image, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  toArrowDto(arrow: CanvasArrow): CanvasArrowDto {
+    return plainToInstance(CanvasArrowDto, arrow, {
       excludeExtraneousValues: true,
     });
   }

@@ -12,6 +12,7 @@ import { CanvasNumpadBlock } from 'src/canvas/entities/canvas-numpad-block.entit
 import { CanvasStage } from 'src/canvas/entities/canvas-stage.entity';
 import { CanvasCharacterMoveImage } from 'src/canvas/entities/canvas-character-move-image.entity';
 import { CanvasModule } from 'src/canvas/canvas.module';
+import { CanvasArrow } from 'src/canvas/entities/canvas-arrow.entity';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CanvasModule } from 'src/canvas/canvas.module';
           CanvasNumpadBlock,
           CanvasStage,
           CanvasCharacterMoveImage,
+          CanvasArrow
         ],
         synchronize: true,
       }),
