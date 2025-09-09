@@ -3,7 +3,8 @@ import { type UserSettings, LAYOUT_SETTING } from '$lib/userInterface';
 import { numpadInputToCommandImages } from '$lib/utils/canvas/numpad/numpadCompiler';
 import Konva from 'konva';
 import { contextMenuState } from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte';
-import { drawAnchorPoint, removeAnchorPoint } from '../arrow/canvas-arrow';
+import { drawInvisibleAnchorPoint, getAnchorPositionArray, removeAnchorPoint, showSpecificAnchorPoint } from '../arrow/canvas-arrow';
+import { featureManager, type IFeature } from '../canvas-feature-manager';
 export type OnBlockDragEndCallback = (blockId: string, x: number, y: number) => void;
 
 export interface DrawNumpadBlockConfig {
@@ -12,11 +13,10 @@ export interface DrawNumpadBlockConfig {
 	dragEndHandler?: OnBlockDragEndCallback;
 	stage: Konva.Stage;
 	layer:Konva.Layer;
-	transformer: Konva.Transformer;
 }
 
 export function drawNumpadBlock(config: DrawNumpadBlockConfig) {
-	const { canvasNumpadBlock, userSettings, dragEndHandler,stage , layer, transformer} = config;
+	const { canvasNumpadBlock, userSettings, dragEndHandler,stage , layer} = config;
 	const commandImagesSrc = numpadInputToCommandImages({
 		input: canvasNumpadBlock.input,
 		type: canvasNumpadBlock.type,
@@ -27,13 +27,14 @@ export function drawNumpadBlock(config: DrawNumpadBlockConfig) {
 	const blockWidth =
 		(commandLength + LAYOUT_SETTING.horizontalMarginScale * 2) * userSettings.commandSize;
 	const blockHeight = userSettings.commandSize * LAYOUT_SETTING.blockHeightScale;
-	const block = new Konva.Group({
+	const block = new Konva.Group({ 
 		x: canvasNumpadBlock.x * userSettings.viewportWidthUnit,
 		y: canvasNumpadBlock.y * userSettings.viewportHeightUnit,
 		draggable: true,
 		width: blockWidth * LENGTH_UNIT,
 		height: blockHeight * LENGTH_UNIT,
-		id: canvasNumpadBlock.id
+		id: canvasNumpadBlock.id,
+		name: 'numpad-block'
 	});
 	commandImagesSrc.forEach((imageSrc, index) => {
 		const imageObj = new Image();
@@ -52,13 +53,9 @@ export function drawNumpadBlock(config: DrawNumpadBlockConfig) {
 	const blockBackground = new Konva.Rect({
 		width: blockWidth * LENGTH_UNIT,
 		height: blockHeight * LENGTH_UNIT,
-		fill: 'oklch(0.45 0.02 264.15)'
+		fill: 'oklch(0.45 0.02 264.15)',
+		id: `${canvasNumpadBlock.id}-block-background`
 	});
-
-	block.on('click', function(event){
-		drawAnchorPoint(block.id(), layer,stage)
-	})
-
 	block.on('contextmenu', (event) => {
 		event.evt.preventDefault();
 		event.cancelBubble = true; // 阻止事件向上冒泡到 Stage
@@ -75,9 +72,28 @@ export function drawNumpadBlock(config: DrawNumpadBlockConfig) {
 			);
 		});
 	}
+	block.on('dragstart', (event) => {
+		featureManager.deactivate()
+	})
 
 	block.add(blockBackground);
+	drawInvisibleAnchorPoint(blockBackground.id(), block, stage)
 	layer.add(block);
+	block.on('click tap', function(e){
+		e.cancelBubble = true;
+		const context: NumpadSelectContext = {
+			numpadNode: block,
+			layer: layer,
+			stage: stage
+		}
+		const feature = new NumpadSelectFeature()
+		featureManager.activate<NumpadSelectContext>(
+			'anchor-points',
+			block.id(),
+			feature,
+			context
+		)
+	})
 	return block;
 }
 
@@ -101,5 +117,21 @@ export function eraseNumpadBlock(blockId: string, layer: Konva.Layer | Konva.Gro
 	} else {
 		console.warn(`Node with ID ${blockId} not found for deletion.`);
 		return false;
+	}
+}
+
+interface NumpadSelectContext{
+	numpadNode: Konva.Group
+	layer: Konva.Layer
+	stage: Konva.Stage
+}
+
+class NumpadSelectFeature implements IFeature<NumpadSelectContext> {
+	onActivated(context: NumpadSelectContext): () => void {
+		showSpecificAnchorPoint(context.numpadNode.id(), context.layer, context.stage)
+		const cleanup = () => {
+			removeAnchorPoint(context.layer)
+		}
+		return cleanup
 	}
 }

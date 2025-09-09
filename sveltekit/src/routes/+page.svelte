@@ -23,7 +23,10 @@
 		canvasControllerCreateCharacterMoveImage,
 		canvasControllerFindAllCharacterMoveImages,
 		canvasControllerDeleteCharacterMoveImage,
-		canvasControllerUpdateCharacterMoveImage
+		canvasControllerUpdateCharacterMoveImage,
+
+		canvasControllerFindAllArrows
+
 	} from '$lib/client';
 	import type { PageProps } from './$types';
 	import type {
@@ -45,7 +48,7 @@
 	import { createStage } from '$lib/utils/canvas/index';
 	import { contextMenuState } from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte';
 	import { drawCharacterMoveImage, eraseCharacterMoveImage, type OnImageDragEndCallback } from '$lib/utils/canvas/image/canvas-character-move-image';
-	import { drawAnchorPoint, drawArrow, type DrawArrowConfig } from '$lib/utils/canvas/arrow/canvas-arrow';
+	import { drawArrow } from '$lib/utils/canvas/arrow/canvas-arrow';
 	let { data }: PageProps = $props();
 	const SCREEN_WIDTH = screen.width;
 	const SCREEN_HEIGHT = screen.height;
@@ -164,44 +167,6 @@
 		currentLayer = layer;
 		currentStageDto = stageDto;
 		currentLayer.add(currentTransformer);
-		const simpleText = new Konva.Text({
-			x: 0,
-			y: 0,
-			text: `Stage:${stageDto.name}`,
-			fontSize: 48,
-			fill: 'white',
-			id:'simple-text'
-		});
-		const simpleCircle = new Konva.Circle({
-			x: currentStage.width()/2,
-			y: currentStage.height()/2,
-			radius: 10,
-			fill: 'white',
-			id: 'circle1'
-		})
-		const simpleCircle2 = new Konva.Circle({
-			x: currentStage.width()/3,
-			y: currentStage.height()/2,
-			radius: 10,
-			fill: 'white',
-			id: 'circle2'
-		})
-		simpleText.on('click', function(event){
-			drawAnchorPoint(this.id(), currentLayer, currentStage)
-		})
-		currentLayer.add(simpleCircle);
-		currentLayer.add(simpleCircle2);
-		currentLayer.add(simpleText);
-		drawArrow({
-			canvasArrow:{
-				startNodeId: 'circle1',
-				endNodeId: 'circle2',
-				id: 'test-arrow',
-				points:[]
-			},
-			relativeStartPosition:{x:0,y:0},
-			relativeEndPosition:{x:0,y:0}
-		}, currentLayer)
 		const blockResp = await canvasControllerFindAllBlocks({
 			path: {
 				stageId: stageDto.id
@@ -215,8 +180,7 @@
 						userSettings: userSettings,
 						dragEndHandler: handelDragEndBlockEvent,
 						stage: currentStage,
-						layer: currentLayer,
-						transformer:currentTransformer
+						layer: currentLayer
 					}
 				);
 				numpadBlockDtos.set(block.id, block);
@@ -241,6 +205,23 @@
 				);
 				characterMoveImageDtos.set(image.id, image);
 			});
+		}
+		const arrowResp = await canvasControllerFindAllArrows({
+			path:{
+				stageId: currentStage.id()
+			}
+		})
+		if(arrowResp.data){
+			arrowResp.data.forEach((arrow) => {
+				drawArrow({
+					canvasArrow:{
+						id: arrow.id,
+						startNodeId: arrow.startNodeId,
+						endNodeId: arrow.endNodeId,
+						points: arrow.points
+					}
+				},currentLayer)
+			})
 		}
 	}
 
@@ -295,8 +276,7 @@
 					userSettings: userSettings,
 					dragEndHandler: handelDragEndBlockEvent,
 					stage: currentStage,
-					layer: currentLayer,
-					transformer: currentTransformer
+					layer: currentLayer
 				}
 			);
 			numpadBlockDtos.set(numpadBlockDto.id, numpadBlockDto);
@@ -342,8 +322,7 @@
 					userSettings: userSettings,
 					dragEndHandler: handelDragEndBlockEvent,
 					stage: currentStage,
-					layer: currentLayer,
-					transformer: currentTransformer
+					layer: currentLayer
 				}
 			);
 			targetBlock.x = block.x;

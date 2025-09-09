@@ -56,6 +56,9 @@ export function drawCharacterMoveImage(
 					image.id()
 				);
 			});
+			image.on('dragstart', () => {
+				featureManager.deactivate()
+			})
 			image.on('dragend', () => {
 				dragEndHandler(
 					image.id(),
@@ -94,12 +97,12 @@ export function eraseCharacterMoveImage(imageId: string, layer: Konva.Layer | Ko
 	}
 }
 
-export interface ImageTransformerContext {
+interface ImageTransformerContext {
 	imageNode: Konva.Image;
 	layer: Konva.Layer;
 }
 
-export class ImageTransformerFeature implements IFeature<ImageTransformerContext> {
+class ImageTransformerFeature implements IFeature<ImageTransformerContext> {
 	onActivated(context: ImageTransformerContext): () => void {
 		const tr = new Konva.Transformer;
 		tr.nodes([context.imageNode])

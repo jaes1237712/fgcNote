@@ -139,11 +139,11 @@ export type CanvasArrowDto = {
     /**
      * other canvas entity primary ID
      */
-    endNodeId: string;
+    endNodeId: string | null;
     /**
      * Konva arrow attrs points
      */
-    points: Array<Array<unknown>>;
+    points: Array<number>;
 };
 
 export type CreateCanvasNumpadBlockDto = {
@@ -205,11 +205,11 @@ export type CreateCanvasArrowDto = {
     /**
      * other canvas entity primary ID
      */
-    endNodeId: string;
+    endNodeId: string | null;
     /**
      * Konva arrow attrs points
      */
-    points: Array<Array<unknown>>;
+    points: Array<number>;
     /**
      * belong to which stage
      */
@@ -282,11 +282,11 @@ export type UpdateCanvasArrowDto = {
     /**
      * other canvas entity primary ID
      */
-    endNodeId: string;
+    endNodeId: string | null;
     /**
      * Konva arrow attrs points
      */
-    points: Array<Array<unknown>>;
+    points: Array<number>;
     /**
      * belong to which stage
      */

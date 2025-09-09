@@ -104,7 +104,7 @@ export class CanvasService {
     }
   }
 
-  async createCanvasCharacterMoveImage(
+  async createCharacterMoveImage(
     image: CreateCanvasCharacterMoveImageDto,
     user: User,
   ): Promise<CanvasCharacterMoveImageDto> {
@@ -131,7 +131,7 @@ export class CanvasService {
     return this.toCanvasCharacterImageDto(savedImage);
   }
 
-  async createCanvasArrow(
+  async createArrow(
     arrow: CreateCanvasArrowDto,
     user: User,
   ): Promise<CanvasArrowDto> {
@@ -192,6 +192,7 @@ export class CanvasService {
         stage: { id: stageId },
       },
     });
+    console.log('arrowData from db', arrows)
     return arrows.map((arrow) => this.toArrowDto(arrow));
   }
 

@@ -163,7 +163,7 @@ export class CanvasController {
     @Req() req: Request,
   ): Promise<CanvasCharacterMoveImageDto> {
     if (req.user) {
-      return this.canvasService.createCanvasCharacterMoveImage(body, req.user);
+      return this.canvasService.createCharacterMoveImage(body, req.user);
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
@@ -188,7 +188,7 @@ export class CanvasController {
     @Req() req: Request,
   ): Promise<CanvasArrowDto> {
     if (req.user) {
-      return this.canvasService.createCanvasArrow(body, req.user);
+      return this.canvasService.createArrow(body, req.user);
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }

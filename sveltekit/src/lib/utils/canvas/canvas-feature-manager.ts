@@ -1,4 +1,4 @@
-export type FeatureType = 'transformer' | 'anchor-points'
+export type FeatureType = 'transformer' | 'anchor-points' | 'arrowing'
 
 export interface IFeature<TContext>{
     onActivated(context: TContext): () => void;    

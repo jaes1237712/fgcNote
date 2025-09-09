@@ -1,4 +1,3 @@
-import type { CreateNumpadBlockConfig } from '$lib/utils/canvas';
 import type { UserSettings } from '$lib/userInterface';
 
 const COMMON_ACTION = {

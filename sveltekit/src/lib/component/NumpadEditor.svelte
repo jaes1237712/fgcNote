@@ -50,9 +50,11 @@
 								x: 0,
 								y: 0
 							},
-							userSettings: userSettings
+							userSettings: userSettings,
+							stage: previewStage,
+							layer: previewLayer
 						},
-						previewLayer
+						
 					);
 					$host().dispatchEvent(
 						new CustomEvent('edit', {
@@ -80,9 +82,11 @@
 							x: 0,
 							y: 0
 						},
-						userSettings: userSettings
+						userSettings: userSettings,
+						layer: previewLayer,
+						stage: previewStage
 					},
-					previewLayer
+					
 				);
 				$host().dispatchEvent(
 					new CustomEvent('edit', {
