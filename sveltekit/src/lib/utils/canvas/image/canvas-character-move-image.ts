@@ -13,10 +13,7 @@ export interface DrawCharacterMoveImageConfig {
 	transformer: Konva.Transformer;
 }
 
-export function drawCharacterMoveImage(
-	config: DrawCharacterMoveImageConfig,
-	layer: Konva.Layer
-) {
+export function drawCharacterMoveImage(config: DrawCharacterMoveImageConfig, layer: Konva.Layer) {
 	const { canvasCharacterMoveImage, userSettings, dragEndHandler, transformer } = config;
 	const scale =
 		(userSettings.viewportHeightUnit * userSettings.moveImageHeight) /
@@ -32,20 +29,20 @@ export function drawCharacterMoveImage(
 				scaleY: scale,
 				id: canvasCharacterMoveImage.id
 			});
-			image.on('click tap', function (e){
+			image.on('click tap', function (e) {
 				e.cancelBubble = true;
 				const context: ImageTransformerContext = {
 					imageNode: this,
 					layer: layer
-				}
-				const feature = new ImageTransformerFeature()
+				};
+				const feature = new ImageTransformerFeature();
 				featureManager.activate<ImageTransformerContext>(
 					'transformer',
 					image.id(),
 					feature,
 					context
-				)
-			})
+				);
+			});
 			image.on('contextmenu', (event) => {
 				event.evt.preventDefault();
 				event.cancelBubble = true;
@@ -57,8 +54,8 @@ export function drawCharacterMoveImage(
 				);
 			});
 			image.on('dragstart', () => {
-				featureManager.deactivate()
-			})
+				featureManager.deactivate();
+			});
 			image.on('dragend', () => {
 				dragEndHandler(
 					image.id(),
@@ -66,9 +63,9 @@ export function drawCharacterMoveImage(
 					image.y() / userSettings.viewportHeightUnit
 				);
 			});
-			image.on('transformend', function(e){
-				console.log(this.attrs)
-			})
+			image.on('transformend', function (e) {
+				console.log(this.attrs);
+			});
 			layer.add(image);
 		}
 	);
@@ -104,15 +101,15 @@ interface ImageTransformerContext {
 
 class ImageTransformerFeature implements IFeature<ImageTransformerContext> {
 	onActivated(context: ImageTransformerContext): () => void {
-		const tr = new Konva.Transformer;
-		tr.nodes([context.imageNode])
+		const tr = new Konva.Transformer();
+		tr.nodes([context.imageNode]);
 		context.layer.add(tr);
 		context.layer.draw();
 		const cleanup = () => {
-			tr.destroy()
+			tr.destroy();
 			context.layer.draw();
-			console.log("clean up")
-		}
-		return cleanup
+			console.log('clean up');
+		};
+		return cleanup;
 	}
 }

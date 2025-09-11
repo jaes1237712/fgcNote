@@ -30,7 +30,7 @@ export function createStage(config: createStageConfig): { stage: Konva.Stage; la
 	});
 	const layer = new Konva.Layer({
 		width: container.clientWidth,
-		height: container.clientHeight,
+		height: container.clientHeight
 	});
 	stage.add(layer);
 	return { stage: stage, layer: layer };

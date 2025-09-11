@@ -2,11 +2,6 @@
 	import logo from '$lib/images/common/logo_mark.png';
 	import { onMount } from 'svelte';
 	import Konva from 'konva';
-	import {
-		eraseNumpadBlock,
-		drawNumpadBlock,
-		type OnBlockDragEndCallback
-	} from '$lib/utils/canvas';
 	import type { CONTROLLER_TYPE, UserSettings } from '$lib/userInterface';
 	import { v4 as uuidv4 } from 'uuid';
 	import {
@@ -16,15 +11,7 @@
 		canvasControllerCreateStage,
 		canvasControllerUpdateStage,
 		canvasControllerDeleteStage,
-		canvasControllerFindAllBlocks,
-		canvasControllerCreateNumpadBlock,
-		canvasControllerUpdateNumpadBlock,
-		canvasControllerDeleteBlock,
-		canvasControllerCreateCharacterMoveImage,
-		canvasControllerFindAllCharacterMoveImages,
-		canvasControllerDeleteCharacterMoveImage,
-		canvasControllerUpdateCharacterMoveImage,
-		canvasControllerFindAllArrows
+
 	} from '$lib/client';
 	import type { PageProps } from './$types';
 	import type {
@@ -58,7 +45,7 @@
 		moveImageHeight: 20,
 		commandSize: 3,
 		defaultControllerType: 'CLASSIC'
-	}
+	};
 	let numpadEditorValue: {
 		input: string;
 		type: CONTROLLER_TYPE;
@@ -99,8 +86,8 @@
 				break;
 			case 'delete-image':
 				deleteExistedCharacterMoveImage(contextMenuState.targetId);
-				break
-		}	
+				break;
+		}
 		hideContextMenu();
 	}
 
@@ -140,42 +127,6 @@
 		}
 	}
 
-	async function createExistedStage(stageDto: CanvasStageDto) {
-		canvasDataStore.stageData = stageDto;
-		// currentTransformer = new Konva.Transformer();
-		// currentLayer.add(currentTransformer);
-		const blockResp = await canvasControllerFindAllBlocks({
-			path: {
-				stageId: stageDto.id
-			}
-		});
-		if (blockResp.data) {
-			blockResp.data.forEach((block) => {
-				canvasDataStore.addNodeData(block)
-			});
-		}
-		const imageResp = await canvasControllerFindAllCharacterMoveImages({
-			path: {
-				stageId: stageDto.id
-			}
-		});
-		if (imageResp.data) {
-			imageResp.data.forEach((image) => {
-				canvasDataStore.addNodeData(image)
-			});
-		}
-		const arrowResp = await canvasControllerFindAllArrows({
-			path:{
-				stageId: stageDto.id
-			}
-		})
-		if(arrowResp.data){
-			arrowResp.data.forEach((arrow) => {
-				canvasDataStore.addNodeData(arrow)
-			})
-		}
-	}
-
 	async function renameExistedStage(stageDto: CanvasStageDto) {
 		const userInput = prompt('Enter new name of stage');
 		canvasControllerUpdateStage({
@@ -207,44 +158,44 @@
 			} else {
 				const newStages = allStageDtos.filter((stage) => stage.id !== stageDto.id);
 				allStageDtos = newStages;
-				if(canvasDataStore.stageData.id === stageDto.id){
-					canvasDataStore.stageData = null 
+				if (canvasDataStore.stageData.id === stageDto.id) {
+					canvasDataStore.stageData = null;
 				}
 			}
 		});
 	}
 
 	async function createNewNumpadBlock(numpadBlockDto: CreateCanvasNumpadBlockDto) {
-		const createResp = await canvasControllerCreateNumpadBlock({
-			body: {
-				...numpadBlockDto,
-				stageId: canvasDataStore.stageData.id
-			}
-		});
-		if (createResp.data) {
-			canvasDataStore.addNodeData(createResp.data)
-		} else {
-			alert('Server side: Something went wrong at create numpad block');
-		}
+		// const createResp = await canvasControllerCreateNumpadBlock({
+		// 	body: {
+		// 		...numpadBlockDto,
+		// 		stageId: canvasDataStore.stageData.id
+		// 	}
+		// });
+		// if (createResp.data) {
+		// 	canvasDataStore.addNodeData(createResp.data);
+		// } else {
+		// 	alert('Server side: Something went wrong at create numpad block');
+		// }
 	}
 
 	async function createNewCharacterMoveImage(
 		CharacterMoveImageDto: CreateCanvasCharacterMoveImageDto
 	) {
-		const createResp = await canvasControllerCreateCharacterMoveImage({
-			body: {
-				...CharacterMoveImageDto
-			}
-		});
-		if (createResp.data) {
-			canvasDataStore.addNodeData(createResp.data)
-		} else {
-			alert('Server side: Something went wrong at create numpad block');
-		}
+		// const createResp = await canvasControllerCreateCharacterMoveImage({
+		// 	body: {
+		// 		...CharacterMoveImageDto
+		// 	}
+		// });
+		// if (createResp.data) {
+		// 	canvasDataStore.addNodeData(createResp.data);
+		// } else {
+		// 	alert('Server side: Something went wrong at create numpad block');
+		// }
 	}
 
 	// async function editExistedBlock(block: UpdateCanvasNumpadBlockDto) {
-		
+
 	// 	const updateResp = await canvasControllerUpdateNumpadBlock({ body: block });
 	// 	if (updateResp.data) {
 	// 		alert("暫時沒有功能")
@@ -326,30 +277,28 @@
 	// };
 
 	async function deleteExistedNumpadBlock(blockId: string) {
-		const serverResp = await canvasControllerDeleteBlock({
-			path: { blockId: blockId }
-		});
-		if (serverResp.data) {
-			canvasDataStore.deleteNodeData(blockId)
-			console.log('delete Successfully');
-		} else {
-			alert('Server side: Something went wrong at delete numpad block');
-		}
+		// const serverResp = await canvasControllerDeleteNumpadBlock({
+		// 	path: { blockId: blockId }
+		// });
+		// if (serverResp.data) {
+		// 	canvasDataStore.deleteNodeData(blockId);
+		// 	console.log('delete Successfully');
+		// } else {
+		// 	alert('Server side: Something went wrong at delete numpad block');
+		// }
 	}
 
 	async function deleteExistedCharacterMoveImage(imageId: string) {
-		const serverResp = await canvasControllerDeleteCharacterMoveImage({
-			path: { canvasCharacterMoveImageID: imageId }
-		});		
-		if (serverResp.data) {
-			canvasDataStore.deleteNodeData(imageId)
-			console.log('delete Successfully');
-		} else {
-			alert('Server side: Something went wrong at delete numpad block');
-		}
-		
+		// const serverResp = await canvasControllerDeleteCharacterMoveImage({
+		// 	path: { canvasCharacterMoveImageID: imageId }
+		// });
+		// if (serverResp.data) {
+		// 	canvasDataStore.deleteNodeData(imageId);
+		// 	console.log('delete Successfully');
+		// } else {
+		// 	alert('Server side: Something went wrong at delete numpad block');
+		// }
 	}
-	
 
 	async function numpadDialogCreateBlock() {
 		console.log('numpad dialog contextMenu Stage', contextMenuState);
@@ -359,8 +308,12 @@
 			const newNumpadBlockDto: CreateCanvasNumpadBlockDto = {
 				input: numpadEditorValue.input,
 				type: numpadEditorValue.type,
-				x: (contextMenuState.position.x - rec_konva.left) / canvasDataStore.userSettings.viewportWidthUnit,
-				y: (contextMenuState.position.y - rec_konva.top) / canvasDataStore.userSettings.viewportHeightUnit,
+				x:
+					(contextMenuState.position.x - rec_konva.left) /
+					canvasDataStore.userSettings.viewportWidthUnit,
+				y:
+					(contextMenuState.position.y - rec_konva.top) /
+					canvasDataStore.userSettings.viewportHeightUnit,
 				id: new_id,
 				stageId: contextMenuState.targetId
 			};
@@ -373,7 +326,7 @@
 			// };
 			// console.log('edit block', updateBlock);
 			// editExistedBlock(updateBlock);
-			alert("暫時沒有功能")
+			alert('暫時沒有功能');
 		}
 		numpadEditorDialog.close();
 	}
@@ -510,7 +463,7 @@
 				{#key currentStageDtos}
 					{#each currentStageDtos as stageDto}
 						<div class="stage-item">
-							<button onclick={() => createExistedStage(stageDto)} class="btn-stage">
+							<button onclick={() => canvasDataStore.setStageData(stageDto)} class="btn-stage">
 								{stageDto.name}
 							</button>
 							<button onclick={() => renameExistedStage(stageDto)} class="btn-rename">
@@ -526,7 +479,7 @@
 		</div>
 		{#if canvasDataStore.stageData}
 			{#key canvasDataStore.stageData.id}
-				<KonvaCanvas/>
+				<KonvaCanvas />
 			{/key}
 		{/if}
 	</main>
@@ -586,8 +539,12 @@
 					const rec_konva = konvaContainer.getBoundingClientRect();
 					const new_id = uuidv4();
 					const createImage: CreateCanvasCharacterMoveImageDto = {
-						x: (contextMenuState.position.x - rec_konva.left) / canvasDataStore.userSettings.viewportWidthUnit,
-						y: (contextMenuState.position.y - rec_konva.top) / canvasDataStore.userSettings.viewportHeightUnit,
+						x:
+							(contextMenuState.position.x - rec_konva.left) /
+							canvasDataStore.userSettings.viewportWidthUnit,
+						y:
+							(contextMenuState.position.y - rec_konva.top) /
+							canvasDataStore.userSettings.viewportHeightUnit,
 						id: new_id,
 						stageId: canvasDataStore.stageData.id,
 						characterMoveImage: image
@@ -599,8 +556,6 @@
 			</search-character-image>
 		{/key}
 	</dialog>
-	 
-	
 </div>
 
 <style>

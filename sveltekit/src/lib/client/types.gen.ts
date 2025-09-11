@@ -316,6 +316,21 @@ export type DeleteSummary = {
     deletedEntityIds: Array<string>;
 };
 
+export type SyncCanvasNumpadBlocksDto = {
+    stageId: string;
+    blocks: Array<CreateCanvasNumpadBlockDto>;
+};
+
+export type SyncCanvasCharacterMoveImagesDto = {
+    stageId: string;
+    characterMoveImages: Array<CreateCanvasCharacterMoveImageDto>;
+};
+
+export type SyncCanvasArrowsDto = {
+    stageId: string;
+    arrows: Array<CreateCanvasArrowDto>;
+};
+
 export type AuthControllerGoogleLoginData = {
     body: GoogleLoginBody;
     path?: never;
@@ -498,6 +513,37 @@ export type CanvasControllerCreateNumpadBlockResponses = {
 
 export type CanvasControllerCreateNumpadBlockResponse = CanvasControllerCreateNumpadBlockResponses[keyof CanvasControllerCreateNumpadBlockResponses];
 
+export type CanvasControllerCreateNumpadBlocksData = {
+    body: Array<CreateCanvasNumpadBlockDto>;
+    path?: never;
+    query?: never;
+    url: '/canvas/numpadBlocks/bulk-create';
+};
+
+export type CanvasControllerCreateNumpadBlocksErrors = {
+    /**
+     * Bad Request (e.g., empty array provided)
+     */
+    400: unknown;
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * One or more stages not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerCreateNumpadBlocksResponses = {
+    /**
+     * Numpad Blocks created successfully
+     */
+    200: Array<CanvasNumpadBlockDto>;
+};
+
+export type CanvasControllerCreateNumpadBlocksResponse = CanvasControllerCreateNumpadBlocksResponses[keyof CanvasControllerCreateNumpadBlocksResponses];
+
 export type CanvasControllerCreateCharacterMoveImageData = {
     body: CreateCanvasCharacterMoveImageDto;
     path?: never;
@@ -521,6 +567,40 @@ export type CanvasControllerCreateCharacterMoveImageResponses = {
 
 export type CanvasControllerCreateCharacterMoveImageResponse = CanvasControllerCreateCharacterMoveImageResponses[keyof CanvasControllerCreateCharacterMoveImageResponses];
 
+export type CanvasControllerCreateCharacterMoveImagesData = {
+    /**
+     * An array of characterMoveImages DTO.
+     */
+    body: Array<CreateCanvasCharacterMoveImageDto>;
+    path?: never;
+    query?: never;
+    url: '/canvas/characterMoveImage/bulk-create';
+};
+
+export type CanvasControllerCreateCharacterMoveImagesErrors = {
+    /**
+     * Bad Request (e.g., empty array provided)
+     */
+    400: unknown;
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * One or more stages not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerCreateCharacterMoveImagesResponses = {
+    /**
+     * characterMoveImages created successfully
+     */
+    200: Array<CanvasCharacterMoveImageDto>;
+};
+
+export type CanvasControllerCreateCharacterMoveImagesResponse = CanvasControllerCreateCharacterMoveImagesResponses[keyof CanvasControllerCreateCharacterMoveImagesResponses];
+
 export type CanvasControllerCreateArrowData = {
     body: CreateCanvasArrowDto;
     path?: never;
@@ -543,6 +623,40 @@ export type CanvasControllerCreateArrowResponses = {
 };
 
 export type CanvasControllerCreateArrowResponse = CanvasControllerCreateArrowResponses[keyof CanvasControllerCreateArrowResponses];
+
+export type CanvasControllerCreateArrowsData = {
+    /**
+     * An array of CreateArrow DTO.
+     */
+    body: Array<CreateCanvasArrowDto>;
+    path?: never;
+    query?: never;
+    url: '/canvas/arrow/bulk-create';
+};
+
+export type CanvasControllerCreateArrowsErrors = {
+    /**
+     * Bad Request (e.g., empty array provided)
+     */
+    400: unknown;
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * One or more stages not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerCreateArrowsResponses = {
+    /**
+     * arrows created successfully
+     */
+    200: Array<CanvasArrowDto>;
+};
+
+export type CanvasControllerCreateArrowsResponse = CanvasControllerCreateArrowsResponses[keyof CanvasControllerCreateArrowsResponses];
 
 export type CanvasControllerCreateStageData = {
     body: CreateCanvasStageDto;
@@ -687,7 +801,7 @@ export type CanvasControllerDeleteStageResponses = {
 
 export type CanvasControllerDeleteStageResponse = CanvasControllerDeleteStageResponses[keyof CanvasControllerDeleteStageResponses];
 
-export type CanvasControllerDeleteBlockData = {
+export type CanvasControllerDeleteNumpadBlockData = {
     body?: never;
     path: {
         /**
@@ -699,21 +813,49 @@ export type CanvasControllerDeleteBlockData = {
     url: '/canvas/numpadBlock/delete/{blockId}';
 };
 
-export type CanvasControllerDeleteBlockErrors = {
+export type CanvasControllerDeleteNumpadBlockErrors = {
     /**
      * Unauthorized
      */
     401: unknown;
 };
 
-export type CanvasControllerDeleteBlockResponses = {
+export type CanvasControllerDeleteNumpadBlockResponses = {
     /**
      * Successfully delete block
      */
     200: DeleteSummary;
 };
 
-export type CanvasControllerDeleteBlockResponse = CanvasControllerDeleteBlockResponses[keyof CanvasControllerDeleteBlockResponses];
+export type CanvasControllerDeleteNumpadBlockResponse = CanvasControllerDeleteNumpadBlockResponses[keyof CanvasControllerDeleteNumpadBlockResponses];
+
+export type CanvasControllerDeleteNumpadBlocksByStageIdData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/numpadBlock/delete/{stageId}';
+};
+
+export type CanvasControllerDeleteNumpadBlocksByStageIdErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteNumpadBlocksByStageIdResponses = {
+    /**
+     * Successfully delete NumpadBlocks by stageId
+     */
+    200: DeleteSummary;
+};
+
+export type CanvasControllerDeleteNumpadBlocksByStageIdResponse = CanvasControllerDeleteNumpadBlocksByStageIdResponses[keyof CanvasControllerDeleteNumpadBlocksByStageIdResponses];
 
 export type CanvasControllerDeleteCharacterMoveImageData = {
     body?: never;
@@ -739,6 +881,34 @@ export type CanvasControllerDeleteCharacterMoveImageResponses = {
 };
 
 export type CanvasControllerDeleteCharacterMoveImageResponse = CanvasControllerDeleteCharacterMoveImageResponses[keyof CanvasControllerDeleteCharacterMoveImageResponses];
+
+export type CanvasControllerDeleteCharacterMoveImagesByStageIdData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/characterMoveImage/delete/{stageId}';
+};
+
+export type CanvasControllerDeleteCharacterMoveImagesByStageIdErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteCharacterMoveImagesByStageIdResponses = {
+    /**
+     * Successfully delete characterMoveImage
+     */
+    200: DeleteSummary;
+};
+
+export type CanvasControllerDeleteCharacterMoveImagesByStageIdResponse = CanvasControllerDeleteCharacterMoveImagesByStageIdResponses[keyof CanvasControllerDeleteCharacterMoveImagesByStageIdResponses];
 
 export type CanvasControllerDeleteArrowData = {
     body?: never;
@@ -767,6 +937,115 @@ export type CanvasControllerDeleteArrowResponses = {
 };
 
 export type CanvasControllerDeleteArrowResponse = CanvasControllerDeleteArrowResponses[keyof CanvasControllerDeleteArrowResponses];
+
+export type CanvasControllerDeleteArrowByStageIdData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/arrow/delete/{stageId}';
+};
+
+export type CanvasControllerDeleteArrowByStageIdErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteArrowByStageIdResponses = {
+    /**
+     * Successfully delete arrows
+     */
+    200: DeleteSummary;
+};
+
+export type CanvasControllerDeleteArrowByStageIdResponse = CanvasControllerDeleteArrowByStageIdResponses[keyof CanvasControllerDeleteArrowByStageIdResponses];
+
+export type CanvasControllerSyncNumpadBlocksData = {
+    body: SyncCanvasNumpadBlocksDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/numpadBlock/sync';
+};
+
+export type CanvasControllerSyncNumpadBlocksErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Stage not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerSyncNumpadBlocksResponses = {
+    /**
+     * Numpad Blocks sync successfully
+     */
+    200: Array<CanvasNumpadBlockDto>;
+};
+
+export type CanvasControllerSyncNumpadBlocksResponse = CanvasControllerSyncNumpadBlocksResponses[keyof CanvasControllerSyncNumpadBlocksResponses];
+
+export type CanvasControllerSyncCharacterMoveImagesData = {
+    body: SyncCanvasCharacterMoveImagesDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/characterMoveImage/sync';
+};
+
+export type CanvasControllerSyncCharacterMoveImagesErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Stage not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerSyncCharacterMoveImagesResponses = {
+    /**
+     * Character Move Images sync successfully
+     */
+    200: Array<CanvasCharacterMoveImageDto>;
+};
+
+export type CanvasControllerSyncCharacterMoveImagesResponse = CanvasControllerSyncCharacterMoveImagesResponses[keyof CanvasControllerSyncCharacterMoveImagesResponses];
+
+export type CanvasControllerSyncArrowsData = {
+    body: SyncCanvasArrowsDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/arrow/sync';
+};
+
+export type CanvasControllerSyncArrowsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Stage not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerSyncArrowsResponses = {
+    /**
+     * Arrows sync successfully
+     */
+    200: Array<CanvasArrowDto>;
+};
+
+export type CanvasControllerSyncArrowsResponse = CanvasControllerSyncArrowsResponses[keyof CanvasControllerSyncArrowsResponses];
 
 export type ClientOptions = {
     baseUrl: 'https://localhost:3000' | (string & {});

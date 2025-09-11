@@ -1,11 +1,12 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { CanvasNumpadBlock } from './entities/canvas-numpad-block.entity';
 import { CanvasNumpadBlockDto } from './dtos/numpad/canvas-numpad-block.dto';
 import { CreateCanvasNumpadBlockDto } from './dtos/numpad/create-canvas-numpad-block.dto';
@@ -28,6 +29,9 @@ import { CanvasArrowDto } from './dtos/arrow/canvas-arrow.dto';
 import { UpdateCanvasArrowDto } from './dtos/arrow/update-arrow.dto';
 import { DeleteSummary } from 'src/common/dto/delete-summary.dto';
 import { NODE_KIND } from 'src/common/interface';
+import { SyncCanvasNumpadBlocksDto } from './dtos/numpad/sync-numpad-blocks.dto';
+import { SyncCanvasCharacterMoveImagesDto } from './dtos/move_image/sync-canvas-character-move-images.dto';
+import { SyncCanvasArrowsDto } from './dtos/arrow/sync-canvas-arrows.dto';
 
 @Injectable()
 export class CanvasService {
@@ -41,6 +45,7 @@ export class CanvasService {
     @InjectRepository(CanvasArrow)
     private canvasArrowRepository: Repository<CanvasArrow>,
     private characterService: CharacterService,
+    private entityManager: EntityManager, // 注入 EntityManager
   ) {}
 
   async getStageWithRelations(stageId: string): Promise<CanvasStage | null> {
@@ -107,6 +112,60 @@ export class CanvasService {
     }
   }
 
+  async createNumpadBlocks(
+    blocks: CreateCanvasNumpadBlockDto[], // 1. 參數改為 DTO 陣列
+    user: User,
+  ): Promise<CanvasNumpadBlockDto[]> { // 1. 回傳值改為 DTO 陣列
+    // 如果傳入的陣列是空的，直接返回空陣列，避免不必要的資料庫查詢
+    if (!blocks || blocks.length === 0) {
+      return [];
+    }
+
+    // 2. 批次驗證 Stage
+    // 取出所有不重複的 stageId
+    const stageIds = [...new Set(blocks.map(block => block.stageId))];
+
+    // 一次性查詢所有需要的 stage
+    const stages = await this.canvasStageRepository.find({
+      where: { id: In(stageIds) }, // 使用 In 運算子進行批次查詢
+    });
+
+    // 檢查是否所有 stage 都找到了
+    if (stages.length !== stageIds.length) {
+      const foundStageIds = new Set(stages.map(s => s.id));
+      const missingStageIds = stageIds.filter(id => !foundStageIds.has(id));
+      throw new NotFoundException(`Stages with IDs [${missingStageIds.join(', ')}] not found`);
+    }
+
+    // 為了方便後續查找，將 stages 陣列轉成以 ID 為 key 的 Map
+    const stageMap = new Map(stages.map(stage => [stage.id, stage]));
+
+    // 3. 批次建立 Block 實體
+    const blockEntities = blocks.map(block => {
+      const stage = stageMap.get(block.stageId);
+      // 這個檢查理論上不會觸發，因為上面已經驗證過，但為了型別安全可以保留
+      if (!stage) {
+          throw new BadRequestException(`Internal error: Stage for block ${block.id} not pre-fetched.`);
+      }
+      return this.canvasNumpadBlockRepository.create({
+        id: block.id,
+        input: block.input,
+        type: block.type,
+        x: block.x,
+        y: block.y,
+        stage: stage, // 從 Map 中取得對應的 stage 實體
+        user: user,
+      });
+    });
+
+    // 4. 一次性儲存所有實體到資料庫
+    // repository.save() 接受一個實體陣列，會將它們包在一個 transaction 中高效地插入
+    const savedBlocks = await this.canvasNumpadBlockRepository.save(blockEntities);
+
+    // 5. 將儲存後的實體陣列映射回 DTO 陣列並返回
+    return savedBlocks.map(block => this.toNumpadBlockDto(block));
+  }
+
   async createCharacterMoveImage(
     image: CreateCanvasCharacterMoveImageDto,
     user: User,
@@ -131,7 +190,71 @@ export class CanvasService {
     });
     const savedImage =
       await this.canvasCharacterMoveImageRepository.save(imageEntity);
-    return this.toCanvasCharacterImageDto(savedImage);
+    return this.toCharacterMoveImageDto(savedImage);
+  }
+
+  async createCharacterMoveImages(
+    images: CreateCanvasCharacterMoveImageDto[], // 參數改為 DTO 陣列
+    user: User,
+  ): Promise<CanvasCharacterMoveImageDto[]> { // 回傳值改為 DTO 陣列
+    if (!images || images.length === 0) {
+      return [];
+    }
+
+    // 1. 批次處理 Stage 查詢
+    const stageIds = [...new Set(images.map(img => img.stageId))];
+    const stages = await this.canvasStageRepository.find({
+      where: { id: In(stageIds) },
+    });
+    if (stages.length !== stageIds.length) {
+      const foundStageIds = new Set(stages.map(s => s.id));
+      const missingStageIds = stageIds.filter(id => !foundStageIds.has(id));
+      throw new NotFoundException(`Stages with IDs [${missingStageIds.join(', ')}] not found`);
+    }
+    const stageMap = new Map(stages.map(stage => [stage.id, stage]));
+
+    // 2. 批次處理 CharacterMoveImage 查詢
+    // 收集所有不重複的 fileName
+    const characterMoveImageFileNames = [...new Set(images.map(img => img.characterMoveImage.fileName))];
+    
+    const characterMoveImages = await this.characterService.findCharacterMoveImagesByFileNames(
+      characterMoveImageFileNames,
+    );
+
+    if (characterMoveImages.length !== characterMoveImageFileNames.length) {
+      const foundFileNames = new Set(characterMoveImages.map(c => c.fileName));
+      const missingFileNames = characterMoveImageFileNames.filter(name => !foundFileNames.has(name));
+      throw new NotFoundException(`CharacterMoveImages with fileNames [${missingFileNames.join(', ')}] not found`);
+    }
+    const characterMoveImageMap = new Map(
+      characterMoveImages.map(charImg => [charImg.fileName, charImg])
+    );
+
+    // 3. 批次建立 Entity
+    const imageEntities = images.map(img => {
+      const stage = stageMap.get(img.stageId);
+      const targetCharacterMoveImage = characterMoveImageMap.get(img.characterMoveImage.fileName);
+
+      // 理論上不會發生，因為前面已驗證，但為型別安全保留
+      if (!stage || !targetCharacterMoveImage) {
+        throw new BadRequestException(`Internal error: Dependent entities for block ${img.id} not pre-fetched.`);
+      }
+
+      return this.canvasCharacterMoveImageRepository.create({
+        id: img.id,
+        x: img.x,
+        y: img.y,
+        characterMoveImage: targetCharacterMoveImage,
+        stage: stage,
+        user: user,
+      });
+    });
+
+    // 4. 一次性儲存所有 Entity
+    const savedImages = await this.canvasCharacterMoveImageRepository.save(imageEntities);
+
+    // 5. 批次轉換為 DTO 並回傳
+    return savedImages.map(image => this.toCharacterMoveImageDto(image));
   }
 
   async createArrow(
@@ -155,6 +278,50 @@ export class CanvasService {
       const savedArrow = await this.canvasArrowRepository.save(arrowEntity);
       return this.toArrowDto(savedArrow);
     }
+  }
+  
+  async createArrows(
+    arrows: CreateCanvasArrowDto[], // 參數改為 DTO 陣列
+    user: User,
+  ): Promise<CanvasArrowDto[]> { // 回傳值改為 DTO 陣列
+    if (!arrows || arrows.length === 0) {
+      return [];
+    }
+
+    // 1. 批次處理 Stage 查詢
+    const stageIds = [...new Set(arrows.map(arrow => arrow.stageId))];
+    const stages = await this.canvasStageRepository.find({
+      where: { id: In(stageIds) },
+    });
+    if (stages.length !== stageIds.length) {
+      const foundStageIds = new Set(stages.map(s => s.id));
+      const missingStageIds = stageIds.filter(id => !foundStageIds.has(id));
+      throw new NotFoundException(`Stages with IDs [${missingStageIds.join(', ')}] not found`);
+    }
+    const stageMap = new Map(stages.map(stage => [stage.id, stage]));
+
+    // 2. 批次建立 Entity
+    const arrowEntities = arrows.map(arrow => {
+      const stage = stageMap.get(arrow.stageId);
+      // 理論上不會發生，因為前面已驗證，但為型別安全保留
+      if (!stage) {
+          throw new BadRequestException(`Internal error: Stage for arrow ${arrow.id} not pre-fetched.`);
+      }
+      return this.canvasArrowRepository.create({
+        id: arrow.id,
+        startNodeId: arrow.startNodeId,
+        endNodeId: arrow.endNodeId,
+        points: arrow.points,
+        stage: stage, // 從 Map 中取得對應的 stage 實體
+        user: user,
+      });
+    });
+
+    // 3. 一次性儲存所有 Entity
+    const savedArrows = await this.canvasArrowRepository.save(arrowEntities);
+
+    // 4. 批次轉換為 DTO 並回傳
+    return savedArrows.map(arrow => this.toArrowDto(arrow));
   }
 
   async findAllStage(user: User): Promise<CanvasStageDto[]> {
@@ -186,7 +353,7 @@ export class CanvasService {
         stage: { id: stageId },
       },
     });
-    return images.map((images) => this.toCanvasCharacterImageDto(images));
+    return images.map((images) => this.toCharacterMoveImageDto(images));
   }
 
   async findAllArrowsByStage(stageId: string): Promise<CanvasArrowDto[]> {
@@ -244,7 +411,7 @@ export class CanvasService {
     // Assign the found stage entity to the block's stage relationship
     const savedImage =
       await this.canvasCharacterMoveImageRepository.save(targetImage);
-    return this.toCanvasCharacterImageDto(savedImage);
+    return this.toCharacterMoveImageDto(savedImage);
   }
 
   async updateArrow(
@@ -373,26 +540,7 @@ export class CanvasService {
       throw new UnauthorizedException('The block not belong to this user');
     }
     await this.canvasNumpadBlockRepository.delete(blockId);
-    const affectArrows = await this.canvasArrowRepository.find({
-      where: [
-        {startNodeId: blockId},
-        {endNodeId: blockId}
-      ]
-    })
     const deletedEntityIds: string[] = [blockId];
-    // 1. 使用 .map() 創建一個 Promise 陣列
-    //    map 回調可以是 async 函數，它會自動返回一個 Promise
-    const arrowDeletionPromises = affectArrows.map(async (arrow) => {
-      // 等待每個箭頭的刪除操作完成
-      const data = await this.removeArrow(arrow.id, user);
-      // 將每個箭頭刪除所影響的 ID 加入到總列表中
-      data.deletedEntityIds.forEach((id) => {
-          deletedEntityIds.push(id);
-      });
-    });
-
-    // 2. 使用 Promise.all 等待所有箭頭刪除操作完成
-    await Promise.all(arrowDeletionPromises);
     return {
       ok: true,
       deletedEntityIds:deletedEntityIds
@@ -446,6 +594,282 @@ export class CanvasService {
     };
   }
 
+  async removeNumpadBlocksByStageId(stageId: string, user:User): Promise<DeleteSummary>{
+    const targetBlocks = await this.canvasNumpadBlockRepository.find({
+      where:{stage:{id:stageId}},
+      select:['id']
+    })
+    if (!targetBlocks) {
+      throw new NotFoundException(`Blocks with stage ID ${stageId} not found`);
+    }
+    if (targetBlocks[0].user.id != user.id) {
+      throw new UnauthorizedException('The Block not belong to this user');
+    }
+    const deletedEntityIds = targetBlocks.map((block) => block.id)
+    await this.canvasNumpadBlockRepository.delete({id:In(deletedEntityIds)})
+    return {
+      ok: true,
+      deletedEntityIds: deletedEntityIds
+    }
+  }
+
+  async removeCharacterMoveImageByStageId(stageId: string, user:User): Promise<DeleteSummary>{
+    const targetCharacterMoveImage = await this.canvasCharacterMoveImageRepository.find({
+      where:{stage:{id:stageId}},
+      select:['id']
+    })
+    if (!targetCharacterMoveImage) {
+      throw new NotFoundException(`CharacterMoveImage with stage ID ${stageId} not found`);
+    }
+    if (targetCharacterMoveImage[0].user.id != user.id) {
+      throw new UnauthorizedException('The CharacterMoveImage not belong to this user');
+    }
+    const deletedEntityIds = targetCharacterMoveImage.map((block) => block.id)
+    await this.canvasCharacterMoveImageRepository.delete({id:In(deletedEntityIds)})
+    return {
+      ok: true,
+      deletedEntityIds: deletedEntityIds
+    }
+  }
+
+  async removeArrowByStageId(stageId: string, user:User): Promise<DeleteSummary>{
+    const targetArrows = await this.canvasArrowRepository.find({
+      where:{stage:{id:stageId}},
+      select:['id']
+    })
+    if (!targetArrows) {
+      throw new NotFoundException(`Arrow with stage ID ${stageId} not found`);
+    }
+    if (targetArrows[0].user.id != user.id) {
+      throw new UnauthorizedException('The Arrow not belong to this user');
+    }
+    const deletedEntityIds = targetArrows.map((block) => block.id)
+    await this.canvasArrowRepository.delete({id:In(deletedEntityIds)})
+    return {
+      ok: true,
+      deletedEntityIds: deletedEntityIds
+    }
+  }
+
+  /**
+   * 同步指定 Stage 的所有 NumpadBlock
+   * 此操作在一個資料庫交易中完成，確保資料一致性。
+   * @param syncDto 包含 stageId 和新的 blocks 陣列
+   * @param user 當前操作的使用者
+   * @returns 返回新創建的 NumpadBlock DTO 陣列
+   */
+  async syncNumpadBlocks(
+    syncDto: SyncCanvasNumpadBlocksDto,
+    user: User,
+  ): Promise<CanvasNumpadBlockDto[]> {
+    const { stageId, blocks } = syncDto;
+
+    // 使用 entityManager.transaction 來執行原子操作
+    return this.entityManager.transaction(
+      async (transactionalEntityManager) => {
+        // 步驟 1: 驗證 Stage 是否存在且屬於該使用者
+        // 在交易中，所有查詢都應該使用 transactionalEntityManager
+        const stage = await transactionalEntityManager.findOne(CanvasStage, {
+          where: { id: stageId },
+          relations: ['user'],
+        });
+
+        if (!stage) {
+          throw new NotFoundException(`Stage with ID ${stageId} not found`);
+        }
+        if (stage.user.id !== user.id) {
+          throw new UnauthorizedException(
+            'You do not have permission to modify this stage.',
+          );
+        }
+
+        // 步驟 2: 刪除該 Stage 底下所有舊的 NumpadBlock
+        // 使用 transactionalEntityManager 執行刪除操作
+        await transactionalEntityManager.delete(CanvasNumpadBlock, {
+          stage: { id: stageId },
+        });
+
+        // 如果前端傳來的 blocks 陣列是空的，那麼操作到此結束（相當於清空）
+        if (!blocks || blocks.length === 0) {
+          return [];
+        }
+
+        // 步驟 3: 創建新的 NumpadBlock 實體
+        const newBlockEntities = blocks.map((blockDto) => {
+          // 不再需要從 DTO 陣列中查詢 stage，因為我們已經在交易開始時驗證過了
+          return transactionalEntityManager.create(CanvasNumpadBlock, {
+            ...blockDto,
+            stage: stage, // 直接使用已查詢到的 stage 實體
+            user: user,
+          });
+        });
+
+        // 步驟 4: 一次性儲存所有新的實體
+        // 使用 transactionalEntityManager 執行保存操作
+        const savedBlocks = await transactionalEntityManager.save(
+          CanvasNumpadBlock,
+          newBlockEntities,
+        );
+        
+        // 如果任何步驟失敗 (例如資料庫約束錯誤)，TypeORM 會自動拋出錯誤
+        // transactionalEntityManager 會捕捉到錯誤並自動回滾所有操作 (包括上面的刪除)
+
+        // 步驟 5: 將儲存後的實體轉換為 DTO 並返回
+        return savedBlocks.map((block) => this.toNumpadBlockDto(block));
+      },
+    );
+  }
+
+  /**
+   * 同步指定 Stage 的所有 CharacterMoveImage
+   * 此操作在一個資料庫交易中完成，確保資料一致性。
+   * @param syncDto 包含 stageId 和新的 characterMoveImages 陣列
+   * @param user 當前操作的使用者
+   * @returns 返回新創建的 CharacterMoveImage DTO 陣列
+   */
+  async syncCharacterMoveImages(
+    syncDto: SyncCanvasCharacterMoveImagesDto,
+    user: User,
+  ): Promise<CanvasCharacterMoveImageDto[]> {
+    const { stageId, characterMoveImages } = syncDto;
+
+    return this.entityManager.transaction(
+      async (transactionalEntityManager) => {
+        // 步驟 1: 驗證 Stage 是否存在且屬於該使用者
+        const stage = await transactionalEntityManager.findOne(CanvasStage, {
+          where: { id: stageId },
+          relations: ['user'],
+        });
+
+        if (!stage) {
+          throw new NotFoundException(`Stage with ID ${stageId} not found`);
+        }
+        if (stage.user.id !== user.id) {
+          throw new UnauthorizedException(
+            'You do not have permission to modify this stage.',
+          );
+        }
+
+        // 步驟 2: 刪除該 Stage 底下所有舊的 CharacterMoveImage
+        await transactionalEntityManager.delete(CanvasCharacterMoveImage, {
+          stage: { id: stageId },
+        });
+
+        // 如果前端傳來的 characterMoveImages 陣列是空的，那麼操作到此結束（相當於清空）
+        if (!characterMoveImages || characterMoveImages.length === 0) {
+          return [];
+        }
+
+        // 步驟 3: 批次查詢所需的 CharacterMoveImage 實體
+        const characterMoveImageFileNames = [...new Set(characterMoveImages.map(img => img.characterMoveImage.fileName))];
+        const characterMoveImagesFromDB = await this.characterService.findCharacterMoveImagesByFileNames(
+          characterMoveImageFileNames,
+        );
+
+        if (characterMoveImagesFromDB.length !== characterMoveImageFileNames.length) {
+          const foundFileNames = new Set(characterMoveImagesFromDB.map(c => c.fileName));
+          const missingFileNames = characterMoveImageFileNames.filter(name => !foundFileNames.has(name));
+          throw new NotFoundException(`CharacterMoveImages with fileNames [${missingFileNames.join(', ')}] not found`);
+        }
+
+        const characterMoveImageMap = new Map(
+          characterMoveImagesFromDB.map(charImg => [charImg.fileName, charImg])
+        );
+
+        // 步驟 4: 創建新的 CharacterMoveImage 實體
+        const newImageEntities = characterMoveImages.map((imageDto) => {
+          const targetCharacterMoveImage = characterMoveImageMap.get(imageDto.characterMoveImage.fileName);
+          
+          if (!targetCharacterMoveImage) {
+            throw new BadRequestException(`CharacterMoveImage with fileName ${imageDto.characterMoveImage.fileName} not found`);
+          }
+
+          return transactionalEntityManager.create(CanvasCharacterMoveImage, {
+            id: imageDto.id,
+            x: imageDto.x,
+            y: imageDto.y,
+            characterMoveImage: targetCharacterMoveImage,
+            stage: stage,
+            user: user,
+          });
+        });
+
+        // 步驟 5: 一次性儲存所有新的實體
+        const savedImages = await transactionalEntityManager.save(
+          CanvasCharacterMoveImage,
+          newImageEntities,
+        );
+
+        // 步驟 6: 將儲存後的實體轉換為 DTO 並返回
+        return savedImages.map((image) => this.toCharacterMoveImageDto(image));
+      },
+    );
+  }
+
+  /**
+   * 同步指定 Stage 的所有 Arrow
+   * 此操作在一個資料庫交易中完成，確保資料一致性。
+   * @param syncDto 包含 stageId 和新的 arrows 陣列
+   * @param user 當前操作的使用者
+   * @returns 返回新創建的 Arrow DTO 陣列
+   */
+  async syncArrows(
+    syncDto: SyncCanvasArrowsDto,
+    user: User,
+  ): Promise<CanvasArrowDto[]> {
+    const { stageId, arrows } = syncDto;
+
+    return this.entityManager.transaction(
+      async (transactionalEntityManager) => {
+        // 步驟 1: 驗證 Stage 是否存在且屬於該使用者
+        const stage = await transactionalEntityManager.findOne(CanvasStage, {
+          where: { id: stageId },
+          relations: ['user'],
+        });
+
+        if (!stage) {
+          throw new NotFoundException(`Stage with ID ${stageId} not found`);
+        }
+        if (stage.user.id !== user.id) {
+          throw new UnauthorizedException(
+            'You do not have permission to modify this stage.',
+          );
+        }
+
+        // 步驟 2: 刪除該 Stage 底下所有舊的 Arrow
+        await transactionalEntityManager.delete(CanvasArrow, {
+          stage: { id: stageId },
+        });
+
+        // 如果前端傳來的 arrows 陣列是空的，那麼操作到此結束（相當於清空）
+        if (!arrows || arrows.length === 0) {
+          return [];
+        }
+
+        // 步驟 3: 創建新的 Arrow 實體
+        const newArrowEntities = arrows.map((arrowDto) => {
+          return transactionalEntityManager.create(CanvasArrow, {
+            id: arrowDto.id,
+            startNodeId: arrowDto.startNodeId,
+            endNodeId: arrowDto.endNodeId,
+            points: arrowDto.points,
+            stage: stage,
+            user: user,
+          });
+        });
+
+        // 步驟 4: 一次性儲存所有新的實體
+        const savedArrows = await transactionalEntityManager.save(
+          CanvasArrow,
+          newArrowEntities,
+        );
+
+        // 步驟 5: 將儲存後的實體轉換為 DTO 並返回
+        return savedArrows.map((arrow) => this.toArrowDto(arrow));
+      },
+    );
+  }
+
   toStageDto(stage: CanvasStage): CanvasStageDto {
     return plainToInstance(CanvasStageDto, stage, {
       excludeExtraneousValues: true,
@@ -460,7 +884,7 @@ export class CanvasService {
     return dto
   }
 
-  toCanvasCharacterImageDto(
+  toCharacterMoveImageDto(
     image: CanvasCharacterMoveImage,
   ): CanvasCharacterMoveImageDto {
     const dto = plainToInstance(CanvasCharacterMoveImageDto, image, {

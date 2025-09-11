@@ -58,7 +58,9 @@
 		"@tiptap/extension-image": "^2.14.0",
 		"@tiptap/pm": "^2.14.0",
 		"@tiptap/starter-kit": "^2.14.0",
+		"@types/lodash": "^4.17.20",
 		"konva": "^9.3.22",
+		"lodash-es": "^4.17.21",
 		"uuid": "^11.1.0"
 	}
 }

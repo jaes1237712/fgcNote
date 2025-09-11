@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Character } from './entities/character.entity';
 import { CharacterDto } from './dtos/character.dto';
 import { CharacterMoveImage } from './entities/character-move-image.entity';
@@ -49,6 +49,10 @@ export class CharacterService {
       throw new NotFoundException(`File with Filename ${fileName} not found`);
     }
     return image;
+  }
+
+  findCharacterMoveImagesByFileNames(fileNames: string[]): Promise<CharacterMoveImage[]> {
+    return this.characterMoveImageRepository.find({ where: { fileName: In(fileNames) } });
   }
 
   toCharacterDto(character: Character): CharacterDto {

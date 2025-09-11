@@ -41,21 +41,18 @@
 				oninput={() => {
 					previewLayer.destroyChildren();
 					const previewId = 'preview';
-					drawNumpadBlock(
-						{
-							canvasNumpadBlock: {
-								id: previewId,
-								input: inputValue,
-								type: controllerType,
-								x: 0,
-								y: 0
-							},
-							userSettings: userSettings,
-							stage: previewStage,
-							layer: previewLayer
+					drawNumpadBlock({
+						canvasNumpadBlock: {
+							id: previewId,
+							input: inputValue,
+							type: controllerType,
+							x: 0,
+							y: 0
 						},
-						
-					);
+						userSettings: userSettings,
+						stage: previewStage,
+						layer: previewLayer
+					});
 					$host().dispatchEvent(
 						new CustomEvent('edit', {
 							detail: {
@@ -73,21 +70,18 @@
 				controllerType = event.detail.controllerType;
 				previewLayer.destroyChildren();
 				const previewId = 'preview';
-				drawNumpadBlock(
-					{
-						canvasNumpadBlock: {
-							id: previewId,
-							input: inputValue,
-							type: controllerType,
-							x: 0,
-							y: 0
-						},
-						userSettings: userSettings,
-						layer: previewLayer,
-						stage: previewStage
+				drawNumpadBlock({
+					canvasNumpadBlock: {
+						id: previewId,
+						input: inputValue,
+						type: controllerType,
+						x: 0,
+						y: 0
 					},
-					
-				);
+					userSettings: userSettings,
+					layer: previewLayer,
+					stage: previewStage
+				});
 				$host().dispatchEvent(
 					new CustomEvent('edit', {
 						detail: {
