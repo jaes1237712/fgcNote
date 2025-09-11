@@ -24,9 +24,7 @@
 		canvasControllerFindAllCharacterMoveImages,
 		canvasControllerDeleteCharacterMoveImage,
 		canvasControllerUpdateCharacterMoveImage,
-
 		canvasControllerFindAllArrows
-
 	} from '$lib/client';
 	import type { PageProps } from './$types';
 	import type {
@@ -45,23 +43,22 @@
 	import '$lib/component/SelectCharacter.svelte';
 	import '$lib/component/SearchCharacterImages.svelte';
 	import '$lib/component/NumpadEditor.svelte';
-	import { createStage } from '$lib/utils/canvas/index';
 	import { contextMenuState } from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte';
-	import { drawCharacterMoveImage, eraseCharacterMoveImage, type OnImageDragEndCallback } from '$lib/utils/canvas/image/canvas-character-move-image';
-	import { drawArrow } from '$lib/utils/canvas/arrow/canvas-arrow';
+	import KonvaCanvas from '$lib/utils/canvas/KonvaCanvas.svelte';
+	import { canvasDataStore } from '$lib/utils/canvas/canvas-data-manager.svelte';
 	let { data }: PageProps = $props();
 	const SCREEN_WIDTH = screen.width;
 	const SCREEN_HEIGHT = screen.height;
 	const LENGTH_UNIT = SCREEN_WIDTH / 100;
 	let allStageDtos = $state<CanvasStageDto[]>(data.allStageDtos);
-	let userSettings = $state<UserSettings>({
+	canvasDataStore.userSettings = {
 		viewportHeightUnit: SCREEN_HEIGHT / 100,
 		viewportWidthUnit: SCREEN_WIDTH / 100,
 		lengthUnit: LENGTH_UNIT,
 		moveImageHeight: 20,
 		commandSize: 3,
 		defaultControllerType: 'CLASSIC'
-	});
+	}
 	let numpadEditorValue: {
 		input: string;
 		type: CONTROLLER_TYPE;
@@ -69,14 +66,9 @@
 		input: '',
 		type: 'CLASSIC' //之後從data中拿取
 	});
-	let currentStage = $state<Konva.Stage>();
-	let currentLayer = $state<Konva.Layer>();
-	let currentStageDto = $state<CanvasStageDto>();
 	let currentTransformer = $state<Konva.Transformer>();
 	let characterMe = $state<CharacterDto>(data.allCharacters[0]);
 	let characterOpponent = $state<CharacterDto>(data.allCharacters[1]);
-	let numpadBlockDtos = $state<Map<string, CanvasNumpadBlockDto>>(new Map());
-	let characterMoveImageDtos = $state<Map<string, CanvasCharacterMoveImageDto>>(new Map());
 	let currentStageDtos = $derived.by<CanvasStageDto[]>(() => {
 		if (characterMe.id && characterOpponent.id && allStageDtos.length > 0) {
 			return allStageDtos.filter(
@@ -106,7 +98,7 @@
 				deleteExistedNumpadBlock(contextMenuState.targetId);
 				break;
 			case 'delete-image':
-			deleteExistedCharacterMoveImage(contextMenuState.targetId);
+				deleteExistedCharacterMoveImage(contextMenuState.targetId);
 				break
 		}	
 		hideContextMenu();
@@ -139,15 +131,7 @@
 			});
 			if (canvasStage.data) {
 				allStageDtos.push(canvasStage.data);
-				const { stage, layer } = createStage({
-					stageDto: canvasStage.data,
-					container: konvaContainer,
-					transformer: currentTransformer
-				});
-				currentStage = stage;
-				currentLayer = layer;
-				currentStageDto = canvasStage.data;
-				console.log('stageDto', currentStageDtos);
+				canvasDataStore.stageData = canvasStage.data;
 			} else {
 				alert('something in server side create stage went wrong');
 			}
@@ -157,16 +141,9 @@
 	}
 
 	async function createExistedStage(stageDto: CanvasStageDto) {
-		currentTransformer = new Konva.Transformer();
-		const { stage, layer } = createStage({
-			stageDto: stageDto,
-			container: konvaContainer,
-			transformer: currentTransformer
-		});
-		currentStage = stage;
-		currentLayer = layer;
-		currentStageDto = stageDto;
-		currentLayer.add(currentTransformer);
+		canvasDataStore.stageData = stageDto;
+		// currentTransformer = new Konva.Transformer();
+		// currentLayer.add(currentTransformer);
 		const blockResp = await canvasControllerFindAllBlocks({
 			path: {
 				stageId: stageDto.id
@@ -174,17 +151,7 @@
 		});
 		if (blockResp.data) {
 			blockResp.data.forEach((block) => {
-				drawNumpadBlock(
-					{
-						canvasNumpadBlock: block,
-						userSettings: userSettings,
-						dragEndHandler: handelDragEndBlockEvent,
-						stage: currentStage,
-						layer: currentLayer
-					}
-				);
-				numpadBlockDtos.set(block.id, block);
-				numpadBlockDtos = new Map(numpadBlockDtos);
+				canvasDataStore.addNodeData(block)
 			});
 		}
 		const imageResp = await canvasControllerFindAllCharacterMoveImages({
@@ -194,33 +161,17 @@
 		});
 		if (imageResp.data) {
 			imageResp.data.forEach((image) => {
-				drawCharacterMoveImage(
-					{
-						canvasCharacterMoveImage: image,
-						userSettings: userSettings,
-						dragEndHandler: handelDragEndCharacterMoveImageEvent,
-						transformer:currentTransformer
-					},
-					currentLayer
-				);
-				characterMoveImageDtos.set(image.id, image);
+				canvasDataStore.addNodeData(image)
 			});
 		}
 		const arrowResp = await canvasControllerFindAllArrows({
 			path:{
-				stageId: currentStage.id()
+				stageId: stageDto.id
 			}
 		})
 		if(arrowResp.data){
 			arrowResp.data.forEach((arrow) => {
-				drawArrow({
-					canvasArrow:{
-						id: arrow.id,
-						startNodeId: arrow.startNodeId,
-						endNodeId: arrow.endNodeId,
-						points: arrow.points
-					}
-				},currentLayer)
+				canvasDataStore.addNodeData(arrow)
 			})
 		}
 	}
@@ -256,8 +207,9 @@
 			} else {
 				const newStages = allStageDtos.filter((stage) => stage.id !== stageDto.id);
 				allStageDtos = newStages;
-				currentStageDto = undefined;
-				currentStage.destroy();
+				if(canvasDataStore.stageData.id === stageDto.id){
+					canvasDataStore.stageData = null 
+				}
 			}
 		});
 	}
@@ -266,21 +218,11 @@
 		const createResp = await canvasControllerCreateNumpadBlock({
 			body: {
 				...numpadBlockDto,
-				stageId: currentStageDto.id
+				stageId: canvasDataStore.stageData.id
 			}
 		});
 		if (createResp.data) {
-			drawNumpadBlock(
-				{
-					canvasNumpadBlock: numpadBlockDto,
-					userSettings: userSettings,
-					dragEndHandler: handelDragEndBlockEvent,
-					stage: currentStage,
-					layer: currentLayer
-				}
-			);
-			numpadBlockDtos.set(numpadBlockDto.id, numpadBlockDto);
-			numpadBlockDtos = new Map(numpadBlockDtos);
+			canvasDataStore.addNodeData(createResp.data)
 		} else {
 			alert('Server side: Something went wrong at create numpad block');
 		}
@@ -295,110 +237,100 @@
 			}
 		});
 		if (createResp.data) {
-			drawCharacterMoveImage(
-				{
-					canvasCharacterMoveImage: CharacterMoveImageDto,
-					userSettings: userSettings,
-					dragEndHandler: handelDragEndCharacterMoveImageEvent,
-					transformer: currentTransformer
-				},
-				currentLayer
-			);
-			characterMoveImageDtos.set(CharacterMoveImageDto.id, CharacterMoveImageDto);
-			characterMoveImageDtos = new Map(characterMoveImageDtos);
+			canvasDataStore.addNodeData(createResp.data)
 		} else {
 			alert('Server side: Something went wrong at create numpad block');
 		}
 	}
 
-	async function editExistedBlock(block: UpdateCanvasNumpadBlockDto) {
-		const updateResp = await canvasControllerUpdateNumpadBlock({ body: block });
-		if (updateResp.data) {
-			const targetBlock = numpadBlockDtos.get(block.id);
-			eraseNumpadBlock(block.id, currentLayer);
-			drawNumpadBlock(
-				{
-					canvasNumpadBlock: block,
-					userSettings: userSettings,
-					dragEndHandler: handelDragEndBlockEvent,
-					stage: currentStage,
-					layer: currentLayer
-				}
-			);
-			targetBlock.x = block.x;
-			targetBlock.y = block.y;
-			targetBlock.input = block.input;
-			targetBlock.type = block.type;
-			numpadBlockDtos.set(block.id, targetBlock);
-			numpadBlockDtos = new Map(numpadBlockDtos);
-		} else {
-			alert('Server side: Something went wrong at update numpad block');
-		}
-	}
+	// async function editExistedBlock(block: UpdateCanvasNumpadBlockDto) {
+		
+	// 	const updateResp = await canvasControllerUpdateNumpadBlock({ body: block });
+	// 	if (updateResp.data) {
+	// 		alert("暫時沒有功能")
+	// 		// const targetBlock = numpadBlockDtos.get(block.id);
+	// 		// eraseNumpadBlock(block.id, currentLayer);
+	// 		// drawNumpadBlock(
+	// 		// 	{
+	// 		// 		canvasNumpadBlock: block,
+	// 		// 		userSettings: userSettings,
+	// 		// 		dragEndHandler: handelDragEndBlockEvent,
+	// 		// 		stage: currentStage,
+	// 		// 		layer: currentLayer
+	// 		// 	}
+	// 		// );
+	// 		// targetBlock.x = block.x;
+	// 		// targetBlock.y = block.y;
+	// 		// targetBlock.input = block.input;
+	// 		// targetBlock.type = block.type;
+	// 		// numpadBlockDtos.set(block.id, targetBlock);
+	// 		// numpadBlockDtos = new Map(numpadBlockDtos);
+	// 	} else {
+	// 		alert('Server side: Something went wrong at update numpad block');
+	// 	}
+	// }
 
-	async function updateExistedBlock(block: UpdateCanvasNumpadBlockDto) {}
+	// const handelDragEndBlockEvent: OnBlockDragEndCallback = async (
+	// 	blockId: string,
+	// 	x: number,
+	// 	y: number
+	// ) => {
+	// 	const targetBlock = numpadBlockDtos.get(blockId);
+	// 	if (!targetBlock) {
+	// 		console.error(`Block with ID ${blockId} not found in state.`);
+	// 		return;
+	// 	}
+	// 	const updatedBlockDto: UpdateCanvasNumpadBlockDto = { ...targetBlock, x, y };
+	// 	try {
+	// 		const updateResp = await canvasControllerUpdateNumpadBlock({ body: updatedBlockDto });
+	// 		if (!updateResp.response.ok) {
+	// 			throw new Error(`Failed to update block ${blockId} on server`);
+	// 		}
+	// 		if (updateResp.data) {
+	// 			numpadBlockDtos.set(blockId, updatedBlockDto);
+	// 			numpadBlockDtos = new Map(numpadBlockDtos);
+	// 			console.log('Backend updated successfully:', updateResp.data);
+	// 		} else {
+	// 			throw new Error(`Failed to update block ${blockId} on server`);
+	// 		}
+	// 	} catch (error) {
+	// 		alert(`Error updating block position on backend.`);
+	// 	}
+	// };
 
-	const handelDragEndBlockEvent: OnBlockDragEndCallback = async (
-		blockId: string,
-		x: number,
-		y: number
-	) => {
-		const targetBlock = numpadBlockDtos.get(blockId);
-		if (!targetBlock) {
-			console.error(`Block with ID ${blockId} not found in state.`);
-			return;
-		}
-		const updatedBlockDto: UpdateCanvasNumpadBlockDto = { ...targetBlock, x, y };
-		try {
-			const updateResp = await canvasControllerUpdateNumpadBlock({ body: updatedBlockDto });
-			if (!updateResp.response.ok) {
-				throw new Error(`Failed to update block ${blockId} on server`);
-			}
-			if (updateResp.data) {
-				numpadBlockDtos.set(blockId, updatedBlockDto);
-				numpadBlockDtos = new Map(numpadBlockDtos);
-				console.log('Backend updated successfully:', updateResp.data);
-			} else {
-				throw new Error(`Failed to update block ${blockId} on server`);
-			}
-		} catch (error) {
-			alert(`Error updating block position on backend.`);
-		}
-	};
-
-	const handelDragEndCharacterMoveImageEvent: OnImageDragEndCallback = async (
-		imageId: string,
-		x: number,
-		y: number
-	) => {
-		const targetImage = characterMoveImageDtos.get(imageId);
-		if (!targetImage) {
-			console.error(`Block with ID ${imageId} not found in state.`);
-			return;
-		}
-		const updatedImageDto: UpdateCanvasCharacterMoveImageDto = { ...targetImage, x, y };
-		try {
-			const updateResp = await canvasControllerUpdateCharacterMoveImage({ body: updatedImageDto });
-			if (!updateResp.response.ok) {
-				throw new Error(`Failed to update block ${imageId} on server`);
-			}
-			if (updateResp.data) {
-				characterMoveImageDtos.set(imageId, updatedImageDto);
-				console.log('Backend updated successfully:', updateResp.data);
-			} else {
-				throw new Error(`Failed to update block ${imageId} on server`);
-			}
-		} catch (error) {
-			alert(`Error updating block position on backend.`);
-		}
-	};
+	// const handelDragEndCharacterMoveImageEvent: OnImageDragEndCallback = async (
+	// 	imageId: string,
+	// 	x: number,
+	// 	y: number
+	// ) => {
+	// 	const targetImage = characterMoveImageDtos.get(imageId);
+	// 	if (!targetImage) {
+	// 		console.error(`Block with ID ${imageId} not found in state.`);
+	// 		return;
+	// 	}
+	// 	const updatedImageDto: UpdateCanvasCharacterMoveImageDto = { ...targetImage, x, y };
+	// 	try {
+	// 		const updateResp = await canvasControllerUpdateCharacterMoveImage({ body: updatedImageDto });
+	// 		if (!updateResp.response.ok) {
+	// 			throw new Error(`Failed to update block ${imageId} on server`);
+	// 		}
+	// 		if (updateResp.data) {
+	// 			characterMoveImageDtos.set(imageId, updatedImageDto);
+	// 			console.log('Backend updated successfully:', updateResp.data);
+	// 		} else {
+	// 			throw new Error(`Failed to update block ${imageId} on server`);
+	// 		}
+	// 	} catch (error) {
+	// 		alert(`Error updating block position on backend.`);
+	// 	}
+	// };
 
 	async function deleteExistedNumpadBlock(blockId: string) {
 		const serverResp = await canvasControllerDeleteBlock({
 			path: { blockId: blockId }
 		});
 		if (serverResp.data) {
-			eraseNumpadBlock(blockId, currentLayer);
+			canvasDataStore.deleteNodeData(blockId)
 			console.log('delete Successfully');
 		} else {
 			alert('Server side: Something went wrong at delete numpad block');
@@ -410,7 +342,7 @@
 			path: { canvasCharacterMoveImageID: imageId }
 		});		
 		if (serverResp.data) {
-			eraseCharacterMoveImage(imageId, currentLayer)
+			canvasDataStore.deleteNodeData(imageId)
 			console.log('delete Successfully');
 		} else {
 			alert('Server side: Something went wrong at delete numpad block');
@@ -427,22 +359,21 @@
 			const newNumpadBlockDto: CreateCanvasNumpadBlockDto = {
 				input: numpadEditorValue.input,
 				type: numpadEditorValue.type,
-				x: (contextMenuState.position.x - rec_konva.left) / userSettings.viewportWidthUnit,
-				y: (contextMenuState.position.y - rec_konva.top) / userSettings.viewportHeightUnit,
+				x: (contextMenuState.position.x - rec_konva.left) / canvasDataStore.userSettings.viewportWidthUnit,
+				y: (contextMenuState.position.y - rec_konva.top) / canvasDataStore.userSettings.viewportHeightUnit,
 				id: new_id,
 				stageId: contextMenuState.targetId
 			};
 			createNewNumpadBlock(newNumpadBlockDto);
 		} else if (contextMenuState.targetType === 'numpadBlock') {
-			const updateBlock: UpdateCanvasNumpadBlockDto = {
-				id: contextMenuState.targetId,
-				input: numpadEditorValue.input,
-				type: numpadEditorValue.type,
-				x: numpadBlockDtos.get(contextMenuState.targetId).x,
-				y: numpadBlockDtos.get(contextMenuState.targetId).y
-			};
-			console.log('edit block', updateBlock);
-			editExistedBlock(updateBlock);
+			// const updateBlock = {
+			// 	id: contextMenuState.targetId,
+			// 	input: numpadEditorValue.input,
+			// 	type: numpadEditorValue.type
+			// };
+			// console.log('edit block', updateBlock);
+			// editExistedBlock(updateBlock);
+			alert("暫時沒有功能")
 		}
 		numpadEditorDialog.close();
 	}
@@ -593,7 +524,11 @@
 				{/key}
 			</div>
 		</div>
-		<div id="konva-container" bind:this={konvaContainer}></div>
+		{#if canvasDataStore.stageData}
+			{#key canvasDataStore.stageData.id}
+				<KonvaCanvas/>
+			{/key}
+		{/if}
 	</main>
 
 	<!-- 自定義右鍵選單 -->
@@ -614,7 +549,7 @@
 	<dialog id="numpad-editor" bind:this={numpadEditorDialog}>
 		<div class="dialog-wrapper">
 			<numpad-editor
-				{userSettings}
+				userSettings={canvasDataStore.userSettings}
 				onedit={(event) => {
 					numpadEditorValue = event.detail;
 				}}
@@ -651,10 +586,10 @@
 					const rec_konva = konvaContainer.getBoundingClientRect();
 					const new_id = uuidv4();
 					const createImage: CreateCanvasCharacterMoveImageDto = {
-						x: (contextMenuState.position.x - rec_konva.left) / userSettings.viewportWidthUnit,
-						y: (contextMenuState.position.y - rec_konva.top) / userSettings.viewportHeightUnit,
+						x: (contextMenuState.position.x - rec_konva.left) / canvasDataStore.userSettings.viewportWidthUnit,
+						y: (contextMenuState.position.y - rec_konva.top) / canvasDataStore.userSettings.viewportHeightUnit,
 						id: new_id,
-						stageId: currentStageDto.id,
+						stageId: canvasDataStore.stageData.id,
 						characterMoveImage: image
 					};
 					createNewCharacterMoveImage(createImage);
@@ -664,6 +599,8 @@
 			</search-character-image>
 		{/key}
 	</dialog>
+	 
+	
 </div>
 
 <style>

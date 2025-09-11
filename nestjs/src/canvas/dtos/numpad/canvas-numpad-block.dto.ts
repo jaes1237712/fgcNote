@@ -1,8 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { CONTROLLER_TYPE } from '../../../common/interface';
+import { CONTROLLER_TYPE, NODE_KIND } from '../../../common/interface';
 
 export class CanvasNumpadBlockDto {
+  @ApiProperty({ 
+    description: 'For frontend to distinguish node kind',
+    enum: [NODE_KIND.NUMPAD_BLOCK]
+  })
+  @Expose()
+  kind: NODE_KIND.NUMPAD_BLOCK;
+
   @ApiProperty({ description: 'UUIDv4, generate by client' })
   @Expose()
   id!: string;

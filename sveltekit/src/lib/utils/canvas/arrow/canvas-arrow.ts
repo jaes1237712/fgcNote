@@ -68,6 +68,7 @@ function dragArrow(startNodeId: string, layer: Konva.Layer, stage:Konva.Stage){
     
     const arrow = drawArrow({
         canvasArrow: {
+            kind:'ARROW',
             id: 'temp-arrow',
             startNodeId: startNodeId,
             endNodeId: null,

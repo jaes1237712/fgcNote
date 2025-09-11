@@ -1,8 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { CharacterMoveImageDto } from 'src/character/dtos/character-move-image.dto';
+import { NODE_KIND } from 'src/common/interface';
+
 
 export class CanvasCharacterMoveImageDto {
+  @ApiProperty({ 
+    description: 'For frontend to distinguish node kind',
+    enum: [NODE_KIND.CHARACTER_MOVE_IMAGE]
+  })
+  @Expose()
+  kind: NODE_KIND.CHARACTER_MOVE_IMAGE;
+
   @ApiProperty({ description: 'UUIDv4, generate by client' })
   @Expose()
   id!: string;
@@ -19,4 +28,5 @@ export class CanvasCharacterMoveImageDto {
   @Expose()
   @Type(() => CharacterMoveImageDto)
   characterMoveImage: CharacterMoveImageDto;
+
 }

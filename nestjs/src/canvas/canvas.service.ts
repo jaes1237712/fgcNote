@@ -1,5 +1,6 @@
 import {
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -25,6 +26,8 @@ import { CanvasArrow } from './entities/canvas-arrow.entity';
 import { CreateCanvasArrowDto } from './dtos/arrow/create-arrow.dto';
 import { CanvasArrowDto } from './dtos/arrow/canvas-arrow.dto';
 import { UpdateCanvasArrowDto } from './dtos/arrow/update-arrow.dto';
+import { DeleteSummary } from 'src/common/dto/delete-summary.dto';
+import { NODE_KIND } from 'src/common/interface';
 
 @Injectable()
 export class CanvasService {
@@ -288,23 +291,78 @@ export class CanvasService {
     );
   }
 
-  async removeStage(stageId: string, user: User): Promise<boolean> {
+  async removeStage(stageId: string, user: User): Promise<DeleteSummary> {
     const targetStage = await this.getStageWithRelations(stageId);
     if (!targetStage) {
       throw new NotFoundException(`Stage with ID "${stageId}" not found`);
     } else if (targetStage.user.id != user.id) {
       throw new UnauthorizedException('The stage not belong to this user');
     }
-
-    const deleteResult: DeleteResult =
-      await this.canvasStageRepository.delete(stageId);
+    const deletedEntityIds:string[] = []
+    const affectCharacterMoveImages = await this.canvasCharacterMoveImageRepository.find({
+      where:{stage:{id:stageId}},
+      select: ['id'],
+    })
+    
+    const affectBlocks = await this.canvasNumpadBlockRepository.find({
+      where:{stage:{id:stageId}},
+      select: ['id'],
+    })
+    const affectArrows = await this.canvasArrowRepository.find({
+      where:{stage:{id:stageId}},
+      select: ['id'],
+    })
+    const deleteResult = await this.canvasStageRepository.delete(stageId);
     if (deleteResult.affected === 0) {
-      throw new NotFoundException(`Stage with ID "${stageId}" not found`);
+      throw new NotFoundException(`Stage with ID "${stageId}" not found for deletion (affected 0).`);
     }
-    return true;
+    deletedEntityIds.push(stageId); 
+    const characterMoveImageCheckPromises = affectCharacterMoveImages.map(async (image)=>{
+      const result = await this.canvasCharacterMoveImageRepository.findOneBy({id:image.id})
+      if(!result){
+        deletedEntityIds.push(image.id) 
+      }
+      else{
+        throw new InternalServerErrorException(
+          `Critical Error: CharacterMoveImages with ID "${image.id}" was expected to be cascade-deleted by Stage ${stageId} but still exists. ` +
+          `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`
+        );
+      }
+    })
+    await Promise.all(characterMoveImageCheckPromises)
+    const numpadBlockCheckPromises = affectBlocks.map(async (block)=>{
+      const result = await this.canvasNumpadBlockRepository.findOneBy({id:block.id})
+      if(!result){
+        deletedEntityIds.push(block.id) 
+      }
+      else{
+        throw new InternalServerErrorException(
+          `Critical Error: CanvasNumpadBlock with ID "${block.id}" was expected to be cascade-deleted by Stage ${stageId} but still exists. ` +
+          `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`
+        );
+      }
+    })
+    await Promise.all(numpadBlockCheckPromises)
+    const arrowCheckPromises = affectArrows.map(async (arrow)=>{
+      const result = await this.canvasArrowRepository.findOneBy({id:arrow.id})
+      if(!result){
+        deletedEntityIds.push(arrow.id) 
+      }
+      else{
+        throw new InternalServerErrorException(
+          `Critical Error: canvasArrow with ID "${arrow.id}" was expected to be cascade-deleted by Stage ${stageId} but still exists. ` +
+          `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`
+        );
+      }
+    })
+    await Promise.all(arrowCheckPromises)
+    return {
+      ok:true,
+      deletedEntityIds: deletedEntityIds
+    }
   }
 
-  async removeNumpadBlock(blockId: string, user: User): Promise<boolean> {
+  async removeNumpadBlock(blockId: string, user: User): Promise<DeleteSummary> {
     const targetBlock = await this.canvasNumpadBlockRepository.findOneBy({
       id: blockId,
     });
@@ -314,18 +372,37 @@ export class CanvasService {
     if (targetBlock.user.id != user.id) {
       throw new UnauthorizedException('The block not belong to this user');
     }
-    const deleteResult: DeleteResult =
-      await this.canvasNumpadBlockRepository.delete(blockId);
-    if (deleteResult.affected === 0) {
-      throw new NotFoundException(`Stage with ID "${blockId}" not found`);
-    }
-    return true;
+    await this.canvasNumpadBlockRepository.delete(blockId);
+    const affectArrows = await this.canvasArrowRepository.find({
+      where: [
+        {startNodeId: blockId},
+        {endNodeId: blockId}
+      ]
+    })
+    const deletedEntityIds: string[] = [blockId];
+    // 1. 使用 .map() 創建一個 Promise 陣列
+    //    map 回調可以是 async 函數，它會自動返回一個 Promise
+    const arrowDeletionPromises = affectArrows.map(async (arrow) => {
+      // 等待每個箭頭的刪除操作完成
+      const data = await this.removeArrow(arrow.id, user);
+      // 將每個箭頭刪除所影響的 ID 加入到總列表中
+      data.deletedEntityIds.forEach((id) => {
+          deletedEntityIds.push(id);
+      });
+    });
+
+    // 2. 使用 Promise.all 等待所有箭頭刪除操作完成
+    await Promise.all(arrowDeletionPromises);
+    return {
+      ok: true,
+      deletedEntityIds:deletedEntityIds
+    };
   }
 
   async removeCharacterMoveImage(
     imageId: string,
     user: User,
-  ): Promise<boolean> {
+  ): Promise<DeleteSummary> {
     const targetImage = await this.canvasCharacterMoveImageRepository.findOneBy(
       {
         id: imageId,
@@ -342,10 +419,13 @@ export class CanvasService {
     if (deleteResult.affected === 0) {
       throw new NotFoundException(`Stage with ID "${imageId}" not found`);
     }
-    return true;
+    return {
+      ok:true,
+      deletedEntityIds: [imageId]
+    };
   }
 
-  async removeArrow(arrowId: string, user: User): Promise<boolean> {
+  async removeArrow(arrowId: string, user: User): Promise<DeleteSummary> {
     const targetArrow = await this.canvasArrowRepository.findOneBy({
       id: arrowId,
     });
@@ -360,7 +440,10 @@ export class CanvasService {
     if (deleteResult.affected === 0) {
       throw new NotFoundException(`Arrow with ID "${arrowId}" not found`);
     }
-    return true;
+    return {
+      ok:true,
+      deletedEntityIds:[arrowId]
+    };
   }
 
   toStageDto(stage: CanvasStage): CanvasStageDto {
@@ -370,22 +453,29 @@ export class CanvasService {
   }
 
   toNumpadBlockDto(numpadBlock: CanvasNumpadBlock): CanvasNumpadBlockDto {
-    return plainToInstance(CanvasNumpadBlockDto, numpadBlock, {
+    const dto= plainToInstance(CanvasNumpadBlockDto, numpadBlock, {
       excludeExtraneousValues: true,
     });
+    dto.kind = NODE_KIND.NUMPAD_BLOCK
+    return dto
   }
 
   toCanvasCharacterImageDto(
     image: CanvasCharacterMoveImage,
   ): CanvasCharacterMoveImageDto {
-    return plainToInstance(CanvasCharacterMoveImageDto, image, {
+    const dto = plainToInstance(CanvasCharacterMoveImageDto, image, {
       excludeExtraneousValues: true,
     });
+    dto.kind = NODE_KIND.CHARACTER_MOVE_IMAGE
+    return dto
   }
 
   toArrowDto(arrow: CanvasArrow): CanvasArrowDto {
-    return plainToInstance(CanvasArrowDto, arrow, {
+    const dto =  plainToInstance(CanvasArrowDto, arrow, {
       excludeExtraneousValues: true,
     });
+    // TODO 應該改成資料庫都有KIND比較好?
+    dto.kind = NODE_KIND.ARROW
+    return dto
   }
 }

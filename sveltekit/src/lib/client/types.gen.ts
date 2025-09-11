@@ -90,6 +90,10 @@ export type CanvasStageDto = {
 
 export type CanvasNumpadBlockDto = {
     /**
+     * For frontend to distinguish node kind
+     */
+    kind: 'NUMPAD_BLOCK';
+    /**
      * UUIDv4, generate by client
      */
     id: string;
@@ -113,6 +117,10 @@ export type CanvasNumpadBlockDto = {
 
 export type CanvasCharacterMoveImageDto = {
     /**
+     * For frontend to distinguish node kind
+     */
+    kind: 'CHARACTER_MOVE_IMAGE';
+    /**
      * UUIDv4, generate by client
      */
     id: string;
@@ -128,6 +136,10 @@ export type CanvasCharacterMoveImageDto = {
 };
 
 export type CanvasArrowDto = {
+    /**
+     * For frontend to distinguish node kind
+     */
+    kind: 'ARROW';
     /**
      * UUIDv4, generate by client
      */
@@ -291,6 +303,17 @@ export type UpdateCanvasArrowDto = {
      * belong to which stage
      */
     stageId: string;
+};
+
+export type DeleteSummary = {
+    /**
+     * Indicates if the operation was successful
+     */
+    ok: boolean;
+    /**
+     * List of IDs deleted by the operation
+     */
+    deletedEntityIds: Array<string>;
 };
 
 export type AuthControllerGoogleLoginData = {
@@ -659,7 +682,7 @@ export type CanvasControllerDeleteStageResponses = {
     /**
      * Successfully delete stage
      */
-    200: boolean;
+    200: DeleteSummary;
 };
 
 export type CanvasControllerDeleteStageResponse = CanvasControllerDeleteStageResponses[keyof CanvasControllerDeleteStageResponses];
@@ -687,7 +710,7 @@ export type CanvasControllerDeleteBlockResponses = {
     /**
      * Successfully delete block
      */
-    200: boolean;
+    200: DeleteSummary;
 };
 
 export type CanvasControllerDeleteBlockResponse = CanvasControllerDeleteBlockResponses[keyof CanvasControllerDeleteBlockResponses];
@@ -712,7 +735,7 @@ export type CanvasControllerDeleteCharacterMoveImageResponses = {
     /**
      * Successfully delete CanvasCharacterMoveImage
      */
-    200: boolean;
+    200: DeleteSummary;
 };
 
 export type CanvasControllerDeleteCharacterMoveImageResponse = CanvasControllerDeleteCharacterMoveImageResponses[keyof CanvasControllerDeleteCharacterMoveImageResponses];
@@ -740,7 +763,7 @@ export type CanvasControllerDeleteArrowResponses = {
     /**
      * Successfully delete arrow
      */
-    200: boolean;
+    200: DeleteSummary;
 };
 
 export type CanvasControllerDeleteArrowResponse = CanvasControllerDeleteArrowResponses[keyof CanvasControllerDeleteArrowResponses];

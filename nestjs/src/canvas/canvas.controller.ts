@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
-import { CanvasService } from './canvas.service';
+import { CanvasService} from './canvas.service';
 import { CanvasNumpadBlockDto } from './dtos/numpad/canvas-numpad-block.dto';
 import { CanvasStageDto } from './dtos/stage/canvas-stage.dto';
 import { SessionGuard } from 'src/common/session.guard';
@@ -27,6 +27,7 @@ import { UpdateCanvasCharacterMoveImageDto } from './dtos/move_image/update-canv
 import { CanvasArrowDto } from './dtos/arrow/canvas-arrow.dto';
 import { CreateCanvasArrowDto } from './dtos/arrow/create-arrow.dto';
 import { UpdateCanvasArrowDto } from './dtos/arrow/update-arrow.dto';
+import { DeleteSummary } from 'src/common/dto/delete-summary.dto';
 
 @ApiTags('canvas')
 @Controller('canvas')
@@ -332,7 +333,7 @@ export class CanvasController {
   @ApiResponse({
     status: 200,
     description: 'Successfully delete stage',
-    type: Boolean,
+    type: DeleteSummary,
   })
   @ApiResponse({
     status: 401, // 添加 401 響應到 Swagger 文檔
@@ -342,7 +343,7 @@ export class CanvasController {
   async deleteStage(
     @Param('stageId', ParseUUIDPipe) stageId: string,
     @Req() req: Request,
-  ): Promise<boolean> {
+  ): Promise<DeleteSummary> {
     if (req.user) {
       return this.canvasService.removeStage(stageId, req.user);
     } else {
@@ -363,7 +364,7 @@ export class CanvasController {
   @ApiResponse({
     status: 200,
     description: 'Successfully delete block',
-    type: Boolean,
+    type: DeleteSummary,
   })
   @ApiResponse({
     status: 401, // 添加 401 響應到 Swagger 文檔
@@ -373,7 +374,7 @@ export class CanvasController {
   async deleteBlock(
     @Param('blockId', ParseUUIDPipe) blockId: string,
     @Req() req: Request,
-  ): Promise<boolean> {
+  ): Promise<DeleteSummary> {
     if (req.user) {
       return this.canvasService.removeNumpadBlock(blockId, req.user);
     } else {
@@ -393,7 +394,7 @@ export class CanvasController {
   @ApiResponse({
     status: 200,
     description: 'Successfully delete CanvasCharacterMoveImage',
-    type: Boolean,
+    type: DeleteSummary,
   })
   @ApiResponse({
     status: 401, // 添加 401 響應到 Swagger 文檔
@@ -404,7 +405,7 @@ export class CanvasController {
     @Param('canvasCharacterMoveImageID', ParseUUIDPipe)
     canvasCharacterMoveImageID: string,
     @Req() req: Request,
-  ): Promise<boolean> {
+  ): Promise<DeleteSummary> {
     if (req.user) {
       return this.canvasService.removeCharacterMoveImage(
         canvasCharacterMoveImageID,
@@ -428,7 +429,7 @@ export class CanvasController {
   @ApiResponse({
     status: 200,
     description: 'Successfully delete arrow',
-    type: Boolean,
+    type: DeleteSummary,
   })
   @ApiResponse({
     status: 401,
@@ -438,7 +439,7 @@ export class CanvasController {
   async deleteArrow(
     @Param('arrowId', ParseUUIDPipe) arrowId: string,
     @Req() req: Request,
-  ): Promise<boolean> {
+  ): Promise<DeleteSummary> {
     if (req.user) {
       return this.canvasService.removeArrow(arrowId, req.user);
     } else {
