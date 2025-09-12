@@ -12,5 +12,14 @@ export class UpdateCanvasCharacterMoveImageDto {
   y: number; // unit:viewportHeightUnit
 
   @ApiProperty()
+  rotation: number; // unit:degree
+
+  @ApiProperty()
+  scaleX: number;
+  
+  @ApiProperty()
+  scaleY: number;
+
+  @ApiProperty()
   characterMoveImage: CharacterMoveImageDto;
 }

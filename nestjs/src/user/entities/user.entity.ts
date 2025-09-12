@@ -10,6 +10,7 @@ import { CanvasNumpadBlock } from 'src/canvas/entities/canvas-numpad-block.entit
 import { CanvasStage } from 'src/canvas/entities/canvas-stage.entity';
 import { CanvasCharacterMoveImage } from 'src/canvas/entities/canvas-character-move-image.entity';
 import { CanvasArrow } from 'src/canvas/entities/canvas-arrow.entity';
+import { CanvasText } from 'src/canvas/entities/canvas-text.entity';
 
 @Entity({ name: 'user' })
 export class User {
@@ -48,4 +49,7 @@ export class User {
 
   @OneToMany(() => CanvasCharacterMoveImage, (image) => image.user)
   canvas_character_move_images: CanvasCharacterMoveImage[];
+
+  @OneToMany(() => CanvasText, (text) => text.user)
+  canvas_text: CanvasText[];
 }

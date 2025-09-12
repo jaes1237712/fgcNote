@@ -33,6 +33,10 @@ import { DeleteSummary } from 'src/common/dto/delete-summary.dto';
 import { SyncCanvasNumpadBlocksDto } from './dtos/numpad/sync-numpad-blocks.dto';
 import { SyncCanvasCharacterMoveImagesDto } from './dtos/move_image/sync-canvas-character-move-images.dto';
 import { SyncCanvasArrowsDto } from './dtos/arrow/sync-canvas-arrows.dto';
+import { CanvasTextDto } from './dtos/text/canvas-text.dto';
+import { CreateCanvasTextDto } from './dtos/text/create-canvas-text.dto';
+import { UpdateCanvasTextDto } from './dtos/text/update-canvas-text.dto';
+import { SyncCanvasTextDto } from './dtos/text/sync-canvas-text.dto';
 
 @ApiTags('canvas')
 @Controller('canvas')
@@ -123,6 +127,28 @@ export class CanvasController {
     @Param('stageId', ParseUUIDPipe) stageId: string,
   ): Promise<CanvasArrowDto[]> {
     return this.canvasService.findAllArrowsByStage(stageId);
+  }
+
+  @Get('text/get/:stageId')
+  @ApiOperation({
+    description: 'Get all texts of certain stage',
+  })
+  @ApiParam({
+    name: 'stageId',
+    description: 'UUID of stage',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully get all texts',
+    type: CanvasTextDto,
+    isArray: true,
+  })
+  async findAllTexts(
+    @Param('stageId', ParseUUIDPipe) stageId: string,
+  ): Promise<CanvasTextDto[]> {
+    return this.canvasService.findAllTextsByStage(stageId);
   }
 
   @Post('numpadBlock/create')
@@ -328,6 +354,74 @@ export class CanvasController {
     }
   }
 
+  @Post('text/create')
+  @ApiOperation({
+    summary: 'Create text',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Create text Successfully',
+    type: CanvasTextDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async createText(
+    @Body() body: CreateCanvasTextDto,
+    @Req() req: Request,
+  ): Promise<CanvasTextDto> {
+    if (req.user) {
+      return this.canvasService.createText(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Post('text/bulk-create') // 新的 URL 路徑，使用複數和 bulk-create
+  @ApiOperation({
+    summary: 'Create multiple texts', // 清晰的 summary
+    description: 'Creates multiple texts in a single request.',
+  })
+  @ApiBody({
+    type: CreateCanvasTextDto, // 指定陣列中每個元素的類型
+    isArray: true, 
+    description: 'An array of CreateText DTO.', // 可選的描述
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'texts created successfully',
+    type: CanvasTextDto,
+    isArray: true
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'One or more stages not found',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request (e.g., empty array provided)',
+  })
+  @UseGuards(SessionGuard)
+  async createTexts(
+    @Body() body: CreateCanvasTextDto[], // 接受 DTO 陣列
+    @Req() req: Request,
+  ): Promise<CanvasTextDto[]> {
+    if (!body || body.length === 0) {
+      throw new BadRequestException('Request body must not be empty.');
+    }
+    if (req.user) {
+      return this.canvasService.createTexts(body, req.user); // 直接呼叫批次服務方法
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
   @Post('stage/create')
   @ApiOperation({
     summary: 'Create Stage',
@@ -448,6 +542,31 @@ export class CanvasController {
   ): Promise<CanvasArrowDto> {
     if (req.user) {
       return this.canvasService.updateArrow(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Patch('text/update')
+  @ApiOperation({
+    summary: 'Update text',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Update text Successfully',
+    type: CanvasTextDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async updateText(
+    @Body() body: UpdateCanvasTextDto,
+    @Req() req: Request,
+  ): Promise<CanvasTextDto> {
+    if (req.user) {
+      return this.canvasService.updateText(body, req.user);
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
@@ -674,6 +793,68 @@ export class CanvasController {
     }
   }
 
+  @Delete('text/delete/:textId')
+  @ApiOperation({
+    description: 'Delete Certain text',
+  })
+  @ApiParam({
+    name: 'textId',
+    description: 'UUID of text',
+    type: 'string',
+    format: 'uuidV4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully delete text',
+    type: DeleteSummary,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async deleteText(
+    @Param('textId', ParseUUIDPipe) textId: string,
+    @Req() req: Request,
+  ): Promise<DeleteSummary> {
+    if (req.user) {
+      return this.canvasService.removeText(textId, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Delete('text/delete/:stageId')
+  @ApiOperation({
+    description: 'Delete All texts belong to this stage',
+  })
+  @ApiParam({
+    name: 'stageId',
+    description: 'UUID of stage',
+    type: 'string',
+    format: 'uuidV4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully delete texts',
+    type: DeleteSummary,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async deleteTextsByStageId(
+    @Param('stageId', ParseUUIDPipe) stageId: string,
+    @Req() req: Request,
+  ): Promise<DeleteSummary> {
+    if (req.user) {
+      return this.canvasService.removeTextsByStageId(stageId, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
   @Put('numpadBlock/sync')
   @ApiBody({
     type: SyncCanvasNumpadBlocksDto
@@ -760,6 +941,36 @@ export class CanvasController {
   ) :Promise<CanvasArrowDto[]>{
     if(req.user){
       return this.canvasService.syncArrows(syncDto, req.user);
+    }else{
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Put('text/sync')
+  @ApiBody({
+    type: SyncCanvasTextDto
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Texts sync successfully',
+    type: CanvasTextDto,
+    isArray: true
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Stage not found',
+  })
+  @UseGuards(SessionGuard)
+  async syncTexts(
+    @Body() syncDto: SyncCanvasTextDto,
+    @Req() req: Request,
+  ) :Promise<CanvasTextDto[]>{
+    if(req.user){
+      return this.canvasService.syncTexts(syncDto, req.user);
     }else{
       throw new UnauthorizedException('User not logged in or session expired.');
     }

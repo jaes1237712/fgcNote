@@ -2,10 +2,11 @@ import Konva from 'konva';
 import { CanvasDataStore, type CanvasNodeData } from './canvas-data-manager.svelte';
 import { LAYOUT_SETTING, type UserSettings } from '$lib/userInterface';
 import { numpadInputToCommandImages } from './numpad/numpadCompiler';
-import { drawInvisibleAnchorPoint, removeAnchorPoint, showSpecificAnchorPoint } from './arrow/canvas-arrow';
+import { ArrowingFeature, drawInvisibleAnchorPoint, removeAnchorPoint, showSpecificAnchorPoint, type ArrowingContext } from './arrow/canvas-arrow';
 import { featureManager, type IFeature } from './canvas-feature-manager';
 import { contextMenuState } from './context_menu/canvas-context-menu.svelte';
 import { PUBLIC_NESTJS_URL } from '$env/static/public';
+import { text } from '@sveltejs/kit';
 
 export class KonvaObjectManager{
     private stage: Konva.Stage;
@@ -32,32 +33,21 @@ export class KonvaObjectManager{
         this.layer = new Konva.Layer();
         this.stage.add(this.layer);
         this.canvasDataStore = canvasDataStore
-    }
-
-    InitializeObjectByDataStore(){
-        // 根據canvasDataStore的內容，生成Konva Object，一般只有初始化需要用
-        const canvasNodeData: CanvasNodeData[] = this.canvasDataStore.nodesDataInDesiredOrder
-        canvasNodeData.forEach((data)=>{
-            this.createNode(data)
-        })
-    }
-
-    // 建立或更新節點
-    upsertNode(data: CanvasNodeData): void {
-        const existingNode = this.layer.findOne('#' + data.id)
-        if (existingNode) {
-            // // 更新現有節點
-            // this.updateNode(nodeData);
-        } else {
-            // 建立新節點
-            this.createNode(data);
-        }
+        
+        const simpleText = new Konva.Text({
+            x: this.stage.width() / 2,
+            y: 15,
+            text: 'Simple Text',
+            fontSize: 30,
+            fontFamily: 'Calibri',
+            fill: 'white'
+        });
+        this.layer.add(simpleText)
     }
 
     createNode(data:CanvasNodeData): void{
         const kind = data.kind
         const userSettings = this.userSettings
-        console.log('createNode', data)
         switch (kind){
             case 'NUMPAD_BLOCK':
                 const commandImagesSrc = numpadInputToCommandImages({
@@ -102,6 +92,25 @@ export class KonvaObjectManager{
                 });
                 block.add(blockBackground);
                 const anchorPoints = drawInvisibleAnchorPoint(blockBackground.id(), block, this.stage);
+                anchorPoints.forEach((anchor) => {
+                    anchor.on('click tap',  (event) => {
+                        event.cancelBubble = true;
+                        const context: ArrowingContext = {
+                            startNodeId: anchor.id(),
+                            layer: this.layer,
+                            stage: this.stage,
+                            canvasDataStore: this.canvasDataStore,
+                            userSettings
+                        }
+                        const feature = new ArrowingFeature()
+                        featureManager.activate<ArrowingContext>(
+                            'arrowing',
+                            anchor.id(),
+                            feature,
+                            context
+                        )
+                    });
+                })
                 this.layer.add(block);
                 block.on('click tap', (e) =>{
                     e.cancelBubble = true;
@@ -129,14 +138,8 @@ export class KonvaObjectManager{
                         })
                     })
                 });
-                block.on('dragstart', (event) => {
-                    const context: NumpadBlockDraggingContext ={
-                        anchorPoints: anchorPoints,
-                        layer: this.layer,
-                        stage: this.stage
-                    }
-                    const feature = new NumpadBlockDraggingFeature();
-                    featureManager.activate('dragging', block.id(),feature, context)
+                block.on('dragstart', () => {
+                    featureManager.deactivate()
                 });
                 block.on('contextmenu', (event) => {
                     event.evt.preventDefault();
@@ -144,6 +147,7 @@ export class KonvaObjectManager{
                     contextMenuState.show(event.evt.clientX, event.evt.clientY, 'numpadBlock', block.id());
                     console.log(block.id())
                 });
+                console.log(block.getAttrs())
                 break
             case 'ARROW':
                 const startNode = this.layer.findOne('#' + data.startNodeId);
@@ -176,18 +180,17 @@ export class KonvaObjectManager{
                     });
                     this.layer.add(arrow)
                 }
+
                 break
-            case 'CHARACTER_MOVE_IMAGE':
-                const scale =
-                (userSettings.viewportHeightUnit * userSettings.moveImageHeight) /
-                data.characterMoveImage.height;
+            case 'CHARACTER_MOVE_IMAGE':                
                 Konva.Image.fromURL(PUBLIC_NESTJS_URL + data.characterMoveImage.filePath, (image)=>{
                     image.setAttrs({
                         x: data.x * userSettings.viewportWidthUnit,
                         y: data.y * userSettings.viewportHeightUnit,
                         draggable: true,
-                        scaleX: scale,
-                        scaleY: scale,
+                        scaleX: data.scaleX,
+                        scaleY: data.scaleY,
+                        rotation:data.rotation,
                         id: data.id
                     });
                     image.on('click tap', (e) => {
@@ -214,12 +217,65 @@ export class KonvaObjectManager{
                             image.id()
                         );
                     });
-                    image.on('destroy', ()=>{
-                        console.log('image destroy')
-                    })
+                    image.on('dragmove', () => {
+                        this.canvasDataStore.updateNodeData(image.id(), {
+                            x: image.x() / userSettings.viewportWidthUnit,
+                            y: image.y() / userSettings.viewportHeightUnit
+                        });
+                    });
+                    image.on('dragstart', (event) => {
+                        featureManager.deactivate()
+                    });
                     this.layer.add(image);
+                    image.on('transformend', (e) => {
+                        this.canvasDataStore.updateNodeData(image.id(), {
+                            rotation: image.rotation(),
+                            scaleX: image.scaleX(),
+                            scaleY: image.scaleY()
+                        });
+                    });
                 });
                 break
+            case 'TEXT':
+                console.log('reach Text Data', data)
+                const text = new Konva.Text({
+                    id: `${data.id}-text`,
+                    x: data.x,
+                    y: data.y,
+                    text:data.text,
+                    scaleX: data.scaleX,
+                    scaleY: data.scaleY,
+                    fill: data.fontColor,
+                    rotation: data.rotation,
+                    fontSize: 32,
+                    fontFamily: 'sans-serif'
+                })
+                const background = new Konva.Rect({
+                    id: `${data.id}-background`,
+                    x: data.x,
+                    y: data.y,
+                    scaleX: data.scaleX,
+                    scaleY: data.scaleY,
+                    fill: data.backgroundColor,
+                    height:text.height()+24,
+                    width: text.width()+24,
+                })
+                text.padding(12)
+                const textBlock = new Konva.Group({
+                    id: data.id,
+                    x: data.x,
+                    y: data.y,
+                    scaleX: data.scaleX,
+                    scaleY: data.scaleY,
+                    width:300,
+                    height:300,
+                    name: 'text',
+                    draggable: true
+                })
+                textBlock.add(background)
+                textBlock.add(text)
+                this.layer.add(textBlock)
+                console.log(text.width())
         }
     }
 
@@ -302,20 +358,6 @@ class NumpadBlockSelectFeature implements IFeature<NumpadBlockSelectContext> {
     }
 }
 
-interface NumpadBlockDraggingContext {
-    anchorPoints: Konva.Circle[];
-    layer: Konva.Layer;
-    stage: Konva.Stage;
-}
-class NumpadBlockDraggingFeature implements IFeature<NumpadBlockDraggingContext> {
-    onActivated(context: NumpadBlockDraggingContext): () => void {
-
-        const cleanup = () => {
-        };
-        return cleanup;
-    }
-}
-
 interface ImageTransformerContext {
     imageNode: Konva.Image;
     layer: Konva.Layer;
@@ -334,3 +376,20 @@ class ImageTransformerFeature implements IFeature<ImageTransformerContext> {
         return cleanup;
     }
 }
+
+// interface ArrowingContext {
+// 	startNodeId: string;
+// 	layer: Konva.Layer;
+// 	stage: Konva.Stage;
+// }
+
+// class ArrowingFeature implements IFeature<ArrowingContext> {
+// 	onActivated(context: ArrowingContext): () => void {
+// 		dragArrow(context.startNodeId, context.layer, context.stage);
+// 		showAllAnchorPoint(context.layer);
+// 		const cleanup = () => {
+// 			removeAnchorPoint(context.layer);
+// 		};
+// 		return cleanup;
+// 	}
+// }

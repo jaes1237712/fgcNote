@@ -21,6 +21,15 @@ export class CanvasCharacterMoveImage {
   @Column({ type: 'float' })
   y: number; // unit:viewportHeightUnit
 
+  @Column({ type: 'float' })
+  rotation: number; // unit:degree
+
+  @Column({ type: 'float' })
+  scaleX: number;
+  
+  @Column({ type: 'float' })
+  scaleY: number;
+
   @ManyToOne(() => User, (user) => user.canvas_character_move_images, {
     cascade: true,
     onDelete: 'CASCADE',

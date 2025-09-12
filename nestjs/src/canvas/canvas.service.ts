@@ -32,6 +32,11 @@ import { NODE_KIND } from 'src/common/interface';
 import { SyncCanvasNumpadBlocksDto } from './dtos/numpad/sync-numpad-blocks.dto';
 import { SyncCanvasCharacterMoveImagesDto } from './dtos/move_image/sync-canvas-character-move-images.dto';
 import { SyncCanvasArrowsDto } from './dtos/arrow/sync-canvas-arrows.dto';
+import { CanvasText } from './entities/canvas-text.entity';
+import { CanvasTextDto } from './dtos/text/canvas-text.dto';
+import { CreateCanvasTextDto } from './dtos/text/create-canvas-text.dto';
+import { UpdateCanvasTextDto } from './dtos/text/update-canvas-text.dto';
+import { SyncCanvasTextDto } from './dtos/text/sync-canvas-text.dto';
 
 @Injectable()
 export class CanvasService {
@@ -44,6 +49,8 @@ export class CanvasService {
     private canvasCharacterMoveImageRepository: Repository<CanvasCharacterMoveImage>,
     @InjectRepository(CanvasArrow)
     private canvasArrowRepository: Repository<CanvasArrow>,
+    @InjectRepository(CanvasText)
+    private canvasTextRepository: Repository<CanvasText>,
     private characterService: CharacterService,
     private entityManager: EntityManager, // 注入 EntityManager
   ) {}
@@ -324,6 +331,83 @@ export class CanvasService {
     return savedArrows.map(arrow => this.toArrowDto(arrow));
   }
 
+  async createText(
+    text: CreateCanvasTextDto,
+    user: User,
+  ): Promise<CanvasTextDto> {
+    const stage = await this.canvasStageRepository.findOne({
+      where: { id: text.stageId },
+    });
+    if (!stage) {
+      throw new NotFoundException(`Stage with ID ${text.stageId} not found`);
+    } else {
+      const textEntity = this.canvasTextRepository.create({
+        id: text.id,
+        text: text.text,
+        fontColor: text.fontColor,
+        backgroundColor: text.backgroundColor,
+        x: text.x,
+        y: text.y,
+        rotation: text.rotation,
+        scaleX: text.scaleX,
+        scaleY: text.scaleY,
+        stage: stage,
+        user: user,
+      });
+      const savedText = await this.canvasTextRepository.save(textEntity);
+      return this.toTextDto(savedText);
+    }
+  }
+
+  async createTexts(
+    texts: CreateCanvasTextDto[], // 參數改為 DTO 陣列
+    user: User,
+  ): Promise<CanvasTextDto[]> { // 回傳值改為 DTO 陣列
+    if (!texts || texts.length === 0) {
+      return [];
+    }
+
+    // 1. 批次處理 Stage 查詢
+    const stageIds = [...new Set(texts.map(text => text.stageId))];
+    const stages = await this.canvasStageRepository.find({
+      where: { id: In(stageIds) },
+    });
+    if (stages.length !== stageIds.length) {
+      const foundStageIds = new Set(stages.map(s => s.id));
+      const missingStageIds = stageIds.filter(id => !foundStageIds.has(id));
+      throw new NotFoundException(`Stages with IDs [${missingStageIds.join(', ')}] not found`);
+    }
+    const stageMap = new Map(stages.map(stage => [stage.id, stage]));
+
+    // 2. 批次建立 Entity
+    const textEntities = texts.map(text => {
+      const stage = stageMap.get(text.stageId);
+      // 理論上不會發生，因為前面已驗證，但為型別安全保留
+      if (!stage) {
+          throw new BadRequestException(`Internal error: Stage for text ${text.id} not pre-fetched.`);
+      }
+      return this.canvasTextRepository.create({
+        id: text.id,
+        text: text.text,
+        fontColor: text.fontColor,
+        backgroundColor: text.backgroundColor,
+        x: text.x,
+        y: text.y,
+        rotation: text.rotation,
+        scaleX: text.scaleX,
+        scaleY: text.scaleY,
+        stage: stage, // 從 Map 中取得對應的 stage 實體
+        user: user,
+      });
+    });
+
+    // 3. 一次性儲存所有 Entity
+    const savedTexts = await this.canvasTextRepository.save(textEntities);
+
+    // 4. 批次轉換為 DTO 並回傳
+    return savedTexts.map(text => this.toTextDto(text));
+  }
+
   async findAllStage(user: User): Promise<CanvasStageDto[]> {
     const stages = await this.canvasStageRepository.find({
       where: {
@@ -364,6 +448,15 @@ export class CanvasService {
     });
     console.log('arrowData from db', arrows)
     return arrows.map((arrow) => this.toArrowDto(arrow));
+  }
+
+  async findAllTextsByStage(stageId: string): Promise<CanvasTextDto[]> {
+    const texts = await this.canvasTextRepository.find({
+      where: {
+        stage: { id: stageId },
+      },
+    });
+    return texts.map((text) => this.toTextDto(text));
   }
 
   async updateNumpadBlock(
@@ -434,6 +527,31 @@ export class CanvasService {
     return this.toArrowDto(savedArrow);
   }
 
+  async updateText(
+    text: UpdateCanvasTextDto,
+    user: User,
+  ): Promise<CanvasTextDto> {
+    const targetText = await this.canvasTextRepository.findOne({
+      where: { id: text.id },
+    });
+
+    if (!targetText) {
+      throw new NotFoundException(`Text with ID ${text.id} not found`);
+    }
+
+    targetText.text = text.text;
+    targetText.fontColor = text.fontColor;
+    targetText.backgroundColor = text.backgroundColor;
+    targetText.x = text.x;
+    targetText.y = text.y;
+    targetText.rotation = text.rotation;
+    targetText.scaleX = text.scaleX;
+    targetText.scaleY = text.scaleY;
+
+    const savedText = await this.canvasTextRepository.save(targetText);
+    return this.toTextDto(savedText);
+  }
+
   async updateStage(
     updateCanvasStageDto: UpdateCanvasStageDto,
     user: User,
@@ -476,6 +594,10 @@ export class CanvasService {
       select: ['id'],
     })
     const affectArrows = await this.canvasArrowRepository.find({
+      where:{stage:{id:stageId}},
+      select: ['id'],
+    })
+    const affectTexts = await this.canvasTextRepository.find({
       where:{stage:{id:stageId}},
       select: ['id'],
     })
@@ -523,6 +645,19 @@ export class CanvasService {
       }
     })
     await Promise.all(arrowCheckPromises)
+    const textCheckPromises = affectTexts.map(async (text)=>{
+      const result = await this.canvasTextRepository.findOneBy({id:text.id})
+      if(!result){
+        deletedEntityIds.push(text.id) 
+      }
+      else{
+        throw new InternalServerErrorException(
+          `Critical Error: CanvasText with ID "${text.id}" was expected to be cascade-deleted by Stage ${stageId} but still exists. ` +
+          `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`
+        );
+      }
+    })
+    await Promise.all(textCheckPromises)
     return {
       ok:true,
       deletedEntityIds: deletedEntityIds
@@ -594,6 +729,27 @@ export class CanvasService {
     };
   }
 
+  async removeText(textId: string, user: User): Promise<DeleteSummary> {
+    const targetText = await this.canvasTextRepository.findOneBy({
+      id: textId,
+    });
+    if (!targetText) {
+      throw new NotFoundException(`Text with ID ${textId} not found`);
+    }
+    if (targetText.user.id != user.id) {
+      throw new UnauthorizedException('The text not belong to this user');
+    }
+    const deleteResult: DeleteResult =
+      await this.canvasTextRepository.delete(textId);
+    if (deleteResult.affected === 0) {
+      throw new NotFoundException(`Text with ID "${textId}" not found`);
+    }
+    return {
+      ok:true,
+      deletedEntityIds:[textId]
+    };
+  }
+
   async removeNumpadBlocksByStageId(stageId: string, user:User): Promise<DeleteSummary>{
     const targetBlocks = await this.canvasNumpadBlockRepository.find({
       where:{stage:{id:stageId}},
@@ -645,6 +801,25 @@ export class CanvasService {
     }
     const deletedEntityIds = targetArrows.map((block) => block.id)
     await this.canvasArrowRepository.delete({id:In(deletedEntityIds)})
+    return {
+      ok: true,
+      deletedEntityIds: deletedEntityIds
+    }
+  }
+
+  async removeTextsByStageId(stageId: string, user:User): Promise<DeleteSummary>{
+    const targetTexts = await this.canvasTextRepository.find({
+      where:{stage:{id:stageId}},
+      select:['id']
+    })
+    if (!targetTexts) {
+      throw new NotFoundException(`Texts with stage ID ${stageId} not found`);
+    }
+    if (targetTexts[0].user.id != user.id) {
+      throw new UnauthorizedException('The Texts not belong to this user');
+    }
+    const deletedEntityIds = targetTexts.map((text) => text.id)
+    await this.canvasTextRepository.delete({id:In(deletedEntityIds)})
     return {
       ok: true,
       deletedEntityIds: deletedEntityIds
@@ -785,9 +960,7 @@ export class CanvasService {
           }
 
           return transactionalEntityManager.create(CanvasCharacterMoveImage, {
-            id: imageDto.id,
-            x: imageDto.x,
-            y: imageDto.y,
+            ...imageDto,
             characterMoveImage: targetCharacterMoveImage,
             stage: stage,
             user: user,
@@ -849,10 +1022,7 @@ export class CanvasService {
         // 步驟 3: 創建新的 Arrow 實體
         const newArrowEntities = arrows.map((arrowDto) => {
           return transactionalEntityManager.create(CanvasArrow, {
-            id: arrowDto.id,
-            startNodeId: arrowDto.startNodeId,
-            endNodeId: arrowDto.endNodeId,
-            points: arrowDto.points,
+            ...arrowDto,
             stage: stage,
             user: user,
           });
@@ -866,6 +1036,67 @@ export class CanvasService {
 
         // 步驟 5: 將儲存後的實體轉換為 DTO 並返回
         return savedArrows.map((arrow) => this.toArrowDto(arrow));
+      },
+    );
+  }
+
+  /**
+   * 同步指定 Stage 的所有 Text
+   * 此操作在一個資料庫交易中完成，確保資料一致性。
+   * @param syncDto 包含 stageId 和新的 texts 陣列
+   * @param user 當前操作的使用者
+   * @returns 返回新創建的 Text DTO 陣列
+   */
+  async syncTexts(
+    syncDto: SyncCanvasTextDto,
+    user: User,
+  ): Promise<CanvasTextDto[]> {
+    const { stageId, texts } = syncDto;
+
+    return this.entityManager.transaction(
+      async (transactionalEntityManager) => {
+        // 步驟 1: 驗證 Stage 是否存在且屬於該使用者
+        const stage = await transactionalEntityManager.findOne(CanvasStage, {
+          where: { id: stageId },
+          relations: ['user'],
+        });
+
+        if (!stage) {
+          throw new NotFoundException(`Stage with ID ${stageId} not found`);
+        }
+        if (stage.user.id !== user.id) {
+          throw new UnauthorizedException(
+            'You do not have permission to modify this stage.',
+          );
+        }
+
+        // 步驟 2: 刪除該 Stage 底下所有舊的 Text
+        await transactionalEntityManager.delete(CanvasText, {
+          stage: { id: stageId },
+        });
+
+        // 如果前端傳來的 texts 陣列是空的，那麼操作到此結束（相當於清空）
+        if (!texts || texts.length === 0) {
+          return [];
+        }
+
+        // 步驟 3: 創建新的 Text 實體
+        const newTextEntities = texts.map((textDto) => {
+          return transactionalEntityManager.create(CanvasText, {
+            ...textDto,
+            stage: stage,
+            user: user,
+          });
+        });
+
+        // 步驟 4: 一次性儲存所有新的實體
+        const savedTexts = await transactionalEntityManager.save(
+          CanvasText,
+          newTextEntities,
+        );
+
+        // 步驟 5: 將儲存後的實體轉換為 DTO 並返回
+        return savedTexts.map((text) => this.toTextDto(text));
       },
     );
   }
@@ -900,6 +1131,14 @@ export class CanvasService {
     });
     // TODO 應該改成資料庫都有KIND比較好?
     dto.kind = NODE_KIND.ARROW
+    return dto
+  }
+
+  toTextDto(text: CanvasText): CanvasTextDto {
+    const dto = plainToInstance(CanvasTextDto, text, {
+      excludeExtraneousValues: true,
+    });
+    dto.kind = NODE_KIND.TEXT
     return dto
   }
 }

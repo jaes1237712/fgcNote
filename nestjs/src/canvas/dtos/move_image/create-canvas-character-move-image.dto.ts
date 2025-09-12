@@ -12,6 +12,15 @@ export class CreateCanvasCharacterMoveImageDto {
   y: number; // unit:viewportHeightUnit
 
   @ApiProperty()
+  rotation: number; // unit:degree
+
+  @ApiProperty()
+  scaleX: number;
+  
+  @ApiProperty()
+  scaleY: number;
+
+  @ApiProperty()
   characterMoveImage: CharacterMoveImageDto;
 
   @ApiProperty({ description: 'belong to which stage' })

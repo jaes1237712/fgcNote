@@ -132,6 +132,9 @@ export type CanvasCharacterMoveImageDto = {
      * y, unit: viewportHeightUnit
      */
     y: number;
+    rotation: number;
+    scaleX: number;
+    scaleY: number;
     characterMoveImage: CharacterMoveImageDto;
 };
 
@@ -156,6 +159,53 @@ export type CanvasArrowDto = {
      * Konva arrow attrs points
      */
     points: Array<number>;
+};
+
+export type CanvasTextDto = {
+    /**
+     * For frontend to distinguish node kind
+     */
+    kind: 'TEXT';
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * Text content
+     */
+    text: string;
+    /**
+     * Font color
+     */
+    fontColor: string;
+    /**
+     * Background color
+     */
+    backgroundColor: string;
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
+    /**
+     * rotation, unit: degree
+     */
+    rotation: number;
+    /**
+     * scaleX
+     */
+    scaleX: number;
+    /**
+     * scaleY
+     */
+    scaleY: number;
+    /**
+     * Stage ID
+     */
+    stageId?: string;
 };
 
 export type CreateCanvasNumpadBlockDto = {
@@ -198,6 +248,9 @@ export type CreateCanvasCharacterMoveImageDto = {
      * y, unit: viewportHeightUnit
      */
     y: number;
+    rotation: number;
+    scaleX: number;
+    scaleY: number;
     characterMoveImage: CharacterMoveImageDto;
     /**
      * belong to which stage
@@ -224,6 +277,49 @@ export type CreateCanvasArrowDto = {
     points: Array<number>;
     /**
      * belong to which stage
+     */
+    stageId: string;
+};
+
+export type CreateCanvasTextDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * Text content
+     */
+    text: string;
+    /**
+     * Font color
+     */
+    fontColor: string;
+    /**
+     * Background color
+     */
+    backgroundColor: string;
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
+    /**
+     * rotation, unit: degree
+     */
+    rotation: number;
+    /**
+     * scaleX
+     */
+    scaleX: number;
+    /**
+     * scaleY
+     */
+    scaleY: number;
+    /**
+     * Stage ID
      */
     stageId: string;
 };
@@ -279,6 +375,9 @@ export type UpdateCanvasCharacterMoveImageDto = {
      * y, unit: viewportHeightUnit
      */
     y: number;
+    rotation: number;
+    scaleX: number;
+    scaleY: number;
     characterMoveImage: CharacterMoveImageDto;
 };
 
@@ -305,6 +404,45 @@ export type UpdateCanvasArrowDto = {
     stageId: string;
 };
 
+export type UpdateCanvasTextDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * Text content
+     */
+    text: string;
+    /**
+     * Font color
+     */
+    fontColor: string;
+    /**
+     * Background color
+     */
+    backgroundColor: string;
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
+    /**
+     * rotation, unit: degree
+     */
+    rotation: number;
+    /**
+     * scaleX
+     */
+    scaleX: number;
+    /**
+     * scaleY
+     */
+    scaleY: number;
+};
+
 export type DeleteSummary = {
     /**
      * Indicates if the operation was successful
@@ -329,6 +467,17 @@ export type SyncCanvasCharacterMoveImagesDto = {
 export type SyncCanvasArrowsDto = {
     stageId: string;
     arrows: Array<CreateCanvasArrowDto>;
+};
+
+export type SyncCanvasTextDto = {
+    /**
+     * Stage ID
+     */
+    stageId: string;
+    /**
+     * Array of text objects to sync
+     */
+    texts: Array<CreateCanvasTextDto>;
 };
 
 export type AuthControllerGoogleLoginData = {
@@ -489,6 +638,27 @@ export type CanvasControllerFindAllArrowsResponses = {
 };
 
 export type CanvasControllerFindAllArrowsResponse = CanvasControllerFindAllArrowsResponses[keyof CanvasControllerFindAllArrowsResponses];
+
+export type CanvasControllerFindAllTextsData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/text/get/{stageId}';
+};
+
+export type CanvasControllerFindAllTextsResponses = {
+    /**
+     * Successfully get all texts
+     */
+    200: Array<CanvasTextDto>;
+};
+
+export type CanvasControllerFindAllTextsResponse = CanvasControllerFindAllTextsResponses[keyof CanvasControllerFindAllTextsResponses];
 
 export type CanvasControllerCreateNumpadBlockData = {
     body: CreateCanvasNumpadBlockDto;
@@ -658,6 +828,63 @@ export type CanvasControllerCreateArrowsResponses = {
 
 export type CanvasControllerCreateArrowsResponse = CanvasControllerCreateArrowsResponses[keyof CanvasControllerCreateArrowsResponses];
 
+export type CanvasControllerCreateTextData = {
+    body: CreateCanvasTextDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/text/create';
+};
+
+export type CanvasControllerCreateTextErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerCreateTextResponses = {
+    /**
+     * Create text Successfully
+     */
+    200: CanvasTextDto;
+};
+
+export type CanvasControllerCreateTextResponse = CanvasControllerCreateTextResponses[keyof CanvasControllerCreateTextResponses];
+
+export type CanvasControllerCreateTextsData = {
+    /**
+     * An array of CreateText DTO.
+     */
+    body: Array<CreateCanvasTextDto>;
+    path?: never;
+    query?: never;
+    url: '/canvas/text/bulk-create';
+};
+
+export type CanvasControllerCreateTextsErrors = {
+    /**
+     * Bad Request (e.g., empty array provided)
+     */
+    400: unknown;
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * One or more stages not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerCreateTextsResponses = {
+    /**
+     * texts created successfully
+     */
+    200: Array<CanvasTextDto>;
+};
+
+export type CanvasControllerCreateTextsResponse = CanvasControllerCreateTextsResponses[keyof CanvasControllerCreateTextsResponses];
+
 export type CanvasControllerCreateStageData = {
     body: CreateCanvasStageDto;
     path?: never;
@@ -772,6 +999,29 @@ export type CanvasControllerUpdateArrowResponses = {
 };
 
 export type CanvasControllerUpdateArrowResponse = CanvasControllerUpdateArrowResponses[keyof CanvasControllerUpdateArrowResponses];
+
+export type CanvasControllerUpdateTextData = {
+    body: UpdateCanvasTextDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/text/update';
+};
+
+export type CanvasControllerUpdateTextErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerUpdateTextResponses = {
+    /**
+     * Update text Successfully
+     */
+    200: CanvasTextDto;
+};
+
+export type CanvasControllerUpdateTextResponse = CanvasControllerUpdateTextResponses[keyof CanvasControllerUpdateTextResponses];
 
 export type CanvasControllerDeleteStageData = {
     body?: never;
@@ -966,6 +1216,62 @@ export type CanvasControllerDeleteArrowByStageIdResponses = {
 
 export type CanvasControllerDeleteArrowByStageIdResponse = CanvasControllerDeleteArrowByStageIdResponses[keyof CanvasControllerDeleteArrowByStageIdResponses];
 
+export type CanvasControllerDeleteTextData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of text
+         */
+        textId: string;
+    };
+    query?: never;
+    url: '/canvas/text/delete/{textId}';
+};
+
+export type CanvasControllerDeleteTextErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteTextResponses = {
+    /**
+     * Successfully delete text
+     */
+    200: DeleteSummary;
+};
+
+export type CanvasControllerDeleteTextResponse = CanvasControllerDeleteTextResponses[keyof CanvasControllerDeleteTextResponses];
+
+export type CanvasControllerDeleteTextsByStageIdData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/text/delete/{stageId}';
+};
+
+export type CanvasControllerDeleteTextsByStageIdErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteTextsByStageIdResponses = {
+    /**
+     * Successfully delete texts
+     */
+    200: DeleteSummary;
+};
+
+export type CanvasControllerDeleteTextsByStageIdResponse = CanvasControllerDeleteTextsByStageIdResponses[keyof CanvasControllerDeleteTextsByStageIdResponses];
+
 export type CanvasControllerSyncNumpadBlocksData = {
     body: SyncCanvasNumpadBlocksDto;
     path?: never;
@@ -1046,6 +1352,33 @@ export type CanvasControllerSyncArrowsResponses = {
 };
 
 export type CanvasControllerSyncArrowsResponse = CanvasControllerSyncArrowsResponses[keyof CanvasControllerSyncArrowsResponses];
+
+export type CanvasControllerSyncTextsData = {
+    body: SyncCanvasTextDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/text/sync';
+};
+
+export type CanvasControllerSyncTextsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Stage not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerSyncTextsResponses = {
+    /**
+     * Texts sync successfully
+     */
+    200: Array<CanvasTextDto>;
+};
+
+export type CanvasControllerSyncTextsResponse = CanvasControllerSyncTextsResponses[keyof CanvasControllerSyncTextsResponses];
 
 export type ClientOptions = {
     baseUrl: 'https://localhost:3000' | (string & {});

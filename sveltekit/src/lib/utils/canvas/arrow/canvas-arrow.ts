@@ -1,17 +1,16 @@
 import {
-	canvasControllerCreateArrow,
 	type CanvasArrowDto,
-	type CreateCanvasArrowDto
 } from '$lib/client';
 import Konva from 'konva';
 import { featureManager, type IFeature } from '../canvas-feature-manager';
-import { v4 as uuidv4 } from 'uuid';
+import type { CanvasDataStore } from '../canvas-data-manager.svelte';
+import type { UserSettings } from '$lib/userInterface';
 
 export interface DrawArrowConfig {
 	canvasArrow: CanvasArrowDto;
 }
 
-export function drawArrow(config: DrawArrowConfig, layer: Konva.Layer) {
+export function drawArrow(config: DrawArrowConfig, layer: Konva.Layer, userSettings: UserSettings) {
 	const { canvasArrow } = config;
 	const startNode = layer.findOne('#' + canvasArrow.startNodeId);
 	const startAbsPos = startNode.getAbsolutePosition();
@@ -21,17 +20,24 @@ export function drawArrow(config: DrawArrowConfig, layer: Konva.Layer) {
 	if (canvasArrow.endNodeId) {
 		const endNode = layer.findOne('#' + canvasArrow.endNodeId);
 		const endNodeAbsPos = endNode.getAbsolutePosition();
-		const dx = endNodeAbsPos.x - startAbsPos.x;
-		const dy = endNodeAbsPos.y - startAbsPos.y;
+		const dx = (endNodeAbsPos.x - startAbsPos.x)/userSettings.viewportWidthUnit;
+		const dy = (endNodeAbsPos.y - startAbsPos.y)/userSettings.viewportHeightUnit;
 		drawPoints.pop();
 		drawPoints.pop();
 		drawPoints.push(dx);
 		drawPoints.push(dy);
 	}
+	let pointsToPx = drawPoints.map((point, index)=>{
+		const modResult = index % 2
+		if(modResult === 1){
+			return point*userSettings.viewportWidthUnit
+		}
+		return point*userSettings.viewportHeightUnit
+	})
 	const arrow = new Konva.Arrow({
 		x: startLayerPos.x,
 		y: startLayerPos.y,
-		points: drawPoints,
+		points: pointsToPx,
 		id: canvasArrow.id,
 		startNodeId: canvasArrow.startNodeId,
 		endNodeId: canvasArrow.endNodeId,
@@ -64,7 +70,7 @@ export function getAnchorPositionArray(nodeId: string, layer: Konva.Layer | Konv
 	];
 }
 
-function dragArrow(startNodeId: string, layer: Konva.Layer, stage: Konva.Stage) {
+function dragArrow(startNodeId: string, layer: Konva.Layer, stage: Konva.Stage, canvasDataStore: CanvasDataStore, userSettings: UserSettings) {
 	const startNode = layer.findOne('#' + startNodeId);
 	const x = startNode.getAbsolutePosition().x;
 	const y = startNode.getAbsolutePosition().y;
@@ -80,7 +86,8 @@ function dragArrow(startNodeId: string, layer: Konva.Layer, stage: Konva.Stage) 
 				points: [0, 0, 0, 0]
 			}
 		},
-		layer
+		layer,
+		userSettings
 	);
 	layer.add(arrow);
 	const anchorNodes = layer.find('.anchor-point');
@@ -119,17 +126,16 @@ function dragArrow(startNodeId: string, layer: Konva.Layer, stage: Konva.Stage) 
 	});
 	stage.on('mouseup', function (event) {
 		event.cancelBubble = true;
-		const new_id = uuidv4();
-		arrow.id(new_id);
-		canvasControllerCreateArrow({
-			body: {
-				id: new_id,
-				stageId: stage.id(),
-				startNodeId: startNodeId,
-				endNodeId: arrow.getAttr('endNodeId'),
-				points: arrow.points()
-			}
-		});
+		const new_id = crypto.randomUUID()
+		const new_data: CanvasArrowDto = {
+			kind:'ARROW',
+			id: new_id,
+			startNodeId: startNodeId,
+			endNodeId: arrow.getAttr('endNodeId'),		
+			points: arrow.points()
+		}
+		arrow.destroy()
+		canvasDataStore.addNodeData(new_data)
 		featureManager.deactivate();
 		stage.off('mousemove');
 		stage.off('mouseup');
@@ -192,16 +198,6 @@ export function showSpecificAnchorPoint(nodeId: string, layer: Konva.Layer, stag
 		const targetAnchorId = `${nodeId}-anchor-point-${ori}`;
 		const targetAnchor = layer.findOne('#' + targetAnchorId);
 		targetAnchor.visible(true);
-		targetAnchor.on('click tap', function (event) {
-			event.cancelBubble = true;
-			const context: ArrowingContext = {
-				startNodeId: targetAnchorId,
-				layer: layer,
-				stage: stage
-			};
-			const feature = new ArrowingFeature();
-			featureManager.activate<ArrowingContext>('arrowing', targetAnchorId, feature, context);
-		});
 	});
 }
 
@@ -223,15 +219,18 @@ export function removeAnchorPoint(layer: Konva.Layer) {
 	});
 }
 
-interface ArrowingContext {
+
+export interface ArrowingContext {
 	startNodeId: string;
 	layer: Konva.Layer;
 	stage: Konva.Stage;
+	canvasDataStore: CanvasDataStore;
+	userSettings: UserSettings
 }
 
-class ArrowingFeature implements IFeature<ArrowingContext> {
+export class ArrowingFeature implements IFeature<ArrowingContext> {
 	onActivated(context: ArrowingContext): () => void {
-		dragArrow(context.startNodeId, context.layer, context.stage);
+		dragArrow(context.startNodeId, context.layer, context.stage, context.canvasDataStore, context.userSettings);
 		showAllAnchorPoint(context.layer);
 		const cleanup = () => {
 			removeAnchorPoint(context.layer);

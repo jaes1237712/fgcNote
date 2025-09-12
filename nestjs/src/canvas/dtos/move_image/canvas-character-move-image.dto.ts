@@ -26,7 +26,18 @@ export class CanvasCharacterMoveImageDto {
 
   @ApiProperty()
   @Expose()
+  rotation: number; // unit:degree
+
+  @ApiProperty()
+  @Expose()
+  scaleX: number;
+  
+  @ApiProperty()
+  @Expose()
+  scaleY: number;
+
+  @ApiProperty()
+  @Expose()
   @Type(() => CharacterMoveImageDto)
   characterMoveImage: CharacterMoveImageDto;
-
 }

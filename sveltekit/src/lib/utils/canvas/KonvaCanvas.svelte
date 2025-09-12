@@ -2,11 +2,10 @@
 	import {onMount } from 'svelte';
 	import { CanvasDataStore} from './canvas-data-manager.svelte';
 	import { contextMenuState } from './context_menu/canvas-context-menu.svelte';
-	import type { CanvasNumpadBlockDto, CanvasStageDto } from '$lib/client';
+	import type { CanvasCharacterMoveImageDto, CanvasNumpadBlockDto, CanvasStageDto, CanvasTextDto, CharacterMoveImageDto } from '$lib/client';
 	import { KonvaObjectManager } from './canvas-object-manager';
 	import type { UserSettings } from '$lib/userInterface';
 	import type { CONTROLLER_TYPE } from './numpad/numpadCompiler';
-	import NumpadEditor from '$lib/component/NumpadEditor.svelte';
 	let {stageData, userSettings}: {stageData: CanvasStageDto;userSettings: UserSettings;} = $props();
 	let konvaContainer = $state<HTMLDivElement>();
 	let numpadEditorDialog = $state<HTMLDialogElement>();
@@ -27,7 +26,20 @@
 		)
 		canvasDataStore.setKonvaObjectManger(konvaObjectManger)
 		await canvasDataStore.SetStageDataAndFetchBackendData(stageData)
-		// await konvaObjectManger.InitializeObjectByDataStore()
+		const new_id = crypto.randomUUID()
+		const testText: CanvasTextDto = {
+			kind: 'TEXT',
+			id: new_id,
+			text: 'TestText',
+			fontColor: 'white',
+			backgroundColor: 'black',
+			x:200,
+			y:200,
+			rotation:0,
+			scaleX:1,
+			scaleY:1
+		}
+		canvasDataStore.addNodeData(testText)
 	});
 
 	// 處理右鍵選單選項點擊
@@ -59,7 +71,7 @@
 				kind:'NUMPAD_BLOCK',
 				id: newId,
 				input: numpadEditorValue.input,
-				type: userSettings.defaultControllerType,
+				type: numpadEditorValue.type,
 				x:
 					(contextMenuState.position.x - rec_konva.left) /
 					userSettings.viewportWidthUnit,
@@ -139,21 +151,25 @@
 			characterMe={stageData.characterMe}
 			characterOpponent={stageData.characterOpponent}
 			onselectImage={(event) => {
-				// const image = event.detail.image as CharacterMoveImageDto;
-				// const rec_konva = konvaContainer.getBoundingClientRect();
-				// const new_id = uuidv4();
-				// const createImage: CreateCanvasCharacterMoveImageDto = {
-				// 	x:
-				// 		(contextMenuState.position.x - rec_konva.left) /
-				// 		currentUserSettings.viewportWidthUnit,
-				// 	y:
-				// 		(contextMenuState.position.y - rec_konva.top) /
-				// 		currentUserSettings.viewportHeightUnit,
-				// 	id: new_id,
-				// 	stageId: currentStageDto.id,
-				// 	characterMoveImage: image
-				// };
-				// createNewCharacterMoveImage(createImage);
+				const image = event.detail.image as CharacterMoveImageDto;
+				const rec_konva = konvaContainer.getBoundingClientRect();
+				const new_id = crypto.randomUUID();
+				const scale = (userSettings.viewportHeightUnit * userSettings.moveImageHeight)/image.height;
+				const createImage: CanvasCharacterMoveImageDto = {
+					kind:'CHARACTER_MOVE_IMAGE',
+					x:
+						(contextMenuState.position.x - rec_konva.left) /
+						userSettings.viewportWidthUnit,
+					y:
+						(contextMenuState.position.y - rec_konva.top) /
+						userSettings.viewportHeightUnit,
+					id: new_id,
+					characterMoveImage: image,
+					scaleX: scale,
+					scaleY: scale,
+					rotation: 0
+				};
+				canvasDataStore.addNodeData(createImage)
 				imageSearchDialog.close();
 			}}
 		>

@@ -14,21 +14,20 @@ import {
 	type SyncCanvasCharacterMoveImagesDto,
 	type SyncCanvasArrowsDto,
 	type SyncCanvasNumpadBlocksDto,
-	canvasControllerSyncCharacterMoveImages
+	canvasControllerSyncCharacterMoveImages,
+	type CanvasTextDto
 } from '$lib/client';
 import type { UserSettings } from '$lib/userInterface';
 import _, { debounce } from 'lodash';
 import type { KonvaObjectManager } from './canvas-object-manager';
+import { featureManager } from './canvas-feature-manager';
 
-export type CanvasNodeData = CanvasNumpadBlockDto | CanvasCharacterMoveImageDto | CanvasArrowDto;
+export type CanvasNodeData = CanvasNumpadBlockDto | CanvasCharacterMoveImageDto | CanvasArrowDto | CanvasTextDto; 
 const NodeKindOrder = ['NUMPAD_BLOCK', 'CHARACTER_MOVE_IMAGE', 'ARROW'] as const;
 type NodeKind = (typeof NodeKindOrder)[number];
 
 export class CanvasDataStore {
 	public nodesData = $state<Map<string, CanvasNodeData>>();
-	public nodesDataInDesiredOrder = $derived<CanvasNodeData[]>(
-		this.getNodesInDesiredOrder(this.nodesData)
-	);
 	public userSettings: UserSettings;
 	public stageData = $state<CanvasStageDto>();
 	public operating = $state<boolean>(false);
@@ -79,8 +78,10 @@ export class CanvasDataStore {
 	// nodeData CRUD
 	public addNodeData(nodeData: CanvasNodeData): CanvasNodeData {
 		this.nodesData.set(nodeData.id,nodeData);
+		console.log('nodeData:',nodeData)
 		this.debouncedSync(this.stageData, this.nodesData)
 		this.konvaObjectManger.createNode(nodeData)
+		featureManager.deactivate()
 		return nodeData;
 	}
 
@@ -108,7 +109,9 @@ export class CanvasDataStore {
 		if(targetNodeData){
 			if(this.nodesData.delete(nodeId)){
 				this.konvaObjectManger.deleteNode(targetNodeData)
+				this.LegalizeNodesDate()
 				this.debouncedSync(this.stageData, this.nodesData)
+				featureManager.deactivate()
 				return true
 			}
 		}
@@ -162,6 +165,7 @@ export class CanvasDataStore {
 					};
 				}
 			);
+			console.log('createCanvasCharacterMoveImagesDto',createCanvasCharacterMoveImagesDto)
 			const syncCharacterMoveImagesPayload:SyncCanvasCharacterMoveImagesDto = {
 				stageId: stageData.id,
 				characterMoveImages: createCanvasCharacterMoveImagesDto
@@ -204,33 +208,7 @@ export class CanvasDataStore {
 		1000
 	);
 
-	private getNodesInDesiredOrder(nodeMapData: Map<string, CanvasNodeData>): CanvasNodeData[] {
-		// 1. 從 Map 中獲取所有值 (CanvasNodeData 實例)
-		const allNodes = Array.from(nodeMapData.values())
-		// 2. 定義一個 kind 到其順序索引的映射
-		const kindOrderMap: Record<NodeKind, number> = {
-			NUMPAD_BLOCK: 0,
-			CHARACTER_MOVE_IMAGE: 1,
-			ARROW: 2
-		};
-
-		// 3. 根據 kind 屬性進行排序
-		allNodes.sort((a, b) => {
-			const orderA = kindOrderMap[a.kind];
-			const orderB = kindOrderMap[b.kind];
-
-			if (orderA === undefined || orderB === undefined) {
-				// 處理未定義 kind 的情況，或者拋出錯誤
-				// 這裡簡單地將未定義的 kind 放在後面
-				if (orderA === undefined) return 1;
-				if (orderB === undefined) return -1;
-			}
-
-			return orderA - orderB;
-		});
-
-		return allNodes;
-	}
+	
 
 	private LegalizeNodesDate(): boolean{
 		let affectedData:number = 0

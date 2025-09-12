@@ -16,9 +16,6 @@
 	import type {
 		CanvasStageDto,
 		CharacterDto,
-		CharacterMoveImageDto,
-		CreateCanvasCharacterMoveImageDto,
-		CreateCanvasNumpadBlockDto,
 		UserDto
 	} from '$lib/client';
 	import '$lib/css/context_menu.css';
@@ -294,79 +291,6 @@
 			{/key}
 		{/if}
 	</main>
-
-	<!-- 自定義右鍵選單
-	{#if contextMenuState.visible}
-		<div
-			class="context-menu"
-			style="left: {contextMenuState.position.x}px; top: {contextMenuState.position.y}px;"
-		>
-			{#each contextMenuState.options as option}
-				<button class="context-menu-item" onclick={() => handleContextMenuOption(option.id)}>
-					{option.label}
-					<option.icon />
-				</button>
-			{/each}
-		</div>
-	{/if}
-
-	<dialog id="numpad-editor" bind:this={numpadEditorDialog}>
-		<div class="dialog-wrapper">
-			<numpad-editor
-				userSettings={currentUserSettings}
-				onedit={(event) => {
-					numpadEditorValue = event.detail;
-				}}
-			>
-			</numpad-editor>
-			<div class="btns">
-				<button
-					class="btn-create"
-					onclick={() => {
-						numpadDialogCreateBlock();
-					}}
-				>
-					保存
-				</button>
-				<button
-					onclick={() => {
-						numpadEditorDialog.close();
-					}}
-				>
-					關閉
-				</button>
-			</div>
-		</div>
-	</dialog>
-
-	<dialog id="search-character-image" bind:this={imageSearchDialog}>
-		{#key [characterMe, characterOpponent]}
-			<search-character-image
-				allCharacters={data.allCharacters}
-				{characterMe}
-				{characterOpponent}
-				onselectImage={(event) => {
-					const image = event.detail.image as CharacterMoveImageDto;
-					const rec_konva = konvaContainer.getBoundingClientRect();
-					const new_id = uuidv4();
-					const createImage: CreateCanvasCharacterMoveImageDto = {
-						x:
-							(contextMenuState.position.x - rec_konva.left) /
-							currentUserSettings.viewportWidthUnit,
-						y:
-							(contextMenuState.position.y - rec_konva.top) /
-							currentUserSettings.viewportHeightUnit,
-						id: new_id,
-						stageId: currentStageDto.id,
-						characterMoveImage: image
-					};
-					createNewCharacterMoveImage(createImage);
-					imageSearchDialog.close();
-				}}
-			>
-			</search-character-image>
-		{/key}
-	</dialog> -->
 </div>
 
 <style>
