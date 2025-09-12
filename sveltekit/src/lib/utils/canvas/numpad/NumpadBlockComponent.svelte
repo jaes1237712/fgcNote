@@ -65,6 +65,19 @@
 			fill: 'oklch(0.45 0.02 264.15)',
 			id: `${data.id}-block-background`
 		});
+		block.add(blockBackground);
+		const anchorPoints = drawInvisibleAnchorPoint(blockBackground.id(), block, stage);
+		layer.add(block);
+		block.on('click tap', function (e) {
+			e.cancelBubble = true;
+			const context: NumpadBlockSelectContext = {
+				numpadNode: block,
+				layer: layer,
+				stage: stage
+			};
+			const feature = new NumpadBlockSelectFeature();
+			featureManager.activate<NumpadBlockSelectContext>('anchor-points', block.id(), feature, context);
+		});
 		block.on('dragend', () => {
 			canvasDataStore.updateNodeData(block.id(), {
 				x: block.x() / userSettings.viewportWidthUnit,
@@ -72,30 +85,23 @@
 			});
 		});
 		block.on('dragstart', (event) => {
-			featureManager.deactivate();
-		});
-		block.add(blockBackground);
-		drawInvisibleAnchorPoint(blockBackground.id(), block, stage);
-		layer.add(block);
-		block.on('click tap', function (e) {
-			e.cancelBubble = true;
-			const context: NumpadSelectContext = {
-				numpadNode: block,
+			const context: NumpadBlockDraggingContext ={
+				anchorPoints: anchorPoints,
 				layer: layer,
 				stage: stage
-			};
-			const feature = new NumpadSelectFeature();
-			featureManager.activate<NumpadSelectContext>('anchor-points', block.id(), feature, context);
+			}
+			const feature = new NumpadBlockDraggingFeature();
+			featureManager.activate('dragging', block.id(),feature, context)
 		});
 	});
 
-	interface NumpadSelectContext {
+	interface NumpadBlockSelectContext {
 		numpadNode: Konva.Group;
 		layer: Konva.Layer;
 		stage: Konva.Stage;
 	}
-	class NumpadSelectFeature implements IFeature<NumpadSelectContext> {
-		onActivated(context: NumpadSelectContext): () => void {
+	class NumpadBlockSelectFeature implements IFeature<NumpadBlockSelectContext> {
+		onActivated(context: NumpadBlockSelectContext): () => void {
 			showSpecificAnchorPoint(context.numpadNode.id(), context.layer, context.stage);
 			const cleanup = () => {
 				removeAnchorPoint(context.layer);
@@ -103,7 +109,22 @@
 			return cleanup;
 		}
 	}
+
+	interface NumpadBlockDraggingContext {
+		anchorPoints: Konva.Circle[];
+		layer: Konva.Layer;
+		stage: Konva.Stage;
+	}
+	class NumpadBlockDraggingFeature implements IFeature<NumpadBlockDraggingContext> {
+		onActivated(context: NumpadBlockDraggingContext): () => void {
+
+			const cleanup = () => {
+			};
+			return cleanup;
+		}
+	}
 	onDestroy(() => {
+		console.log('block destroy')
 		block.destroy();
 	});
 </script>

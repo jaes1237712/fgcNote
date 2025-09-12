@@ -1,7 +1,4 @@
 import {
-	canvasControllerDeleteArrow,
-	canvasControllerDeleteNumpadBlock,
-	canvasControllerDeleteCharacterMoveImage,
 	canvasControllerFindAllArrows,
 	canvasControllerFindAllBlocks,
 	canvasControllerFindAllCharacterMoveImages,
@@ -9,10 +6,6 @@ import {
 	type CanvasCharacterMoveImageDto,
 	type CanvasNumpadBlockDto,
 	type CanvasStageDto,
-	canvasControllerDeleteNumpadBlocksByStageId,
-	canvasControllerDeleteArrowByStageId,
-	canvasControllerDeleteCharacterMoveImagesByStageId,
-	canvasControllerCreateNumpadBlocks,
 	type CreateCanvasNumpadBlockDto,
 	canvasControllerSyncNumpadBlocks,
 	type CreateCanvasArrowDto,
@@ -25,14 +18,14 @@ import {
 } from '$lib/client';
 import type { UserSettings } from '$lib/userInterface';
 import _, { debounce } from 'lodash';
-import { featureManager } from './canvas-feature-manager';
+import type { KonvaObjectManager } from './canvas-object-manager';
 
-type CanvasNodeData = CanvasNumpadBlockDto | CanvasCharacterMoveImageDto | CanvasArrowDto;
+export type CanvasNodeData = CanvasNumpadBlockDto | CanvasCharacterMoveImageDto | CanvasArrowDto;
 const NodeKindOrder = ['NUMPAD_BLOCK', 'CHARACTER_MOVE_IMAGE', 'ARROW'] as const;
 type NodeKind = (typeof NodeKindOrder)[number];
 
 export class CanvasDataStore {
-	public nodesData = $state<CanvasNodeData[]>([]);
+	public nodesData = $state<Map<string, CanvasNodeData>>();
 	public nodesDataInDesiredOrder = $derived<CanvasNodeData[]>(
 		this.getNodesInDesiredOrder(this.nodesData)
 	);
@@ -41,10 +34,11 @@ export class CanvasDataStore {
 	public operating = $state<boolean>(false);
 	public isSyncing = $state<boolean>(false);
 	public lastSyncTime = $state<Date | null>(null);
+	public konvaObjectManger: KonvaObjectManager
 
-	public async setStageData(data: CanvasStageDto): Promise<void> {
+	public async SetStageDataAndFetchBackendData(data: CanvasStageDto): Promise<void> {
 		this.stageData = data;
-		this.nodesData = [];
+		this.nodesData = new Map();
 		const blockResp = await canvasControllerFindAllBlocks({
 			path: {
 				stageId: data.id
@@ -52,7 +46,7 @@ export class CanvasDataStore {
 		});
 		if (blockResp.data) {
 			blockResp.data.forEach((block) => {
-				canvasDataStore.addNodeData(block);
+				this.addNodeData(block);
 			});
 		}
 		const imageResp = await canvasControllerFindAllCharacterMoveImages({
@@ -62,7 +56,7 @@ export class CanvasDataStore {
 		});
 		if (imageResp.data) {
 			imageResp.data.forEach((image) => {
-				canvasDataStore.addNodeData(image);
+				this.addNodeData(image);
 			});
 		}
 		const arrowResp = await canvasControllerFindAllArrows({
@@ -72,36 +66,64 @@ export class CanvasDataStore {
 		});
 		if (arrowResp.data) {
 			arrowResp.data.forEach((arrow) => {
-				canvasDataStore.addNodeData(arrow);
+				this.addNodeData(arrow);
 			});
 		}
+		this.LegalizeNodesDate()
+	}
+	
+	public setKonvaObjectManger(manager:KonvaObjectManager){
+		this.konvaObjectManger = manager
 	}
 
 	// nodeData CRUD
 	public addNodeData(nodeData: CanvasNodeData): CanvasNodeData {
-		this.nodesData.push(nodeData);
+		this.nodesData.set(nodeData.id,nodeData);
+		this.debouncedSync(this.stageData, this.nodesData)
+		this.konvaObjectManger.createNode(nodeData)
 		return nodeData;
 	}
 
 	public updateNodeData(nodeId: string, updates: Partial<CanvasNodeData>): void {
-		const nodeData = this.nodesData.find((node) => node.id === nodeId);
+		const nodeData = this.nodesData.get(nodeId)
 		if (nodeData) {
-			Object.assign(nodeData, updates);
+			Object.assign(nodeData, updates)
+			this.debouncedSync(this.stageData, this.nodesData)
+			this.konvaObjectManger.updateKonvaNode(nodeData)
 		}
-		this.debouncedSync(this.stageData,this.nodesData)
 	}
 
-	public async deleteNodeData(nodeId: string): Promise<void> {
-		
+	public putNodeData(nodeId: string, updates: Partial<CanvasNodeData>): void {
+		const nodeDataCopy = {...this.nodesData.get(nodeId)}
+		if (nodeDataCopy) {
+			Object.assign(nodeDataCopy, updates)
+			this.deleteNodeData(nodeId)
+			this.addNodeData(nodeDataCopy)
+			this.debouncedSync(this.stageData, this.nodesData)
+		}
+	}
+
+	public deleteNodeData(nodeId: string):boolean{
+		const targetNodeData = this.nodesData.get(nodeId)
+		if(targetNodeData){
+			if(this.nodesData.delete(nodeId)){
+				this.konvaObjectManger.deleteNode(targetNodeData)
+				this.debouncedSync(this.stageData, this.nodesData)
+				return true
+			}
+		}
+		console.log('try to delete', targetNodeData)
+		return false
 	}
 
 	public getNodeData(nodeId: string): CanvasNodeData | undefined {
-		return this.nodesData.find((node) => node.id === nodeId);
+		return this.nodesData.get(nodeId)
 	}
 
 	private debouncedSync = debounce(
-		async (stageData: CanvasStageDto, nodesData: CanvasNodeData[]) => {
+		async (stageData: CanvasStageDto, nodesMapData: Map<string, CanvasNodeData>) => {
 			this.isSyncing = true;
+			const nodesData = Array.from(nodesMapData.values())
 			const numpadBlocks = nodesData.filter((node) => node.kind === 'NUMPAD_BLOCK');
 			const createNumpadBlockDtos: CreateCanvasNumpadBlockDto[] = numpadBlocks.map(
 				(numpadBlock) => {
@@ -182,9 +204,9 @@ export class CanvasDataStore {
 		1000
 	);
 
-	private getNodesInDesiredOrder(allNodes: CanvasNodeData[]): CanvasNodeData[] {
+	private getNodesInDesiredOrder(nodeMapData: Map<string, CanvasNodeData>): CanvasNodeData[] {
 		// 1. 從 Map 中獲取所有值 (CanvasNodeData 實例)
-
+		const allNodes = Array.from(nodeMapData.values())
 		// 2. 定義一個 kind 到其順序索引的映射
 		const kindOrderMap: Record<NodeKind, number> = {
 			NUMPAD_BLOCK: 0,
@@ -209,6 +231,52 @@ export class CanvasDataStore {
 
 		return allNodes;
 	}
-}
 
-export const canvasDataStore = new CanvasDataStore();
+	private LegalizeNodesDate(): boolean{
+		let affectedData:number = 0
+		const copyData = new Map(this.nodesData)
+		copyData.forEach((data)=>{
+			if(data.kind === 'ARROW'){
+				if(data.startNodeId){
+					const anchorId = data.startNodeId
+					// `${groupId}-anchor-point-${pos.orientation}`;
+					const parts = anchorId.split('-anchor-point-');
+					if (parts.length < 2) {
+						console.warn(`警告: 字串 "${anchorId}" 格式不符預期，無法提取 groupId。`);
+						return false; // 或者拋出錯誤，看你的錯誤處理策略
+					  }
+					const groupId = parts[0]
+					if(!copyData.has(groupId)){
+						if(this.deleteNodeData(data.id)){
+							affectedData += 1
+						}
+						else{
+							console.warn(`警告: 無法刪除arrow:${data}`);
+						}
+						
+					}
+				}
+				if(data.endNodeId){
+					const anchorId = data.endNodeId
+					// `${groupId}-anchor-point-${pos.orientation}`;
+					const parts = anchorId.split('-anchor-point-');
+					if (parts.length < 2) {
+						console.warn(`警告: 字串 "${anchorId}" 格式不符預期，無法提取 groupId。`);
+						return false; // 或者拋出錯誤，看你的錯誤處理策略
+					  }
+					const groupId = parts[0]
+					if(!this.nodesData.has(groupId)){
+						if(this.deleteNodeData(data.id)){
+							affectedData += 1
+						}
+						else{
+							console.warn(`警告: 無法刪除arrow:${data}`);
+						}
+					}
+				}
+			}
+		})
+		console.log('LegalizeNodesData: Delete', affectedData)
+		return true
+	}
+}

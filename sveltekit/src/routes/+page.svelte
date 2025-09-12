@@ -1,7 +1,6 @@
 <script lang="ts">
 	import logo from '$lib/images/common/logo_mark.png';
 	import { onMount } from 'svelte';
-	import Konva from 'konva';
 	import type { CONTROLLER_TYPE, UserSettings } from '$lib/userInterface';
 	import { v4 as uuidv4 } from 'uuid';
 	import {
@@ -15,15 +14,11 @@
 	} from '$lib/client';
 	import type { PageProps } from './$types';
 	import type {
-		CanvasCharacterMoveImageDto,
-		CanvasNumpadBlockDto,
 		CanvasStageDto,
 		CharacterDto,
 		CharacterMoveImageDto,
 		CreateCanvasCharacterMoveImageDto,
 		CreateCanvasNumpadBlockDto,
-		UpdateCanvasCharacterMoveImageDto,
-		UpdateCanvasNumpadBlockDto,
 		UserDto
 	} from '$lib/client';
 	import '$lib/css/context_menu.css';
@@ -32,20 +27,19 @@
 	import '$lib/component/NumpadEditor.svelte';
 	import { contextMenuState } from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte';
 	import KonvaCanvas from '$lib/utils/canvas/KonvaCanvas.svelte';
-	import { canvasDataStore } from '$lib/utils/canvas/canvas-data-manager.svelte';
 	let { data }: PageProps = $props();
 	const SCREEN_WIDTH = screen.width;
 	const SCREEN_HEIGHT = screen.height;
 	const LENGTH_UNIT = SCREEN_WIDTH / 100;
 	let allStageDtos = $state<CanvasStageDto[]>(data.allStageDtos);
-	canvasDataStore.userSettings = {
+	let currentUserSettings =$state<UserSettings>({
 		viewportHeightUnit: SCREEN_HEIGHT / 100,
 		viewportWidthUnit: SCREEN_WIDTH / 100,
 		lengthUnit: LENGTH_UNIT,
 		moveImageHeight: 20,
 		commandSize: 3,
 		defaultControllerType: 'CLASSIC'
-	};
+	}) 
 	let numpadEditorValue: {
 		input: string;
 		type: CONTROLLER_TYPE;
@@ -53,7 +47,6 @@
 		input: '',
 		type: 'CLASSIC' //之後從data中拿取
 	});
-	let currentTransformer = $state<Konva.Transformer>();
 	let characterMe = $state<CharacterDto>(data.allCharacters[0]);
 	let characterOpponent = $state<CharacterDto>(data.allCharacters[1]);
 	let currentStageDtos = $derived.by<CanvasStageDto[]>(() => {
@@ -66,30 +59,11 @@
 		}
 		return [];
 	});
+	let currentStageDto = $state<CanvasStageDto>();
 	// 用戶狀態管理 - 使用響應式變量
 	let currentUser = $state<UserDto>(data?.user);
 
-	// 處理右鍵選單選項點擊
-	function handleContextMenuOption(optionId: string) {
-		switch (optionId) {
-			case 'insert-block':
-				numpadEditorDialog.showModal();
-				break;
-			case 'edit-block':
-				numpadEditorDialog.showModal();
-				break;
-			case 'insert-image':
-				imageSearchDialog.showModal();
-				break;
-			case 'delete-block':
-				deleteExistedNumpadBlock(contextMenuState.targetId);
-				break;
-			case 'delete-image':
-				deleteExistedCharacterMoveImage(contextMenuState.targetId);
-				break;
-		}
-		hideContextMenu();
-	}
+
 
 	// 隱藏右鍵選單
 	function hideContextMenu() {
@@ -118,7 +92,7 @@
 			});
 			if (canvasStage.data) {
 				allStageDtos.push(canvasStage.data);
-				canvasDataStore.stageData = canvasStage.data;
+				currentStageDto = canvasStage.data;
 			} else {
 				alert('something in server side create stage went wrong');
 			}
@@ -158,178 +132,14 @@
 			} else {
 				const newStages = allStageDtos.filter((stage) => stage.id !== stageDto.id);
 				allStageDtos = newStages;
-				if (canvasDataStore.stageData.id === stageDto.id) {
-					canvasDataStore.stageData = null;
+				if (currentStageDto.id === stageDto.id) {
+					currentStageDto = null;
 				}
 			}
 		});
 	}
 
-	async function createNewNumpadBlock(numpadBlockDto: CreateCanvasNumpadBlockDto) {
-		// const createResp = await canvasControllerCreateNumpadBlock({
-		// 	body: {
-		// 		...numpadBlockDto,
-		// 		stageId: canvasDataStore.stageData.id
-		// 	}
-		// });
-		// if (createResp.data) {
-		// 	canvasDataStore.addNodeData(createResp.data);
-		// } else {
-		// 	alert('Server side: Something went wrong at create numpad block');
-		// }
-	}
 
-	async function createNewCharacterMoveImage(
-		CharacterMoveImageDto: CreateCanvasCharacterMoveImageDto
-	) {
-		// const createResp = await canvasControllerCreateCharacterMoveImage({
-		// 	body: {
-		// 		...CharacterMoveImageDto
-		// 	}
-		// });
-		// if (createResp.data) {
-		// 	canvasDataStore.addNodeData(createResp.data);
-		// } else {
-		// 	alert('Server side: Something went wrong at create numpad block');
-		// }
-	}
-
-	// async function editExistedBlock(block: UpdateCanvasNumpadBlockDto) {
-
-	// 	const updateResp = await canvasControllerUpdateNumpadBlock({ body: block });
-	// 	if (updateResp.data) {
-	// 		alert("暫時沒有功能")
-	// 		// const targetBlock = numpadBlockDtos.get(block.id);
-	// 		// eraseNumpadBlock(block.id, currentLayer);
-	// 		// drawNumpadBlock(
-	// 		// 	{
-	// 		// 		canvasNumpadBlock: block,
-	// 		// 		userSettings: userSettings,
-	// 		// 		dragEndHandler: handelDragEndBlockEvent,
-	// 		// 		stage: currentStage,
-	// 		// 		layer: currentLayer
-	// 		// 	}
-	// 		// );
-	// 		// targetBlock.x = block.x;
-	// 		// targetBlock.y = block.y;
-	// 		// targetBlock.input = block.input;
-	// 		// targetBlock.type = block.type;
-	// 		// numpadBlockDtos.set(block.id, targetBlock);
-	// 		// numpadBlockDtos = new Map(numpadBlockDtos);
-	// 	} else {
-	// 		alert('Server side: Something went wrong at update numpad block');
-	// 	}
-	// }
-
-	// const handelDragEndBlockEvent: OnBlockDragEndCallback = async (
-	// 	blockId: string,
-	// 	x: number,
-	// 	y: number
-	// ) => {
-	// 	const targetBlock = numpadBlockDtos.get(blockId);
-	// 	if (!targetBlock) {
-	// 		console.error(`Block with ID ${blockId} not found in state.`);
-	// 		return;
-	// 	}
-	// 	const updatedBlockDto: UpdateCanvasNumpadBlockDto = { ...targetBlock, x, y };
-	// 	try {
-	// 		const updateResp = await canvasControllerUpdateNumpadBlock({ body: updatedBlockDto });
-	// 		if (!updateResp.response.ok) {
-	// 			throw new Error(`Failed to update block ${blockId} on server`);
-	// 		}
-	// 		if (updateResp.data) {
-	// 			numpadBlockDtos.set(blockId, updatedBlockDto);
-	// 			numpadBlockDtos = new Map(numpadBlockDtos);
-	// 			console.log('Backend updated successfully:', updateResp.data);
-	// 		} else {
-	// 			throw new Error(`Failed to update block ${blockId} on server`);
-	// 		}
-	// 	} catch (error) {
-	// 		alert(`Error updating block position on backend.`);
-	// 	}
-	// };
-
-	// const handelDragEndCharacterMoveImageEvent: OnImageDragEndCallback = async (
-	// 	imageId: string,
-	// 	x: number,
-	// 	y: number
-	// ) => {
-	// 	const targetImage = characterMoveImageDtos.get(imageId);
-	// 	if (!targetImage) {
-	// 		console.error(`Block with ID ${imageId} not found in state.`);
-	// 		return;
-	// 	}
-	// 	const updatedImageDto: UpdateCanvasCharacterMoveImageDto = { ...targetImage, x, y };
-	// 	try {
-	// 		const updateResp = await canvasControllerUpdateCharacterMoveImage({ body: updatedImageDto });
-	// 		if (!updateResp.response.ok) {
-	// 			throw new Error(`Failed to update block ${imageId} on server`);
-	// 		}
-	// 		if (updateResp.data) {
-	// 			characterMoveImageDtos.set(imageId, updatedImageDto);
-	// 			console.log('Backend updated successfully:', updateResp.data);
-	// 		} else {
-	// 			throw new Error(`Failed to update block ${imageId} on server`);
-	// 		}
-	// 	} catch (error) {
-	// 		alert(`Error updating block position on backend.`);
-	// 	}
-	// };
-
-	async function deleteExistedNumpadBlock(blockId: string) {
-		// const serverResp = await canvasControllerDeleteNumpadBlock({
-		// 	path: { blockId: blockId }
-		// });
-		// if (serverResp.data) {
-		// 	canvasDataStore.deleteNodeData(blockId);
-		// 	console.log('delete Successfully');
-		// } else {
-		// 	alert('Server side: Something went wrong at delete numpad block');
-		// }
-	}
-
-	async function deleteExistedCharacterMoveImage(imageId: string) {
-		// const serverResp = await canvasControllerDeleteCharacterMoveImage({
-		// 	path: { canvasCharacterMoveImageID: imageId }
-		// });
-		// if (serverResp.data) {
-		// 	canvasDataStore.deleteNodeData(imageId);
-		// 	console.log('delete Successfully');
-		// } else {
-		// 	alert('Server side: Something went wrong at delete numpad block');
-		// }
-	}
-
-	async function numpadDialogCreateBlock() {
-		console.log('numpad dialog contextMenu Stage', contextMenuState);
-		if (contextMenuState.targetType === 'stage') {
-			const rec_konva = konvaContainer.getBoundingClientRect();
-			const new_id = uuidv4();
-			const newNumpadBlockDto: CreateCanvasNumpadBlockDto = {
-				input: numpadEditorValue.input,
-				type: numpadEditorValue.type,
-				x:
-					(contextMenuState.position.x - rec_konva.left) /
-					canvasDataStore.userSettings.viewportWidthUnit,
-				y:
-					(contextMenuState.position.y - rec_konva.top) /
-					canvasDataStore.userSettings.viewportHeightUnit,
-				id: new_id,
-				stageId: contextMenuState.targetId
-			};
-			createNewNumpadBlock(newNumpadBlockDto);
-		} else if (contextMenuState.targetType === 'numpadBlock') {
-			// const updateBlock = {
-			// 	id: contextMenuState.targetId,
-			// 	input: numpadEditorValue.input,
-			// 	type: numpadEditorValue.type
-			// };
-			// console.log('edit block', updateBlock);
-			// editExistedBlock(updateBlock);
-			alert('暫時沒有功能');
-		}
-		numpadEditorDialog.close();
-	}
 	onMount(() => {
 		document.addEventListener('click', handleClickOutside);
 		return () => {
@@ -338,7 +148,6 @@
 	});
 	let numpadEditorDialog = $state<HTMLDialogElement>();
 	let imageSearchDialog = $state<HTMLDialogElement>();
-	let konvaContainer = $state<HTMLDivElement>();
 
 	// 登錄狀態
 	let currentCredential: any;
@@ -463,7 +272,9 @@
 				{#key currentStageDtos}
 					{#each currentStageDtos as stageDto}
 						<div class="stage-item">
-							<button onclick={() => canvasDataStore.setStageData(stageDto)} class="btn-stage">
+							<button onclick={() => {
+								currentStageDto = stageDto
+							}} class="btn-stage">
 								{stageDto.name}
 							</button>
 							<button onclick={() => renameExistedStage(stageDto)} class="btn-rename">
@@ -477,14 +288,14 @@
 				{/key}
 			</div>
 		</div>
-		{#if canvasDataStore.stageData}
-			{#key canvasDataStore.stageData.id}
-				<KonvaCanvas />
+		{#if currentStageDto && currentUserSettings}
+			{#key [currentStageDto, currentUserSettings]}
+				<KonvaCanvas stageData={currentStageDto} userSettings={currentUserSettings}/>
 			{/key}
 		{/if}
 	</main>
 
-	<!-- 自定義右鍵選單 -->
+	<!-- 自定義右鍵選單
 	{#if contextMenuState.visible}
 		<div
 			class="context-menu"
@@ -502,7 +313,7 @@
 	<dialog id="numpad-editor" bind:this={numpadEditorDialog}>
 		<div class="dialog-wrapper">
 			<numpad-editor
-				userSettings={canvasDataStore.userSettings}
+				userSettings={currentUserSettings}
 				onedit={(event) => {
 					numpadEditorValue = event.detail;
 				}}
@@ -541,12 +352,12 @@
 					const createImage: CreateCanvasCharacterMoveImageDto = {
 						x:
 							(contextMenuState.position.x - rec_konva.left) /
-							canvasDataStore.userSettings.viewportWidthUnit,
+							currentUserSettings.viewportWidthUnit,
 						y:
 							(contextMenuState.position.y - rec_konva.top) /
-							canvasDataStore.userSettings.viewportHeightUnit,
+							currentUserSettings.viewportHeightUnit,
 						id: new_id,
-						stageId: canvasDataStore.stageData.id,
+						stageId: currentStageDto.id,
 						characterMoveImage: image
 					};
 					createNewCharacterMoveImage(createImage);
@@ -555,7 +366,7 @@
 			>
 			</search-character-image>
 		{/key}
-	</dialog>
+	</dialog> -->
 </div>
 
 <style>
@@ -640,7 +451,7 @@
 			}
 		}
 	}
-	dialog {
+	/* dialog {
 		overflow: visible;
 		background-color: oklch(0.25 0.02 264.15);
 	}
@@ -673,5 +484,5 @@
 		display: block;
 		width: 50vw;
 		height: 80vh;
-	}
+	} */
 </style>

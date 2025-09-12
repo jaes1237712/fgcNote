@@ -7,7 +7,6 @@
 	import { PUBLIC_NESTJS_URL } from '$env/static/public';
 	import '$lib/component/SelectCharacter.svelte';
 	let {
-		allCharacters,
 		characterMe,
 		characterOpponent
 	}: {
@@ -31,8 +30,6 @@
 		return Array.from(map.values());
 	}
 
-	// let characterMe = $state<CharacterDto>(allCharacters[0]);
-	// let characterOpponent = $state<CharacterDto>(allCharacters[1]);
 	let moveImagesMe = $state<CharacterMoveImageDto[]>([]);
 	let moveImagesOpponent = $state<CharacterMoveImageDto[]>([]);
 	$effect(() => {
@@ -92,7 +89,7 @@
 <div class="search-character-panel">
 	<div class="character-versus">
 		<select-character
-			{allCharacters}
+			allCharacters={[characterMe, characterOpponent]}
 			size="6vw"
 			defaultCharacter={characterMe}
 			onselectCharacter={(event) => {
@@ -102,7 +99,7 @@
 		</select-character>
 		<p>vs.</p>
 		<select-character
-			{allCharacters}
+			allCharacters={[characterMe, characterOpponent]}
 			defaultCharacter={characterOpponent}
 			size="6vw"
 			onselectCharacter={(event) => {

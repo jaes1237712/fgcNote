@@ -136,7 +136,7 @@ function dragArrow(startNodeId: string, layer: Konva.Layer, stage: Konva.Stage) 
 	});
 }
 
-export function drawInvisibleAnchorPoint(nodeId: string, group: Konva.Group, stage: Konva.Stage) {
+export function drawInvisibleAnchorPoint(nodeId: string, group: Konva.Group, stage: Konva.Stage):Konva.Circle[] {
 	const targetNode = group.findOne('#' + nodeId);
 	const positionArray = getAnchorPositionArray(nodeId, group);
 	const groupId = group.id();
@@ -162,6 +162,7 @@ export function drawInvisibleAnchorPoint(nodeId: string, group: Konva.Group, sta
 		visible: false
 	});
 	group.add(rect);
+	const anchorsObject: Konva.Circle[] = [];
 	positionArray.forEach((pos) => {
 		const new_id = `${groupId}-anchor-point-${pos.orientation}`;
 		const anchorCircle = new Konva.Circle({
@@ -175,7 +176,9 @@ export function drawInvisibleAnchorPoint(nodeId: string, group: Konva.Group, sta
 			visible: false
 		});
 		group.add(anchorCircle);
+		anchorsObject.push(anchorCircle)
 	});
+	return anchorsObject
 }
 
 export function showSpecificAnchorPoint(nodeId: string, layer: Konva.Layer, stage: Konva.Stage) {

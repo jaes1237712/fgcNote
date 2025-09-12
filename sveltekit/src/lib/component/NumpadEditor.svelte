@@ -43,6 +43,7 @@
 					const previewId = 'preview';
 					drawNumpadBlock({
 						canvasNumpadBlock: {
+							kind:'NUMPAD_BLOCK',
 							id: previewId,
 							input: inputValue,
 							type: controllerType,
@@ -72,6 +73,7 @@
 				const previewId = 'preview';
 				drawNumpadBlock({
 					canvasNumpadBlock: {
+						kind:'NUMPAD_BLOCK',
 						id: previewId,
 						input: inputValue,
 						type: controllerType,

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Konva from 'konva';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { PUBLIC_NESTJS_URL } from '$env/static/public';
 	// 引入你的 CanvasStore 和 FeatureManager
 	import { featureManager, type IFeature } from '$lib/utils/canvas/canvas-feature-manager'; // 假設路徑
@@ -27,7 +27,6 @@
 		imageNode: Konva.Image;
 		layer: Konva.Layer;
 	}
-
 	class ImageTransformerFeature implements IFeature<ImageTransformerContext> {
 		onActivated(context: ImageTransformerContext): () => void {
 			const tr = new Konva.Transformer();
@@ -78,5 +77,9 @@
 			});
 			layer.add(image);
 		});
+		
 	});
+	onDestroy(()=>{
+	
+	})
 </script>

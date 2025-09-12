@@ -1,8 +1,7 @@
 <script lang="ts">
 	import type { CanvasArrowDto } from '$lib/client';
-	import type { UserSettings } from '$lib/userInterface';
 	import Konva from 'konva';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	let {
 		layer,
 		data
@@ -39,4 +38,7 @@
 		});
 		layer.add(arrow);
 	});
+	onDestroy(()=>{
+		arrow.destroy()
+	})
 </script>
