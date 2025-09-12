@@ -6,15 +6,16 @@ import { ArrowingFeature, drawInvisibleAnchorPoint, removeAnchorPoint, showSpeci
 import { featureManager, type IFeature } from './canvas-feature-manager';
 import { contextMenuState } from './context_menu/canvas-context-menu.svelte';
 import { PUBLIC_NESTJS_URL } from '$env/static/public';
-import { text } from '@sveltejs/kit';
 
 export class KonvaObjectManager{
     private stage: Konva.Stage;
     private layer: Konva.Layer;
     private userSettings: UserSettings = null
     private canvasDataStore: CanvasDataStore
+    private konvaContainer: HTMLDivElement
 
     constructor(container: HTMLDivElement, stageId: string, userSettings: UserSettings, canvasDataStore: CanvasDataStore) {
+        this.konvaContainer = container
         this.stage = new Konva.Stage({
             container,
             id: stageId,
@@ -33,16 +34,6 @@ export class KonvaObjectManager{
         this.layer = new Konva.Layer();
         this.stage.add(this.layer);
         this.canvasDataStore = canvasDataStore
-        
-        const simpleText = new Konva.Text({
-            x: this.stage.width() / 2,
-            y: 15,
-            text: 'Simple Text',
-            fontSize: 30,
-            fontFamily: 'Calibri',
-            fill: 'white'
-        });
-        this.layer.add(simpleText)
     }
 
     createNode(data:CanvasNodeData): void{
@@ -145,9 +136,7 @@ export class KonvaObjectManager{
                     event.evt.preventDefault();
                     event.cancelBubble = true; // 阻止事件向上冒泡到 Stage
                     contextMenuState.show(event.evt.clientX, event.evt.clientY, 'numpadBlock', block.id());
-                    console.log(block.id())
                 });
-                console.log(block.getAttrs())
                 break
             case 'ARROW':
                 const startNode = this.layer.findOne('#' + data.startNodeId);
@@ -237,11 +226,10 @@ export class KonvaObjectManager{
                 });
                 break
             case 'TEXT':
-                console.log('reach Text Data', data)
                 const text = new Konva.Text({
                     id: `${data.id}-text`,
-                    x: data.x,
-                    y: data.y,
+                    x: 0,
+                    y: 0,
                     text:data.text,
                     scaleX: data.scaleX,
                     scaleY: data.scaleY,
@@ -252,29 +240,50 @@ export class KonvaObjectManager{
                 })
                 const background = new Konva.Rect({
                     id: `${data.id}-background`,
-                    x: data.x,
-                    y: data.y,
+                    x: 0,
+                    y: 0,
                     scaleX: data.scaleX,
                     scaleY: data.scaleY,
                     fill: data.backgroundColor,
                     height:text.height()+24,
                     width: text.width()+24,
                 })
-                text.padding(12)
                 const textBlock = new Konva.Group({
                     id: data.id,
                     x: data.x,
                     y: data.y,
                     scaleX: data.scaleX,
                     scaleY: data.scaleY,
-                    width:300,
-                    height:300,
                     name: 'text',
                     draggable: true
                 })
                 textBlock.add(background)
                 textBlock.add(text)
                 this.layer.add(textBlock)
+                console.log(text)
+                const textarea = document.createElement('textarea');
+                textarea.style.position = 'absolute';
+                textarea.value = data.text
+                textarea.style.left = `${data.x}px`
+                textarea.style.top = `${data.y}px`
+                textarea.style.visibility = 'hidden'
+                this.konvaContainer.appendChild(textarea)
+                textBlock.on('click', () =>{
+                    textarea.style.visibility = 'visible'
+                })
+                textBlock.on('dragmove', ()=>{
+                    // this.canvasDataStore.updateNodeData(textBlock.id(),{
+                    //     x: 
+                    // });
+                })
+                textBlock.on('dragstart', () =>{
+                    featureManager.deactivate()
+                });
+                textBlock.on('contextmenu', (event) => {
+                    event.evt.preventDefault();
+                    event.cancelBubble = true; // 阻止事件向上冒泡到 Stage
+                    contextMenuState.show(event.evt.clientX, event.evt.clientY, 'text', text.id());
+                });
                 console.log(text.width())
         }
     }

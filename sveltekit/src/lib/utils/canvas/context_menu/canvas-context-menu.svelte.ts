@@ -6,7 +6,7 @@ export type ContextMenuOption = {
 	icon: typeof Plus;
 };
 
-export type ContextMenuTargetType = 'stage' | 'numpadBlock' | 'characterMoveImage';
+export type ContextMenuTargetType = 'stage' | 'numpadBlock' | 'characterMoveImage' | 'text';
 
 class ContextMenuStore {
 	// 使用 $state() 來宣告響應式狀態變數 (類似 Vue 的 ref 或 React 的 useState)
@@ -47,6 +47,10 @@ const CHARACTER_MOVE_IMAGES_OPTIONS: ContextMenuOption[] = [
 	{ id: 'delete-image', label: '刪除圖片', icon: DeleteIcon }
 ];
 
+const TEXT_OPTIONS: ContextMenuOption[] = [
+	{ id: 'delete-text', label: '刪除文字', icon: DeleteIcon }
+];
+
 function getContextMenuOptions(targetType: ContextMenuTargetType) {
 	switch (targetType) {
 		case 'stage':
@@ -57,6 +61,8 @@ function getContextMenuOptions(targetType: ContextMenuTargetType) {
 
 		case 'characterMoveImage':
 			return CHARACTER_MOVE_IMAGES_OPTIONS;
+		case 'text':
+			return TEXT_OPTIONS;
 	}
 }
 

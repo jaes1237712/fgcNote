@@ -15,7 +15,7 @@
 	}>();
 	let imageSearchDialog = $state<HTMLDialogElement>();
 	let canvasDataStore = $state<CanvasDataStore>()
-	let konvaObjectManger = $state<KonvaObjectManager>()
+	let konvaObjectManger = $state<KonvaObjectManager>();
 	onMount( async () => {
 		canvasDataStore = new CanvasDataStore()
 		konvaObjectManger = new KonvaObjectManager(
@@ -40,6 +40,12 @@
 			scaleY:1
 		}
 		canvasDataStore.addNodeData(testText)
+		// const textarea = document.createElement('textarea');
+		// textarea.style.position = 'absolute';
+		// textarea.style.left = '200px';
+		// textarea.style.top = '200px';
+		// textarea.value = 'TestText'
+		// konvaContainer.appendChild(textarea)
 	});
 
 	// 處理右鍵選單選項點擊
@@ -60,6 +66,9 @@
 			case 'delete-image':
 				canvasDataStore.deleteNodeData(contextMenuState.targetId);
 				break;
+			case 'delete-text':
+				canvasDataStore.deleteNodeData(contextMenuState.targetId);
+				break
 		}
 		contextMenuState.hide();
 	}
@@ -181,6 +190,7 @@
 	#konva-container {
 		width: 100vw;
 		height: 100vh;
+		position: relative;
 	}
 	dialog {
 		overflow: visible;
