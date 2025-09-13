@@ -1,4 +1,4 @@
-import { DeleteIcon, EditIcon, ImageIcon, Plus } from '@lucide/svelte';
+import { DeleteIcon, EditIcon, ImageIcon, Plus, Text } from '@lucide/svelte';
 
 export type ContextMenuOption = {
 	id: string;
@@ -34,13 +34,14 @@ class ContextMenuStore {
 }
 
 const STAGE_OPTIONS: ContextMenuOption[] = [
-	{ id: 'insert-block', label: '插入區塊', icon: Plus },
-	{ id: 'insert-image', label: '插入圖片', icon: ImageIcon }
+	{ id: 'insert-block', label: '新增連段', icon: Plus },
+	{ id: 'insert-image', label: '新增圖片', icon: ImageIcon },
+	{id:'insert-text', label:'新增文字', icon: Text}
 ];
 
 const NUMPAD_BLOCK_OPTIONS: ContextMenuOption[] = [
-	{ id: 'edit-block', label: '編輯區塊', icon: EditIcon },
-	{ id: 'delete-block', label: '刪除區塊', icon: DeleteIcon }
+	{ id: 'edit-block', label: '編輯連段', icon: EditIcon },
+	{ id: 'delete-block', label: '刪除連段', icon: DeleteIcon }
 ];
 
 const CHARACTER_MOVE_IMAGES_OPTIONS: ContextMenuOption[] = [

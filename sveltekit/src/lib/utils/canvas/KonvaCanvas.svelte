@@ -26,26 +26,6 @@
 		)
 		canvasDataStore.setKonvaObjectManger(konvaObjectManger)
 		await canvasDataStore.SetStageDataAndFetchBackendData(stageData)
-		const new_id = crypto.randomUUID()
-		const testText: CanvasTextDto = {
-			kind: 'TEXT',
-			id: new_id,
-			text: 'TestText',
-			fontColor: 'white',
-			backgroundColor: 'black',
-			x:200,
-			y:200,
-			rotation:0,
-			scaleX:1,
-			scaleY:1
-		}
-		canvasDataStore.addNodeData(testText)
-		// const textarea = document.createElement('textarea');
-		// textarea.style.position = 'absolute';
-		// textarea.style.left = '200px';
-		// textarea.style.top = '200px';
-		// textarea.value = 'TestText'
-		// konvaContainer.appendChild(textarea)
 	});
 
 	// 處理右鍵選單選項點擊
@@ -60,6 +40,26 @@
 			case 'insert-image':
 				imageSearchDialog.showModal();
 				break;
+			case 'insert-text':
+				const new_id = crypto.randomUUID()
+				const rec_konva = konvaContainer.getBoundingClientRect();
+				const new_text: CanvasTextDto = {
+					kind: 'TEXT',
+					id: new_id,
+					text: 'EDIT ME',
+					fontColor: 'white',
+					backgroundColor:'oklch(0.67 0.11 247.16)',
+					x: (contextMenuState.position.x - rec_konva.left) /
+					userSettings.viewportWidthUnit,
+					y:
+					(contextMenuState.position.y - rec_konva.top) /
+					userSettings.viewportHeightUnit,
+					rotation: 0,
+					scaleX: 1,
+					scaleY: 1
+				}
+				canvasDataStore.addNodeData(new_text)
+				break
 			case 'delete-block':
 				canvasDataStore.deleteNodeData(contextMenuState.targetId);
 				break;
@@ -114,8 +114,8 @@
 	>
 		{#each contextMenuState.options as option}
 			<button class="context-menu-item" onclick={() => handleContextMenuOption(option.id)}>
-				{option.label}
 				<option.icon />
+				{option.label}
 			</button>
 		{/each}
 	</div>
@@ -225,5 +225,8 @@
 		display: block;
 		width: 50vw;
 		height: 80vh;
+	}
+	:global(textarea){
+		field-sizing: content;
 	}
 </style>

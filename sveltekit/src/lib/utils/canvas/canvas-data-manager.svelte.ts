@@ -18,7 +18,8 @@ import {
 	type CanvasTextDto,
 	type CreateCanvasTextDto,
 	type SyncCanvasTextDto,
-	canvasControllerSyncTexts
+	canvasControllerSyncTexts,
+	canvasControllerFindAllTexts
 } from '$lib/client';
 import type { UserSettings } from '$lib/userInterface';
 import _, { debounce } from 'lodash';
@@ -71,6 +72,16 @@ export class CanvasDataStore {
 				this.addNodeData(arrow);
 			});
 		}
+		const textResp = await canvasControllerFindAllTexts({
+			path: {
+				stageId: data.id
+			}
+		});
+		if (textResp.data) {
+			textResp.data.forEach((data) => {
+				this.addNodeData(data);
+			});
+		}
 		this.LegalizeNodesDate()
 	}
 	
@@ -81,7 +92,6 @@ export class CanvasDataStore {
 	// nodeData CRUD
 	public addNodeData(nodeData: CanvasNodeData): CanvasNodeData {
 		this.nodesData.set(nodeData.id,nodeData);
-		console.log('nodeData:',nodeData)
 		this.debouncedSync(this.stageData, this.nodesData)
 		this.konvaObjectManger.createNode(nodeData)
 		featureManager.deactivate()

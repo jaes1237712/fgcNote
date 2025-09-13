@@ -6,6 +6,7 @@ import { ArrowingFeature, drawInvisibleAnchorPoint, removeAnchorPoint, showSpeci
 import { featureManager, type IFeature } from './canvas-feature-manager';
 import { contextMenuState } from './context_menu/canvas-context-menu.svelte';
 import { PUBLIC_NESTJS_URL } from '$env/static/public';
+import type { CanvasTextDto } from '$lib/client';
 
 export class KonvaObjectManager{
     private stage: Konva.Stage;
@@ -228,30 +229,26 @@ export class KonvaObjectManager{
             case 'TEXT':
                 const text = new Konva.Text({
                     id: `${data.id}-text`,
-                    x: 0,
-                    y: 0,
+                    x: 12,
+                    y: 12,
                     text:data.text,
-                    scaleX: data.scaleX,
-                    scaleY: data.scaleY,
                     fill: data.fontColor,
-                    rotation: data.rotation,
                     fontSize: 32,
-                    fontFamily: 'sans-serif'
+                    fontFamily: 'sans-serif',
+                    lineHeight: 1.2,
                 })
                 const background = new Konva.Rect({
                     id: `${data.id}-background`,
                     x: 0,
                     y: 0,
-                    scaleX: data.scaleX,
-                    scaleY: data.scaleY,
                     fill: data.backgroundColor,
                     height:text.height()+24,
                     width: text.width()+24,
                 })
                 const textBlock = new Konva.Group({
                     id: data.id,
-                    x: data.x,
-                    y: data.y,
+                    x: data.x*this.userSettings.viewportWidthUnit,
+                    y: data.y*this.userSettings.viewportHeightUnit,
                     scaleX: data.scaleX,
                     scaleY: data.scaleY,
                     name: 'text',
@@ -260,31 +257,88 @@ export class KonvaObjectManager{
                 textBlock.add(background)
                 textBlock.add(text)
                 this.layer.add(textBlock)
-                console.log(text)
                 const textarea = document.createElement('textarea');
-                textarea.style.position = 'absolute';
+                textarea.id = `${data.id}-textarea`
+                const textAreaStyle = {
+                    position:'absolute',
+                    visibility: 'hidden',
+                    left: `${textBlock.x()}px`,
+                    top: `${textBlock.y()}px`,
+                    backgroundColor: `transparent`,
+                    border: 'none',
+                    outline: 'none',
+                    filedSizing:'content',
+                    fontSize:'32px',
+                    lineHeight: `${text.lineHeight()}`,
+                    margin:`0`,
+                    fontFamily:`sans-serif`,
+                    boxSizing: `border-box`,
+                    transform: `scale(${data.scaleX}, ${data.scaleY})`,
+                    padding: `${text.y()}px ${text.x()}px`,
+                    transformOrigin: 'top left',
+                    zIndex: 1000,
+                    resize: 'none'
+                }
                 textarea.value = data.text
-                textarea.style.left = `${data.x}px`
-                textarea.style.top = `${data.y}px`
-                textarea.style.visibility = 'hidden'
+                textarea.focus();
+                textarea.oninput = ()=>{
+                    text.text(textarea.value)
+                    background.height(text.height()+24)
+                    background.width(text.width()+24)
+                    console.log('oninput event')
+                }
+                Object.assign(textarea.style, textAreaStyle)
                 this.konvaContainer.appendChild(textarea)
-                textBlock.on('click', () =>{
-                    textarea.style.visibility = 'visible'
+                textBlock.on('dblclick', (e) =>{
+                    e.cancelBubble = true
+                    const context: TextAreaEditContext ={
+                        data: data,
+                        text: text,
+                        textarea: textarea,
+                        canvasDataStore: this.canvasDataStore
+                    }
+                    const feature = new TextAreaEditFeature()
+                    featureManager.activate<TextAreaEditContext>('text-editing', data.id, feature, context)
                 })
-                textBlock.on('dragmove', ()=>{
-                    // this.canvasDataStore.updateNodeData(textBlock.id(),{
-                    //     x: 
-                    // });
+                textBlock.on('dragend', ()=>{
+                    this.canvasDataStore.updateNodeData(textBlock.id(),{
+                        x: textBlock.x() / this.userSettings.viewportWidthUnit,
+                        y: textBlock.y() / this.userSettings.viewportHeightUnit
+                    });
                 })
+                textBlock.on('dragmove',()=>{
+                    textarea.style.x = `${textBlock.x()}px`
+                    textarea.style.y = `${textBlock.y()}px`
+                })
+                textBlock.on('click tap', (e) => {
+                    e.cancelBubble = true;
+                    const context: TextBlockTransformerContext = {
+                        textBlock: textBlock,
+                        layer: this.layer
+                    };
+                    const feature = new TextBlockTransformerFeature();
+                    featureManager.activate<TextBlockTransformerContext>(
+                        'text-transformer',
+                        textBlock.id(),
+                        feature,
+                        context
+                    );
+                });
                 textBlock.on('dragstart', () =>{
                     featureManager.deactivate()
+                });
+                textBlock.on('transformend', (e) => {
+                    this.canvasDataStore.updateNodeData(textBlock.id(), {
+                        rotation: textBlock.rotation(),
+                        scaleX: textBlock.scaleX(),
+                        scaleY: textBlock.scaleY()
+                    });
                 });
                 textBlock.on('contextmenu', (event) => {
                     event.evt.preventDefault();
                     event.cancelBubble = true; // 阻止事件向上冒泡到 Stage
-                    contextMenuState.show(event.evt.clientX, event.evt.clientY, 'text', text.id());
+                    contextMenuState.show(event.evt.clientX, event.evt.clientY, 'text', textBlock.id());
                 });
-                console.log(text.width())
         }
     }
 
@@ -324,6 +378,39 @@ export class KonvaObjectManager{
                     })
                 }
                 break
+            case 'TEXT':
+                const text = this.layer.findOne('#'+`${data.id}-text`) as Konva.Text;
+                text.text(data.text)
+                text.fill(data.fontColor)
+                const background = this.layer.findOne('#'+`${data.id}-background`) as Konva.Rect;
+                background.fill(data.backgroundColor)
+                const textBlock = this.layer.findOne('#'+`${data.id}`) as Konva.Group;
+                textBlock.scaleX(data.scaleX)
+                textBlock.scaleY(data.scaleY)
+                textBlock.rotation(data.rotation)
+                const textarea = document.getElementById(`${data.id}-textarea`) as HTMLTextAreaElement
+                const textAreaStyle = {
+                    position:'absolute',
+                    visibility: 'hidden',
+                    left: `${textBlock.x()}px`,
+                    top: `${textBlock.y()}px`,
+                    backgroundColor: `transparent`,
+                    border: 'none',
+                    outline: 'none',
+                    filedSizing:'content',
+                    fontSize:'32px',
+                    lineHeight: `${text.lineHeight()}`,
+                    margin:`0`,
+                    fontFamily:`sans-serif`,
+                    boxSizing: `border-box`,
+                    transform: `scale(${data.scaleX}, ${data.scaleY})`,
+                    padding: `${text.y()}px ${text.x()}px`,
+                    transformOrigin: 'top left',
+                    zIndex: 1000,
+                    resize: 'none'
+                }
+                Object.assign(textarea.style, textAreaStyle)
+                this.layer.draw()
             default:
                 break
         }
@@ -344,11 +431,48 @@ export class KonvaObjectManager{
                         this.canvasDataStore.deleteNodeData(node.id())
                     })
                     break
+   
             }
+
             targetNode.destroy()
             return true
         }
         return false
+    }
+}
+
+interface TextAreaEditContext{
+    data: CanvasTextDto,
+    text: Konva.Text,
+    textarea: HTMLTextAreaElement,
+    canvasDataStore: CanvasDataStore
+}
+
+
+
+class TextAreaEditFeature implements IFeature<TextAreaEditContext>{
+    onActivated(context: TextAreaEditContext): () => void {
+        const { data, text, textarea, canvasDataStore} = context;
+        const copyData = {...data}
+        if(text.visible()){
+            textarea.style.visibility = 'visible'
+            text.visible(false)
+            textarea.focus()
+        }
+        const focusOutHandler = () => {
+            // 在處理之前先移除監聽器，避免在 cleanup 期間再次觸發
+            textarea.removeEventListener('focusout', focusOutHandler);
+            copyData.text = textarea.value;
+            canvasDataStore.updateNodeData(data.id, copyData);
+            textarea.style.visibility = 'hidden';
+            text.visible(true);
+            featureManager.deactivate();
+        }
+        textarea.addEventListener('focusout', focusOutHandler)
+        const cleanup = () => {
+            textarea.removeEventListener('focusout', focusOutHandler);
+        }
+        return cleanup
     }
 }
 
@@ -381,6 +505,26 @@ class ImageTransformerFeature implements IFeature<ImageTransformerContext> {
             tr.destroy();
             context.layer.draw();
             console.log('clean up');
+        };
+        return cleanup;
+    }
+}
+
+interface TextBlockTransformerContext {
+    textBlock: Konva.Group;
+    layer: Konva.Layer;
+}
+
+class TextBlockTransformerFeature implements IFeature<TextBlockTransformerContext> {
+    onActivated(context: TextBlockTransformerContext): () => void {
+        const tr = new Konva.Transformer();
+        tr.nodes([context.textBlock]);
+        context.layer.add(tr);
+        context.layer.draw();
+        const cleanup = () => {
+            tr.destroy();
+            context.layer.draw();
+            console.log('text transformer clean up');
         };
         return cleanup;
     }
