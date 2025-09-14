@@ -21,7 +21,11 @@ export class UpdateCanvasVideoDto {
   @IsString()
   src: string;
 
-  @ApiProperty({ description: 'Video title', required: false })
+  @ApiProperty({
+    description: 'Show up title on canvas',
+    type: String, // <-- 明確指定為 String
+    nullable: true, // <-- 明確指定為可為 null
+  })
   @IsString()
   @IsOptional()
   title?: string | null;

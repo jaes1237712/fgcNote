@@ -1,4 +1,4 @@
-import { DeleteIcon, EditIcon, ImageIcon, Plus, Text } from '@lucide/svelte';
+import { DeleteIcon, EditIcon, ImageIcon, Plus, Text, Video } from '@lucide/svelte';
 
 export type ContextMenuOption = {
 	id: string;
@@ -6,7 +6,7 @@ export type ContextMenuOption = {
 	icon: typeof Plus;
 };
 
-export type ContextMenuTargetType = 'stage' | 'numpadBlock' | 'characterMoveImage' | 'text';
+export type ContextMenuTargetType = 'stage' | 'numpadBlock' | 'characterMoveImage' | 'text' | 'video';
 
 class ContextMenuStore {
 	// 使用 $state() 來宣告響應式狀態變數 (類似 Vue 的 ref 或 React 的 useState)
@@ -36,7 +36,8 @@ class ContextMenuStore {
 const STAGE_OPTIONS: ContextMenuOption[] = [
 	{ id: 'insert-block', label: '新增連段', icon: Plus },
 	{ id: 'insert-image', label: '新增圖片', icon: ImageIcon },
-	{id:'insert-text', label:'新增文字', icon: Text}
+	{id:'insert-text', label:'新增文字', icon: Text},
+	{id:'insert-video', label:'新增影片', icon: Video}
 ];
 
 const NUMPAD_BLOCK_OPTIONS: ContextMenuOption[] = [
@@ -52,18 +53,22 @@ const TEXT_OPTIONS: ContextMenuOption[] = [
 	{ id: 'delete-text', label: '刪除文字', icon: DeleteIcon }
 ];
 
+const VIDEO_OPTIONS: ContextMenuOption[] = [
+	{ id: 'delete-video', label: '刪除影片', icon: DeleteIcon }
+];
+
 function getContextMenuOptions(targetType: ContextMenuTargetType) {
 	switch (targetType) {
 		case 'stage':
 			return STAGE_OPTIONS;
-
 		case 'numpadBlock':
 			return NUMPAD_BLOCK_OPTIONS;
-
 		case 'characterMoveImage':
 			return CHARACTER_MOVE_IMAGES_OPTIONS;
 		case 'text':
 			return TEXT_OPTIONS;
+		case 'video':
+			return VIDEO_OPTIONS
 	}
 }
 

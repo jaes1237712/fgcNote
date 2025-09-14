@@ -35,30 +35,6 @@ export class KonvaObjectManager{
         this.layer = new Konva.Layer();
         this.stage.add(this.layer);
         this.canvasDataStore = canvasDataStore
-        // <iframe width="1001" height="563" 
-        // src="https://www.youtube.com/embed/JM2OnDfbHtc" 
-        // title="JP INSANE 7750 DAMAGE COMBO!" frameborder="0" 
-        // allow="accelerometer; autoplay; clipboard-write; 
-        // encrypted-media; gyroscope; picture-in-picture; 
-        // web-share" referrerpolicy="strict-origin-when-cross-origin" 
-        // allowfullscreen></iframe>
-        const videoId = 'JM2OnDfbHtc';
-        const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        const new_id = crypto.randomUUID()
-        this.createNode({
-            kind: 'VIDEO',
-            id: new_id,
-            type: 'YOUTUBE',
-            src: embedUrl,
-            x: 10,
-            y:10,
-            scaleX: 1,
-            scaleY: 1,
-            rotation:0,
-            title: 'JP TEST'
-        })
-        
-
     }
 
     createNode(data:CanvasNodeData): void{
@@ -404,7 +380,7 @@ export class KonvaObjectManager{
                                     scaleX: data.scaleX,
                                     scaleY: data.scaleY,
                                     rotation:data.rotation,
-                                    id: `${data.id}-image`
+                                    id: `${data.id}`
                                 });
                                 image.on('dblclick', () =>{
                                     const context: ShowYouTubeVideoContext = {
@@ -413,11 +389,6 @@ export class KonvaObjectManager{
                                     }
                                     
                                     const feature: ShowYouTubeVideoFeature = new ShowYouTubeVideoFeature()
-                                    // iframeElement.style.left = `${image.x()}px`
-                                    // iframeElement.style.top = `${image.y()}px`
-                                    // iframeElement.style.width = `${image.width()}px`
-                                    // iframeElement.style.height = `${image.height()}px`
-                                    // iframeElement.style.visibility = 'visible'
                                     featureManager.activate('showYouTube', data.id, feature, context)
                                 })
                                 image.on('dragend', ()=>{
@@ -425,6 +396,16 @@ export class KonvaObjectManager{
                                         x: image.x() / userSettings.viewportWidthUnit,
                                         y: image.y() / userSettings.viewportHeightUnit
                                     });
+                                })
+                                image.on('contextmenu', (event)=>{
+                                    event.evt.preventDefault();
+                                    event.cancelBubble = true;
+                                    contextMenuState.show(
+                                        event.evt.clientX,
+                                        event.evt.clientY,
+                                        'video',
+                                        data.id
+                                    );
                                 })
                                 this.layer.add(image);
                             })
@@ -526,9 +507,19 @@ export class KonvaObjectManager{
                         this.canvasDataStore.deleteNodeData(node.id())
                     })
                     break
-   
+                case 'TEXT':
+                    const textarea = document.getElementById(`${data.id}-textarea`) as HTMLTextAreaElement
+                    if(textarea){
+                        textarea.parentNode.removeChild(textarea)
+                    }
+                    break
+                case 'VIDEO':
+                    const iframeElement = document.getElementById(`${data.id}-iframe`) as HTMLIFrameElement
+                    if(iframeElement){
+                        iframeElement.parentNode.removeChild(iframeElement)
+                    }
+                    break
             }
-
             targetNode.destroy()
             return true
         }

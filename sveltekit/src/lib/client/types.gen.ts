@@ -226,7 +226,7 @@ export type CanvasVideoDto = {
      */
     src: string;
     /**
-     * other canvas entity primary ID
+     * Show up title on canvas
      */
     title: string | null;
     /**
@@ -385,11 +385,9 @@ export type CreateCanvasVideoDto = {
      */
     src: string;
     /**
-     * Video title
+     * Show up title on canvas
      */
-    title?: {
-        [key: string]: unknown;
-    };
+    title: string | null;
     /**
      * x, unit: viewportWidthUnit
      */
@@ -549,11 +547,9 @@ export type UpdateCanvasVideoDto = {
      */
     src: string;
     /**
-     * Video title
+     * Show up title on canvas
      */
-    title?: {
-        [key: string]: unknown;
-    };
+    title: string | null;
     /**
      * x, unit: viewportWidthUnit
      */

@@ -2,7 +2,7 @@
 	import {onMount } from 'svelte';
 	import { CanvasDataStore} from './canvas-data-manager.svelte';
 	import { contextMenuState } from './context_menu/canvas-context-menu.svelte';
-	import type { CanvasCharacterMoveImageDto, CanvasNumpadBlockDto, CanvasStageDto, CanvasTextDto, CharacterMoveImageDto } from '$lib/client';
+	import type { CanvasCharacterMoveImageDto, CanvasNumpadBlockDto, CanvasStageDto, CanvasTextDto, CanvasVideoDto, CharacterMoveImageDto } from '$lib/client';
 	import { KonvaObjectManager } from './canvas-object-manager';
 	import type { UserSettings } from '$lib/userInterface';
 	import type { CONTROLLER_TYPE } from './numpad/numpadCompiler';
@@ -13,6 +13,7 @@
 		input: string,
 		type: CONTROLLER_TYPE
 	}>();
+	let videoFormDialog = $state<HTMLDialogElement>();
 	let imageSearchDialog = $state<HTMLDialogElement>();
 	let canvasDataStore = $state<CanvasDataStore>()
 	let konvaObjectManger = $state<KonvaObjectManager>();
@@ -26,6 +27,35 @@
 		)
 		canvasDataStore.setKonvaObjectManger(konvaObjectManger)
 		await canvasDataStore.SetStageDataAndFetchBackendData(stageData)
+		const videoForm = document.getElementById("video-form") 
+		const videoTypeSelect = document.getElementById('video-type-select') as HTMLSelectElement; // 獲取下拉選單
+		const videoUrlInput = document.getElementById('video-url-input') as HTMLInputElement; // 獲取 URL 輸入框
+		const videoTitleInput = document.getElementById('video-title-input') as HTMLInputElement; // 獲取 URL 輸入框
+
+		videoForm.addEventListener('submit', function(event) {
+			event.preventDefault();
+			if(videoTypeSelect.value === 'YOUTUBE'){
+				const enteredVideoUrl = videoUrlInput.value;   // 獲取輸入的影片 URL
+				const videoTitle = videoTitleInput.value;
+				const videoId = enteredVideoUrl.split('/watch?v=')[1]
+				const newId = crypto.randomUUID()
+				const videoData: CanvasVideoDto = {
+					kind: 'VIDEO',
+					id: newId,
+					type: 'YOUTUBE',
+					src: `https://www.youtube.com/embed/${videoId}`, //https://www.youtube.com/embed/l-d26xbK1T0
+					title: videoTitle,
+					x: contextMenuState.position.x/(userSettings.viewportWidthUnit),
+					y: contextMenuState.position.y/(userSettings.viewportHeightUnit),
+					rotation:0,
+					scaleX:0.5,
+					scaleY:0.5
+				}
+				canvasDataStore.addNodeData(videoData);
+				videoFormDialog.close();
+			}
+			
+		})
 	});
 
 	// 處理右鍵選單選項點擊
@@ -60,6 +90,9 @@
 				}
 				canvasDataStore.addNodeData(new_text)
 				break
+			case 'insert-video':
+				videoFormDialog.showModal()
+				break
 			case 'delete-block':
 				canvasDataStore.deleteNodeData(contextMenuState.targetId);
 				break;
@@ -69,7 +102,11 @@
 			case 'delete-text':
 				canvasDataStore.deleteNodeData(contextMenuState.targetId);
 				break
-		}
+			case 'delete-video':
+				console.log(contextMenuState.targetId)
+				canvasDataStore.deleteNodeData(contextMenuState.targetId);
+				break
+			}
 		contextMenuState.hide();
 	}
 	function numpadDialogCreateBlock(){
@@ -102,6 +139,7 @@
 		}
 		
 	}
+	
 </script>
 
 <div id="konva-container" bind:this={konvaContainer}></div>
@@ -186,6 +224,28 @@
 	{/key}
 </dialog>
 
+<dialog id="video-dialog" bind:this={videoFormDialog}>
+	<form id="video-form" class="video-form">
+		<label>
+			Video Type
+			<select id="video-type-select" name="video-type"required>
+				<option value="YOUTUBE">
+					YouTube
+				</option>
+			</select>
+		</label>
+		<label>
+			Video URL
+			<input id="video-url-input" name="video-url"  type='url' required/>
+		</label>
+		<label>
+			Your Title
+			<input id="video-title-input" name="video-url"  type='text' required/>
+		</label>
+		<input type='submit' value="Create"/>
+	</form>
+</dialog>
+
 <style>
 	#konva-container {
 		width: 100vw;
@@ -228,5 +288,8 @@
 	}
 	:global(textarea){
 		field-sizing: content;
+	}
+	.video-form{
+		color: white;
 	}
 </style>

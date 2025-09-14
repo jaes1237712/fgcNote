@@ -34,7 +34,7 @@ export class CanvasVideoDto {
   src: string;
 
   @ApiProperty({
-    description: 'other canvas entity primary ID',
+    description: 'Show up title on canvas',
     type: String, // <-- 明確指定為 String
     nullable: true, // <-- 明確指定為可為 null
   })

@@ -20,7 +20,11 @@ import {
 	type SyncCanvasTextDto,
 	canvasControllerSyncTexts,
 	canvasControllerFindAllTexts,
-	type CanvasVideoDto
+	type CanvasVideoDto,
+	canvasControllerFindAllVideos,
+	type CreateCanvasVideoDto,
+	type SyncCanvasVideoDto,
+	canvasControllerSyncVideos
 } from '$lib/client';
 import type { UserSettings } from '$lib/userInterface';
 import _, { debounce } from 'lodash';
@@ -80,6 +84,16 @@ export class CanvasDataStore {
 		});
 		if (textResp.data) {
 			textResp.data.forEach((data) => {
+				this.addNodeData(data);
+			});
+		}
+		const videoResp = await canvasControllerFindAllVideos({
+			path: {
+				stageId: data.id
+			}
+		});
+		if (videoResp.data) {
+			videoResp.data.forEach((data) => {
 				this.addNodeData(data);
 			});
 		}
@@ -197,6 +211,20 @@ export class CanvasDataStore {
 				stageId: stageData.id,
 				texts: createTextDto
 			};
+			const videos = nodesData.filter((node) => node.kind === 'VIDEO');
+			const createVideoDtos: CreateCanvasVideoDto[] = videos.map(
+				(data) => {
+					const baseDto = _.omit(data, ['kind']);
+					return {
+						...baseDto,
+						stageId: stageData.id
+					};
+				}
+			);
+			const syncVideoPayload:SyncCanvasVideoDto = {
+				stageId: stageData.id,
+				videos: createVideoDtos
+			};
 			try {
 				// 2. 呼叫新的單一同步 API
 				// 假設你的 API 請求函數叫做 canvasControllerSyncNumpadBlocks
@@ -205,28 +233,35 @@ export class CanvasDataStore {
 					console.log('Sync numpadBlockData successfully', syncBlocksResp.data);
 				} else {
 					// 這種情況比較少見，通常是網路層或服務器層的非預期錯誤
-					alert('Sync failed: No response data.');
+					alert('Sync numpadBlockData failed: No response data.');
 				}
 				const syncArrowsResp = await canvasControllerSyncArrows({ body: syncArrowsPayload });
 				if (syncArrowsResp.data) {
 					console.log('Sync Arrow Data successfully', syncArrowsResp.data);
 				} else {
 					// 這種情況比較少見，通常是網路層或服務器層的非預期錯誤
-					alert('Sync failed: No response data.');
+					alert('Sync Arrow failed: No response data.');
 				}
 				const syncTextResp = await canvasControllerSyncTexts({ body: syncTextPayload });
 				if (syncTextResp.data) {
 					console.log('Sync Text Data successfully', syncTextResp.data);
 				} else {
 					// 這種情況比較少見，通常是網路層或服務器層的非預期錯誤
-					alert('Sync failed: No response data.');
+					alert('Sync text failed: No response data.');
 				}
 				const syncMoveImagesResp = await canvasControllerSyncCharacterMoveImages({ body: syncCharacterMoveImagesPayload });
 				if (syncMoveImagesResp.data) {
 					console.log('Sync characterMoveImage successfully', syncMoveImagesResp.data);
 				} else {
 					// 這種情況比較少見，通常是網路層或服務器層的非預期錯誤
-					alert('Sync failed: No response data.');
+					alert('Sync characterMoveImage failed: No response data.');
+				}
+				const syncVideoResp = await canvasControllerSyncVideos({ body: syncVideoPayload });
+				if (syncVideoResp.data) {
+					console.log('Sync Video Data successfully', syncVideoResp.data);
+				} else {
+					// 這種情況比較少見，通常是網路層或服務器層的非預期錯誤
+					alert('Sync text failed: No response data.');
 				}
 			} catch (error) {
 				// 3. 統一處理錯誤
