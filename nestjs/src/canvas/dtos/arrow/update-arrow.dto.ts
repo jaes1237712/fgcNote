@@ -13,12 +13,12 @@ export class UpdateCanvasArrowDto {
     description: 'other canvas entity primary ID',
     type: String, // <-- 明確指定為 String
     nullable: true, // <-- 明確指定為可為 null
-  })  
-  endNodeId: string|null;
+  })
+  endNodeId: string | null;
 
   @ApiProperty({
     description: 'Konva arrow attrs points',
-    type: Number, 
+    type: Number,
     isArray: true,
   })
   @IsArray()

@@ -11,6 +11,7 @@ import { CanvasStage } from 'src/canvas/entities/canvas-stage.entity';
 import { CanvasCharacterMoveImage } from 'src/canvas/entities/canvas-character-move-image.entity';
 import { CanvasArrow } from 'src/canvas/entities/canvas-arrow.entity';
 import { CanvasText } from 'src/canvas/entities/canvas-text.entity';
+import { CanvasVideo } from 'src/canvas/entities/canvas-video.entity';
 
 @Entity({ name: 'user' })
 export class User {
@@ -46,6 +47,9 @@ export class User {
 
   @OneToMany(() => CanvasStage, (stage) => stage.user)
   canvas_stages: CanvasStage[];
+
+  @OneToMany(() => CanvasVideo, (stage) => stage.user)
+  canvas_video: CanvasVideo[];
 
   @OneToMany(() => CanvasCharacterMoveImage, (image) => image.user)
   canvas_character_move_images: CanvasCharacterMoveImage[];

@@ -3,9 +3,9 @@ import { Expose } from 'class-transformer';
 import { CONTROLLER_TYPE, NODE_KIND } from '../../../common/interface';
 
 export class CanvasNumpadBlockDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'For frontend to distinguish node kind',
-    enum: [NODE_KIND.NUMPAD_BLOCK]
+    enum: [NODE_KIND.NUMPAD_BLOCK],
   })
   @Expose()
   kind: NODE_KIND.NUMPAD_BLOCK;

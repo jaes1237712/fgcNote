@@ -44,7 +44,7 @@ export class CanvasArrow {
 
   @Column({
     type: 'text', // <-- 添加這行
-    nullable: true
+    nullable: true,
   })
   endNodeId: string | null; // other canvas entity primary ID
 

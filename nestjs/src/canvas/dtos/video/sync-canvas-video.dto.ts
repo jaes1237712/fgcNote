@@ -1,19 +1,19 @@
 import { IsUUID, IsArray, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { CreateCanvasTextDto } from './create-canvas-text.dto';
+import { CreateCanvasVideoDto } from './create-canvas-video.dto';
 
-export class SyncCanvasTextDto {
+export class SyncCanvasVideoDto {
   @ApiProperty({ description: 'Stage ID' })
   @IsUUID()
   stageId: string;
 
   @ApiProperty({
-    description: 'Array of text objects to sync',
-    type: () => [CreateCanvasTextDto],
+    description: 'Array of video objects to sync',
+    type: () => [CreateCanvasVideoDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateCanvasTextDto)
-  texts: any[];
+  @Type(() => CreateCanvasVideoDto)
+  videos: any[];
 }

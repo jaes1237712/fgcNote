@@ -12,6 +12,7 @@ import { Character } from 'src/character/entities/character.entity';
 import { CanvasNumpadBlock } from './canvas-numpad-block.entity';
 import { CanvasArrow } from './canvas-arrow.entity';
 import { CanvasText } from './canvas-text.entity';
+import { CanvasVideo } from './canvas-video.entity';
 
 @Entity({ name: 'canvas_stage' })
 export class CanvasStage {
@@ -45,6 +46,9 @@ export class CanvasStage {
 
   @OneToMany(() => CanvasText, (text) => text.stage)
   text?: CanvasText[];
+
+  @OneToMany(() => CanvasVideo, (video) => video.stage)
+  video?: CanvasVideo[];
 
   @CreateDateColumn()
   createdAt!: Date;

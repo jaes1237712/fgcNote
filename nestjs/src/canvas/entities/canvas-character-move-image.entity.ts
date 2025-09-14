@@ -26,7 +26,7 @@ export class CanvasCharacterMoveImage {
 
   @Column({ type: 'float' })
   scaleX: number;
-  
+
   @Column({ type: 'float' })
   scaleY: number;
 

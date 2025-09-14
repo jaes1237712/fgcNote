@@ -1,4 +1,4 @@
-export type FeatureType = 'transformer' | 'text-transformer' | 'anchor-points' | 'arrowing' | 'dragging' | 'text-editing';
+export type FeatureType = 'showYouTube'|'transformer' | 'text-transformer' | 'anchor-points' | 'arrowing' | 'dragging' | 'text-editing';
 
 export interface IFeature<TContext> {
 	onActivated(context: TContext): () => void;
@@ -54,16 +54,34 @@ class FeatureManager {
 	 * 清理並停用當前所有活動的功能。
 	 * 例如：當使用者點擊畫布空白處時呼叫。
 	 */
-	public deactivate(): void {
-		if (this.activeFeature) {
-			console.log(
-				`Deactivating current feature: ${this.activeFeature.type} on ${this.activeFeature.targetId}`
-			);
-			this.activeFeature.cleanupCallback(); // 呼叫清理函數
-			this.activeFeature = null; // 清空活動功能
-		} else {
-			console.log('No active feature to deactivate.');
-		}
+	public deactivate(featureTypeToDeactivate?: FeatureType): void {
+		if (!this.activeFeature) {
+            console.log('No active feature to deactivate.');
+            return; // 沒有活動功能，直接返回
+        }
+		if (featureTypeToDeactivate !== undefined && featureTypeToDeactivate !== null) {
+            // 有傳入 featureType，進行針對性檢查
+            if (this.activeFeature.type === featureTypeToDeactivate) {
+                // 當前活動功能類型匹配，執行清理並停用
+                console.log(
+                    `Deactivating specific feature (type match): ${this.activeFeature.type} on ${this.activeFeature.targetId}`
+                );
+                this.activeFeature.cleanupCallback();
+                this.activeFeature = null;
+            } else {
+                // 當前活動功能類型不匹配，不動作
+                console.log(
+                    `Active feature type (${this.activeFeature.type}) does not match requested type (${featureTypeToDeactivate}). No action taken.`
+                );
+            }
+        } else {
+            // 沒有傳入 featureType，執行原本的通用清理並停用當前所有活動功能
+            console.log(
+                `Deactivating current feature (general cleanup): ${this.activeFeature.type} on ${this.activeFeature.targetId}`
+            );
+            this.activeFeature.cleanupCallback();
+            this.activeFeature = null;
+        }
 	}
 
 	/**

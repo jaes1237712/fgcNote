@@ -1,35 +1,47 @@
-import { IsString, IsNumber, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsUUID,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { NODE_KIND } from 'src/common/interface';
 import { Expose } from 'class-transformer';
+import { CANVAS_VIDEO_TYPE } from '../../entities/canvas-video.entity';
 
-export class CanvasTextDto {
+export class CanvasVideoDto {
   @ApiProperty({
     description: 'For frontend to distinguish node kind',
-    enum: [NODE_KIND.TEXT],
+    enum: [NODE_KIND.VIDEO],
   })
   @Expose()
-  kind: NODE_KIND.TEXT;
+  kind: NODE_KIND.VIDEO;
 
   @ApiProperty({ description: 'UUIDv4, generate by client' })
   @IsUUID()
   @Expose()
   id: string;
 
-  @ApiProperty({ description: 'Text content' })
-  @IsString()
+  @ApiProperty({ description: 'Video type', enum: CANVAS_VIDEO_TYPE })
+  @IsEnum(CANVAS_VIDEO_TYPE)
   @Expose()
-  text: string;
+  type: CANVAS_VIDEO_TYPE;
 
-  @ApiProperty({ description: 'Font color' })
+  @ApiProperty({ description: 'Video source URL' })
   @IsString()
   @Expose()
-  fontColor: string;
+  src: string;
 
-  @ApiProperty({ description: 'Background color' })
+  @ApiProperty({
+    description: 'other canvas entity primary ID',
+    type: String, // <-- 明確指定為 String
+    nullable: true, // <-- 明確指定為可為 null
+  })
   @IsString()
+  @IsOptional()
   @Expose()
-  backgroundColor: string;
+  title?: string | null;
 
   @ApiProperty({ description: 'x, unit: viewportWidthUnit' })
   @IsNumber()

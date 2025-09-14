@@ -51,8 +51,12 @@ export class CharacterService {
     return image;
   }
 
-  findCharacterMoveImagesByFileNames(fileNames: string[]): Promise<CharacterMoveImage[]> {
-    return this.characterMoveImageRepository.find({ where: { fileName: In(fileNames) } });
+  findCharacterMoveImagesByFileNames(
+    fileNames: string[],
+  ): Promise<CharacterMoveImage[]> {
+    return this.characterMoveImageRepository.find({
+      where: { fileName: In(fileNames) },
+    });
   }
 
   toCharacterDto(character: Character): CharacterDto {

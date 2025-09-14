@@ -19,15 +19,16 @@ import {
 	type CreateCanvasTextDto,
 	type SyncCanvasTextDto,
 	canvasControllerSyncTexts,
-	canvasControllerFindAllTexts
+	canvasControllerFindAllTexts,
+	type CanvasVideoDto
 } from '$lib/client';
 import type { UserSettings } from '$lib/userInterface';
 import _, { debounce } from 'lodash';
 import type { KonvaObjectManager } from './canvas-object-manager';
 import { featureManager } from './canvas-feature-manager';
 
-export type CanvasNodeData = CanvasNumpadBlockDto | CanvasCharacterMoveImageDto | CanvasArrowDto | CanvasTextDto; 
-const NodeKindOrder = ['NUMPAD_BLOCK', 'CHARACTER_MOVE_IMAGE', 'ARROW'] as const;
+export type CanvasNodeData = CanvasNumpadBlockDto | CanvasCharacterMoveImageDto | CanvasArrowDto | CanvasTextDto | CanvasVideoDto; 
+const NodeKindOrder = ['NUMPAD_BLOCK', 'CHARACTER_MOVE_IMAGE','VIDEO','TEXT', 'ARROW', ] as const;
 type NodeKind = (typeof NodeKindOrder)[number];
 
 export class CanvasDataStore {

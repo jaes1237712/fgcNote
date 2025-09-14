@@ -3,11 +3,10 @@ import { Expose, Type } from 'class-transformer';
 import { CharacterMoveImageDto } from 'src/character/dtos/character-move-image.dto';
 import { NODE_KIND } from 'src/common/interface';
 
-
 export class CanvasCharacterMoveImageDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'For frontend to distinguish node kind',
-    enum: [NODE_KIND.CHARACTER_MOVE_IMAGE]
+    enum: [NODE_KIND.CHARACTER_MOVE_IMAGE],
   })
   @Expose()
   kind: NODE_KIND.CHARACTER_MOVE_IMAGE;
@@ -31,7 +30,7 @@ export class CanvasCharacterMoveImageDto {
   @ApiProperty()
   @Expose()
   scaleX: number;
-  
+
   @ApiProperty()
   @Expose()
   scaleY: number;

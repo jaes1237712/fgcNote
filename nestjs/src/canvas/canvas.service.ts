@@ -37,6 +37,11 @@ import { CanvasTextDto } from './dtos/text/canvas-text.dto';
 import { CreateCanvasTextDto } from './dtos/text/create-canvas-text.dto';
 import { UpdateCanvasTextDto } from './dtos/text/update-canvas-text.dto';
 import { SyncCanvasTextDto } from './dtos/text/sync-canvas-text.dto';
+import { CanvasVideo } from './entities/canvas-video.entity';
+import { CanvasVideoDto } from './dtos/video/canvas-video.dto';
+import { CreateCanvasVideoDto } from './dtos/video/create-canvas-video.dto';
+import { UpdateCanvasVideoDto } from './dtos/video/update-canvas-video.dto';
+import { SyncCanvasVideoDto } from './dtos/video/sync-canvas-video.dto';
 
 @Injectable()
 export class CanvasService {
@@ -51,6 +56,8 @@ export class CanvasService {
     private canvasArrowRepository: Repository<CanvasArrow>,
     @InjectRepository(CanvasText)
     private canvasTextRepository: Repository<CanvasText>,
+    @InjectRepository(CanvasVideo)
+    private canvasVideoRepository: Repository<CanvasVideo>,
     private characterService: CharacterService,
     private entityManager: EntityManager, // 注入 EntityManager
   ) {}
@@ -122,7 +129,8 @@ export class CanvasService {
   async createNumpadBlocks(
     blocks: CreateCanvasNumpadBlockDto[], // 1. 參數改為 DTO 陣列
     user: User,
-  ): Promise<CanvasNumpadBlockDto[]> { // 1. 回傳值改為 DTO 陣列
+  ): Promise<CanvasNumpadBlockDto[]> {
+    // 1. 回傳值改為 DTO 陣列
     // 如果傳入的陣列是空的，直接返回空陣列，避免不必要的資料庫查詢
     if (!blocks || blocks.length === 0) {
       return [];
@@ -130,7 +138,7 @@ export class CanvasService {
 
     // 2. 批次驗證 Stage
     // 取出所有不重複的 stageId
-    const stageIds = [...new Set(blocks.map(block => block.stageId))];
+    const stageIds = [...new Set(blocks.map((block) => block.stageId))];
 
     // 一次性查詢所有需要的 stage
     const stages = await this.canvasStageRepository.find({
@@ -139,20 +147,24 @@ export class CanvasService {
 
     // 檢查是否所有 stage 都找到了
     if (stages.length !== stageIds.length) {
-      const foundStageIds = new Set(stages.map(s => s.id));
-      const missingStageIds = stageIds.filter(id => !foundStageIds.has(id));
-      throw new NotFoundException(`Stages with IDs [${missingStageIds.join(', ')}] not found`);
+      const foundStageIds = new Set(stages.map((s) => s.id));
+      const missingStageIds = stageIds.filter((id) => !foundStageIds.has(id));
+      throw new NotFoundException(
+        `Stages with IDs [${missingStageIds.join(', ')}] not found`,
+      );
     }
 
     // 為了方便後續查找，將 stages 陣列轉成以 ID 為 key 的 Map
-    const stageMap = new Map(stages.map(stage => [stage.id, stage]));
+    const stageMap = new Map(stages.map((stage) => [stage.id, stage]));
 
     // 3. 批次建立 Block 實體
-    const blockEntities = blocks.map(block => {
+    const blockEntities = blocks.map((block) => {
       const stage = stageMap.get(block.stageId);
       // 這個檢查理論上不會觸發，因為上面已經驗證過，但為了型別安全可以保留
       if (!stage) {
-          throw new BadRequestException(`Internal error: Stage for block ${block.id} not pre-fetched.`);
+        throw new BadRequestException(
+          `Internal error: Stage for block ${block.id} not pre-fetched.`,
+        );
       }
       return this.canvasNumpadBlockRepository.create({
         id: block.id,
@@ -167,10 +179,11 @@ export class CanvasService {
 
     // 4. 一次性儲存所有實體到資料庫
     // repository.save() 接受一個實體陣列，會將它們包在一個 transaction 中高效地插入
-    const savedBlocks = await this.canvasNumpadBlockRepository.save(blockEntities);
+    const savedBlocks =
+      await this.canvasNumpadBlockRepository.save(blockEntities);
 
     // 5. 將儲存後的實體陣列映射回 DTO 陣列並返回
-    return savedBlocks.map(block => this.toNumpadBlockDto(block));
+    return savedBlocks.map((block) => this.toNumpadBlockDto(block));
   }
 
   async createCharacterMoveImage(
@@ -203,48 +216,64 @@ export class CanvasService {
   async createCharacterMoveImages(
     images: CreateCanvasCharacterMoveImageDto[], // 參數改為 DTO 陣列
     user: User,
-  ): Promise<CanvasCharacterMoveImageDto[]> { // 回傳值改為 DTO 陣列
+  ): Promise<CanvasCharacterMoveImageDto[]> {
+    // 回傳值改為 DTO 陣列
     if (!images || images.length === 0) {
       return [];
     }
 
     // 1. 批次處理 Stage 查詢
-    const stageIds = [...new Set(images.map(img => img.stageId))];
+    const stageIds = [...new Set(images.map((img) => img.stageId))];
     const stages = await this.canvasStageRepository.find({
       where: { id: In(stageIds) },
     });
     if (stages.length !== stageIds.length) {
-      const foundStageIds = new Set(stages.map(s => s.id));
-      const missingStageIds = stageIds.filter(id => !foundStageIds.has(id));
-      throw new NotFoundException(`Stages with IDs [${missingStageIds.join(', ')}] not found`);
+      const foundStageIds = new Set(stages.map((s) => s.id));
+      const missingStageIds = stageIds.filter((id) => !foundStageIds.has(id));
+      throw new NotFoundException(
+        `Stages with IDs [${missingStageIds.join(', ')}] not found`,
+      );
     }
-    const stageMap = new Map(stages.map(stage => [stage.id, stage]));
+    const stageMap = new Map(stages.map((stage) => [stage.id, stage]));
 
     // 2. 批次處理 CharacterMoveImage 查詢
     // 收集所有不重複的 fileName
-    const characterMoveImageFileNames = [...new Set(images.map(img => img.characterMoveImage.fileName))];
-    
-    const characterMoveImages = await this.characterService.findCharacterMoveImagesByFileNames(
-      characterMoveImageFileNames,
-    );
+    const characterMoveImageFileNames = [
+      ...new Set(images.map((img) => img.characterMoveImage.fileName)),
+    ];
+
+    const characterMoveImages =
+      await this.characterService.findCharacterMoveImagesByFileNames(
+        characterMoveImageFileNames,
+      );
 
     if (characterMoveImages.length !== characterMoveImageFileNames.length) {
-      const foundFileNames = new Set(characterMoveImages.map(c => c.fileName));
-      const missingFileNames = characterMoveImageFileNames.filter(name => !foundFileNames.has(name));
-      throw new NotFoundException(`CharacterMoveImages with fileNames [${missingFileNames.join(', ')}] not found`);
+      const foundFileNames = new Set(
+        characterMoveImages.map((c) => c.fileName),
+      );
+      const missingFileNames = characterMoveImageFileNames.filter(
+        (name) => !foundFileNames.has(name),
+      );
+      throw new NotFoundException(
+        `CharacterMoveImages with fileNames [${missingFileNames.join(', ')}] not found`,
+      );
     }
     const characterMoveImageMap = new Map(
-      characterMoveImages.map(charImg => [charImg.fileName, charImg])
+      characterMoveImages.map((charImg) => [charImg.fileName, charImg]),
     );
 
     // 3. 批次建立 Entity
-    const imageEntities = images.map(img => {
+    const imageEntities = images.map((img) => {
       const stage = stageMap.get(img.stageId);
-      const targetCharacterMoveImage = characterMoveImageMap.get(img.characterMoveImage.fileName);
+      const targetCharacterMoveImage = characterMoveImageMap.get(
+        img.characterMoveImage.fileName,
+      );
 
       // 理論上不會發生，因為前面已驗證，但為型別安全保留
       if (!stage || !targetCharacterMoveImage) {
-        throw new BadRequestException(`Internal error: Dependent entities for block ${img.id} not pre-fetched.`);
+        throw new BadRequestException(
+          `Internal error: Dependent entities for block ${img.id} not pre-fetched.`,
+        );
       }
 
       return this.canvasCharacterMoveImageRepository.create({
@@ -258,10 +287,11 @@ export class CanvasService {
     });
 
     // 4. 一次性儲存所有 Entity
-    const savedImages = await this.canvasCharacterMoveImageRepository.save(imageEntities);
+    const savedImages =
+      await this.canvasCharacterMoveImageRepository.save(imageEntities);
 
     // 5. 批次轉換為 DTO 並回傳
-    return savedImages.map(image => this.toCharacterMoveImageDto(image));
+    return savedImages.map((image) => this.toCharacterMoveImageDto(image));
   }
 
   async createArrow(
@@ -286,33 +316,38 @@ export class CanvasService {
       return this.toArrowDto(savedArrow);
     }
   }
-  
+
   async createArrows(
     arrows: CreateCanvasArrowDto[], // 參數改為 DTO 陣列
     user: User,
-  ): Promise<CanvasArrowDto[]> { // 回傳值改為 DTO 陣列
+  ): Promise<CanvasArrowDto[]> {
+    // 回傳值改為 DTO 陣列
     if (!arrows || arrows.length === 0) {
       return [];
     }
 
     // 1. 批次處理 Stage 查詢
-    const stageIds = [...new Set(arrows.map(arrow => arrow.stageId))];
+    const stageIds = [...new Set(arrows.map((arrow) => arrow.stageId))];
     const stages = await this.canvasStageRepository.find({
       where: { id: In(stageIds) },
     });
     if (stages.length !== stageIds.length) {
-      const foundStageIds = new Set(stages.map(s => s.id));
-      const missingStageIds = stageIds.filter(id => !foundStageIds.has(id));
-      throw new NotFoundException(`Stages with IDs [${missingStageIds.join(', ')}] not found`);
+      const foundStageIds = new Set(stages.map((s) => s.id));
+      const missingStageIds = stageIds.filter((id) => !foundStageIds.has(id));
+      throw new NotFoundException(
+        `Stages with IDs [${missingStageIds.join(', ')}] not found`,
+      );
     }
-    const stageMap = new Map(stages.map(stage => [stage.id, stage]));
+    const stageMap = new Map(stages.map((stage) => [stage.id, stage]));
 
     // 2. 批次建立 Entity
-    const arrowEntities = arrows.map(arrow => {
+    const arrowEntities = arrows.map((arrow) => {
       const stage = stageMap.get(arrow.stageId);
       // 理論上不會發生，因為前面已驗證，但為型別安全保留
       if (!stage) {
-          throw new BadRequestException(`Internal error: Stage for arrow ${arrow.id} not pre-fetched.`);
+        throw new BadRequestException(
+          `Internal error: Stage for arrow ${arrow.id} not pre-fetched.`,
+        );
       }
       return this.canvasArrowRepository.create({
         id: arrow.id,
@@ -328,7 +363,7 @@ export class CanvasService {
     const savedArrows = await this.canvasArrowRepository.save(arrowEntities);
 
     // 4. 批次轉換為 DTO 並回傳
-    return savedArrows.map(arrow => this.toArrowDto(arrow));
+    return savedArrows.map((arrow) => this.toArrowDto(arrow));
   }
 
   async createText(
@@ -362,29 +397,34 @@ export class CanvasService {
   async createTexts(
     texts: CreateCanvasTextDto[], // 參數改為 DTO 陣列
     user: User,
-  ): Promise<CanvasTextDto[]> { // 回傳值改為 DTO 陣列
+  ): Promise<CanvasTextDto[]> {
+    // 回傳值改為 DTO 陣列
     if (!texts || texts.length === 0) {
       return [];
     }
 
     // 1. 批次處理 Stage 查詢
-    const stageIds = [...new Set(texts.map(text => text.stageId))];
+    const stageIds = [...new Set(texts.map((text) => text.stageId))];
     const stages = await this.canvasStageRepository.find({
       where: { id: In(stageIds) },
     });
     if (stages.length !== stageIds.length) {
-      const foundStageIds = new Set(stages.map(s => s.id));
-      const missingStageIds = stageIds.filter(id => !foundStageIds.has(id));
-      throw new NotFoundException(`Stages with IDs [${missingStageIds.join(', ')}] not found`);
+      const foundStageIds = new Set(stages.map((s) => s.id));
+      const missingStageIds = stageIds.filter((id) => !foundStageIds.has(id));
+      throw new NotFoundException(
+        `Stages with IDs [${missingStageIds.join(', ')}] not found`,
+      );
     }
-    const stageMap = new Map(stages.map(stage => [stage.id, stage]));
+    const stageMap = new Map(stages.map((stage) => [stage.id, stage]));
 
     // 2. 批次建立 Entity
-    const textEntities = texts.map(text => {
+    const textEntities = texts.map((text) => {
       const stage = stageMap.get(text.stageId);
       // 理論上不會發生，因為前面已驗證，但為型別安全保留
       if (!stage) {
-          throw new BadRequestException(`Internal error: Stage for text ${text.id} not pre-fetched.`);
+        throw new BadRequestException(
+          `Internal error: Stage for text ${text.id} not pre-fetched.`,
+        );
       }
       return this.canvasTextRepository.create({
         id: text.id,
@@ -405,7 +445,89 @@ export class CanvasService {
     const savedTexts = await this.canvasTextRepository.save(textEntities);
 
     // 4. 批次轉換為 DTO 並回傳
-    return savedTexts.map(text => this.toTextDto(text));
+    return savedTexts.map((text) => this.toTextDto(text));
+  }
+
+  async createVideo(
+    video: CreateCanvasVideoDto,
+    user: User,
+  ): Promise<CanvasVideoDto> {
+    const stage = await this.canvasStageRepository.findOne({
+      where: { id: video.stageId },
+    });
+    if (!stage) {
+      throw new NotFoundException(`Stage with ID ${video.stageId} not found`);
+    } else {
+      const videoEntity = this.canvasVideoRepository.create({
+        id: video.id,
+        type: video.type,
+        src: video.src,
+        title: video.title,
+        x: video.x,
+        y: video.y,
+        rotation: video.rotation,
+        scaleX: video.scaleX,
+        scaleY: video.scaleY,
+        stage: stage,
+        user: user,
+      });
+      const savedVideo = await this.canvasVideoRepository.save(videoEntity);
+      return this.toVideoDto(savedVideo);
+    }
+  }
+
+  async createVideos(
+    videos: CreateCanvasVideoDto[], // 參數改為 DTO 陣列
+    user: User,
+  ): Promise<CanvasVideoDto[]> {
+    // 回傳值改為 DTO 陣列
+    if (!videos || videos.length === 0) {
+      return [];
+    }
+
+    // 1. 批次處理 Stage 查詢
+    const stageIds = [...new Set(videos.map((video) => video.stageId))];
+    const stages = await this.canvasStageRepository.find({
+      where: { id: In(stageIds) },
+    });
+    if (stages.length !== stageIds.length) {
+      const foundStageIds = new Set(stages.map((s) => s.id));
+      const missingStageIds = stageIds.filter((id) => !foundStageIds.has(id));
+      throw new NotFoundException(
+        `Stages with IDs [${missingStageIds.join(', ')}] not found`,
+      );
+    }
+    const stageMap = new Map(stages.map((stage) => [stage.id, stage]));
+
+    // 2. 批次建立 Entity
+    const videoEntities = videos.map((video) => {
+      const stage = stageMap.get(video.stageId);
+      // 理論上不會發生，因為前面已驗證，但為型別安全保留
+      if (!stage) {
+        throw new BadRequestException(
+          `Internal error: Stage for video ${video.id} not pre-fetched.`,
+        );
+      }
+      return this.canvasVideoRepository.create({
+        id: video.id,
+        type: video.type,
+        src: video.src,
+        title: video.title,
+        x: video.x,
+        y: video.y,
+        rotation: video.rotation,
+        scaleX: video.scaleX,
+        scaleY: video.scaleY,
+        stage: stage, // 從 Map 中取得對應的 stage 實體
+        user: user,
+      });
+    });
+
+    // 3. 一次性儲存所有 Entity
+    const savedVideos = await this.canvasVideoRepository.save(videoEntities);
+
+    // 4. 批次轉換為 DTO 並回傳
+    return savedVideos.map((video) => this.toVideoDto(video));
   }
 
   async findAllStage(user: User): Promise<CanvasStageDto[]> {
@@ -446,7 +568,7 @@ export class CanvasService {
         stage: { id: stageId },
       },
     });
-    console.log('arrowData from db', arrows)
+    console.log('arrowData from db', arrows);
     return arrows.map((arrow) => this.toArrowDto(arrow));
   }
 
@@ -457,6 +579,15 @@ export class CanvasService {
       },
     });
     return texts.map((text) => this.toTextDto(text));
+  }
+
+  async findAllVideosByStage(stageId: string): Promise<CanvasVideoDto[]> {
+    const videos = await this.canvasVideoRepository.find({
+      where: {
+        stage: { id: stageId },
+      },
+    });
+    return videos.map((video) => this.toVideoDto(video));
   }
 
   async updateNumpadBlock(
@@ -552,6 +683,33 @@ export class CanvasService {
     return this.toTextDto(savedText);
   }
 
+  async updateVideo(
+    video: UpdateCanvasVideoDto,
+    user: User,
+  ): Promise<CanvasVideoDto> {
+    const targetVideo = await this.canvasVideoRepository.findOne({
+      where: { id: video.id },
+    });
+
+    if (!targetVideo) {
+      throw new NotFoundException(`Video with ID ${video.id} not found`);
+    }
+
+    targetVideo.type = video.type;
+    targetVideo.src = video.src;
+    if (video.title) {
+      targetVideo.title = video.title;
+    }
+    targetVideo.x = video.x;
+    targetVideo.y = video.y;
+    targetVideo.rotation = video.rotation;
+    targetVideo.scaleX = video.scaleX;
+    targetVideo.scaleY = video.scaleY;
+
+    const savedVideo = await this.canvasVideoRepository.save(targetVideo);
+    return this.toVideoDto(savedVideo);
+  }
+
   async updateStage(
     updateCanvasStageDto: UpdateCanvasStageDto,
     user: User,
@@ -583,85 +741,110 @@ export class CanvasService {
     } else if (targetStage.user.id != user.id) {
       throw new UnauthorizedException('The stage not belong to this user');
     }
-    const deletedEntityIds:string[] = []
-    const affectCharacterMoveImages = await this.canvasCharacterMoveImageRepository.find({
-      where:{stage:{id:stageId}},
-      select: ['id'],
-    })
-    
+    const deletedEntityIds: string[] = [];
+    const affectCharacterMoveImages =
+      await this.canvasCharacterMoveImageRepository.find({
+        where: { stage: { id: stageId } },
+        select: ['id'],
+      });
+
     const affectBlocks = await this.canvasNumpadBlockRepository.find({
-      where:{stage:{id:stageId}},
+      where: { stage: { id: stageId } },
       select: ['id'],
-    })
+    });
     const affectArrows = await this.canvasArrowRepository.find({
-      where:{stage:{id:stageId}},
+      where: { stage: { id: stageId } },
       select: ['id'],
-    })
+    });
     const affectTexts = await this.canvasTextRepository.find({
-      where:{stage:{id:stageId}},
+      where: { stage: { id: stageId } },
       select: ['id'],
-    })
+    });
+    const affectVideos = await this.canvasVideoRepository.find({
+      where: { stage: { id: stageId } },
+      select: ['id'],
+    });
     const deleteResult = await this.canvasStageRepository.delete(stageId);
     if (deleteResult.affected === 0) {
-      throw new NotFoundException(`Stage with ID "${stageId}" not found for deletion (affected 0).`);
+      throw new NotFoundException(
+        `Stage with ID "${stageId}" not found for deletion (affected 0).`,
+      );
     }
-    deletedEntityIds.push(stageId); 
-    const characterMoveImageCheckPromises = affectCharacterMoveImages.map(async (image)=>{
-      const result = await this.canvasCharacterMoveImageRepository.findOneBy({id:image.id})
-      if(!result){
-        deletedEntityIds.push(image.id) 
-      }
-      else{
-        throw new InternalServerErrorException(
-          `Critical Error: CharacterMoveImages with ID "${image.id}" was expected to be cascade-deleted by Stage ${stageId} but still exists. ` +
-          `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`
-        );
-      }
-    })
-    await Promise.all(characterMoveImageCheckPromises)
-    const numpadBlockCheckPromises = affectBlocks.map(async (block)=>{
-      const result = await this.canvasNumpadBlockRepository.findOneBy({id:block.id})
-      if(!result){
-        deletedEntityIds.push(block.id) 
-      }
-      else{
+    deletedEntityIds.push(stageId);
+    const characterMoveImageCheckPromises = affectCharacterMoveImages.map(
+      async (image) => {
+        const result = await this.canvasCharacterMoveImageRepository.findOneBy({
+          id: image.id,
+        });
+        if (!result) {
+          deletedEntityIds.push(image.id);
+        } else {
+          throw new InternalServerErrorException(
+            `Critical Error: CharacterMoveImages with ID "${image.id}" was expected to be cascade-deleted by Stage ${stageId} but still exists. ` +
+              `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`,
+          );
+        }
+      },
+    );
+    await Promise.all(characterMoveImageCheckPromises);
+    const numpadBlockCheckPromises = affectBlocks.map(async (block) => {
+      const result = await this.canvasNumpadBlockRepository.findOneBy({
+        id: block.id,
+      });
+      if (!result) {
+        deletedEntityIds.push(block.id);
+      } else {
         throw new InternalServerErrorException(
           `Critical Error: CanvasNumpadBlock with ID "${block.id}" was expected to be cascade-deleted by Stage ${stageId} but still exists. ` +
-          `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`
+            `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`,
         );
       }
-    })
-    await Promise.all(numpadBlockCheckPromises)
-    const arrowCheckPromises = affectArrows.map(async (arrow)=>{
-      const result = await this.canvasArrowRepository.findOneBy({id:arrow.id})
-      if(!result){
-        deletedEntityIds.push(arrow.id) 
-      }
-      else{
+    });
+    await Promise.all(numpadBlockCheckPromises);
+    const arrowCheckPromises = affectArrows.map(async (arrow) => {
+      const result = await this.canvasArrowRepository.findOneBy({
+        id: arrow.id,
+      });
+      if (!result) {
+        deletedEntityIds.push(arrow.id);
+      } else {
         throw new InternalServerErrorException(
           `Critical Error: canvasArrow with ID "${arrow.id}" was expected to be cascade-deleted by Stage ${stageId} but still exists. ` +
-          `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`
+            `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`,
         );
       }
-    })
-    await Promise.all(arrowCheckPromises)
-    const textCheckPromises = affectTexts.map(async (text)=>{
-      const result = await this.canvasTextRepository.findOneBy({id:text.id})
-      if(!result){
-        deletedEntityIds.push(text.id) 
-      }
-      else{
+    });
+    await Promise.all(arrowCheckPromises);
+    const textCheckPromises = affectTexts.map(async (text) => {
+      const result = await this.canvasTextRepository.findOneBy({ id: text.id });
+      if (!result) {
+        deletedEntityIds.push(text.id);
+      } else {
         throw new InternalServerErrorException(
           `Critical Error: CanvasText with ID "${text.id}" was expected to be cascade-deleted by Stage ${stageId} but still exists. ` +
-          `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`
+            `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`,
         );
       }
-    })
-    await Promise.all(textCheckPromises)
+    });
+    await Promise.all(textCheckPromises);
+    const videoCheckPromises = affectVideos.map(async (video) => {
+      const result = await this.canvasVideoRepository.findOneBy({
+        id: video.id,
+      });
+      if (!result) {
+        deletedEntityIds.push(video.id);
+      } else {
+        throw new InternalServerErrorException(
+          `Critical Error: CanvasVideo with ID "${video.id}" was expected to be cascade-deleted by Stage ${stageId} but still exists. ` +
+            `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`,
+        );
+      }
+    });
+    await Promise.all(videoCheckPromises);
     return {
-      ok:true,
-      deletedEntityIds: deletedEntityIds
-    }
+      ok: true,
+      deletedEntityIds: deletedEntityIds,
+    };
   }
 
   async removeNumpadBlock(blockId: string, user: User): Promise<DeleteSummary> {
@@ -678,7 +861,7 @@ export class CanvasService {
     const deletedEntityIds: string[] = [blockId];
     return {
       ok: true,
-      deletedEntityIds:deletedEntityIds
+      deletedEntityIds: deletedEntityIds,
     };
   }
 
@@ -703,8 +886,8 @@ export class CanvasService {
       throw new NotFoundException(`Stage with ID "${imageId}" not found`);
     }
     return {
-      ok:true,
-      deletedEntityIds: [imageId]
+      ok: true,
+      deletedEntityIds: [imageId],
     };
   }
 
@@ -724,8 +907,8 @@ export class CanvasService {
       throw new NotFoundException(`Arrow with ID "${arrowId}" not found`);
     }
     return {
-      ok:true,
-      deletedEntityIds:[arrowId]
+      ok: true,
+      deletedEntityIds: [arrowId],
     };
   }
 
@@ -745,85 +928,147 @@ export class CanvasService {
       throw new NotFoundException(`Text with ID "${textId}" not found`);
     }
     return {
-      ok:true,
-      deletedEntityIds:[textId]
+      ok: true,
+      deletedEntityIds: [textId],
     };
   }
 
-  async removeNumpadBlocksByStageId(stageId: string, user:User): Promise<DeleteSummary>{
+  async removeVideo(videoId: string, user: User): Promise<DeleteSummary> {
+    const targetVideo = await this.canvasVideoRepository.findOneBy({
+      id: videoId,
+    });
+    if (!targetVideo) {
+      throw new NotFoundException(`Video with ID ${videoId} not found`);
+    }
+    if (targetVideo.user.id != user.id) {
+      throw new UnauthorizedException('The video not belong to this user');
+    }
+    const deleteResult: DeleteResult =
+      await this.canvasVideoRepository.delete(videoId);
+    if (deleteResult.affected === 0) {
+      throw new NotFoundException(`Video with ID "${videoId}" not found`);
+    }
+    return {
+      ok: true,
+      deletedEntityIds: [videoId],
+    };
+  }
+
+  async removeNumpadBlocksByStageId(
+    stageId: string,
+    user: User,
+  ): Promise<DeleteSummary> {
     const targetBlocks = await this.canvasNumpadBlockRepository.find({
-      where:{stage:{id:stageId}},
-      select:['id']
-    })
+      where: { stage: { id: stageId } },
+      select: ['id'],
+    });
     if (!targetBlocks) {
       throw new NotFoundException(`Blocks with stage ID ${stageId} not found`);
     }
     if (targetBlocks[0].user.id != user.id) {
       throw new UnauthorizedException('The Block not belong to this user');
     }
-    const deletedEntityIds = targetBlocks.map((block) => block.id)
-    await this.canvasNumpadBlockRepository.delete({id:In(deletedEntityIds)})
+    const deletedEntityIds = targetBlocks.map((block) => block.id);
+    await this.canvasNumpadBlockRepository.delete({ id: In(deletedEntityIds) });
     return {
       ok: true,
-      deletedEntityIds: deletedEntityIds
-    }
+      deletedEntityIds: deletedEntityIds,
+    };
   }
 
-  async removeCharacterMoveImageByStageId(stageId: string, user:User): Promise<DeleteSummary>{
-    const targetCharacterMoveImage = await this.canvasCharacterMoveImageRepository.find({
-      where:{stage:{id:stageId}},
-      select:['id']
-    })
+  async removeCharacterMoveImageByStageId(
+    stageId: string,
+    user: User,
+  ): Promise<DeleteSummary> {
+    const targetCharacterMoveImage =
+      await this.canvasCharacterMoveImageRepository.find({
+        where: { stage: { id: stageId } },
+        select: ['id'],
+      });
     if (!targetCharacterMoveImage) {
-      throw new NotFoundException(`CharacterMoveImage with stage ID ${stageId} not found`);
+      throw new NotFoundException(
+        `CharacterMoveImage with stage ID ${stageId} not found`,
+      );
     }
     if (targetCharacterMoveImage[0].user.id != user.id) {
-      throw new UnauthorizedException('The CharacterMoveImage not belong to this user');
+      throw new UnauthorizedException(
+        'The CharacterMoveImage not belong to this user',
+      );
     }
-    const deletedEntityIds = targetCharacterMoveImage.map((block) => block.id)
-    await this.canvasCharacterMoveImageRepository.delete({id:In(deletedEntityIds)})
+    const deletedEntityIds = targetCharacterMoveImage.map((block) => block.id);
+    await this.canvasCharacterMoveImageRepository.delete({
+      id: In(deletedEntityIds),
+    });
     return {
       ok: true,
-      deletedEntityIds: deletedEntityIds
-    }
+      deletedEntityIds: deletedEntityIds,
+    };
   }
 
-  async removeArrowByStageId(stageId: string, user:User): Promise<DeleteSummary>{
+  async removeArrowByStageId(
+    stageId: string,
+    user: User,
+  ): Promise<DeleteSummary> {
     const targetArrows = await this.canvasArrowRepository.find({
-      where:{stage:{id:stageId}},
-      select:['id']
-    })
+      where: { stage: { id: stageId } },
+      select: ['id'],
+    });
     if (!targetArrows) {
       throw new NotFoundException(`Arrow with stage ID ${stageId} not found`);
     }
     if (targetArrows[0].user.id != user.id) {
       throw new UnauthorizedException('The Arrow not belong to this user');
     }
-    const deletedEntityIds = targetArrows.map((block) => block.id)
-    await this.canvasArrowRepository.delete({id:In(deletedEntityIds)})
+    const deletedEntityIds = targetArrows.map((block) => block.id);
+    await this.canvasArrowRepository.delete({ id: In(deletedEntityIds) });
     return {
       ok: true,
-      deletedEntityIds: deletedEntityIds
-    }
+      deletedEntityIds: deletedEntityIds,
+    };
   }
 
-  async removeTextsByStageId(stageId: string, user:User): Promise<DeleteSummary>{
+  async removeTextsByStageId(
+    stageId: string,
+    user: User,
+  ): Promise<DeleteSummary> {
     const targetTexts = await this.canvasTextRepository.find({
-      where:{stage:{id:stageId}},
-      select:['id']
-    })
+      where: { stage: { id: stageId } },
+      select: ['id'],
+    });
     if (!targetTexts) {
       throw new NotFoundException(`Texts with stage ID ${stageId} not found`);
     }
     if (targetTexts[0].user.id != user.id) {
       throw new UnauthorizedException('The Texts not belong to this user');
     }
-    const deletedEntityIds = targetTexts.map((text) => text.id)
-    await this.canvasTextRepository.delete({id:In(deletedEntityIds)})
+    const deletedEntityIds = targetTexts.map((text) => text.id);
+    await this.canvasTextRepository.delete({ id: In(deletedEntityIds) });
     return {
       ok: true,
-      deletedEntityIds: deletedEntityIds
+      deletedEntityIds: deletedEntityIds,
+    };
+  }
+
+  async removeVideosByStageId(
+    stageId: string,
+    user: User,
+  ): Promise<DeleteSummary> {
+    const targetVideos = await this.canvasVideoRepository.find({
+      where: { stage: { id: stageId } },
+      select: ['id'],
+    });
+    if (!targetVideos) {
+      throw new NotFoundException(`Videos with stage ID ${stageId} not found`);
     }
+    if (targetVideos[0].user.id != user.id) {
+      throw new UnauthorizedException('The Videos not belong to this user');
+    }
+    const deletedEntityIds = targetVideos.map((video) => video.id);
+    await this.canvasVideoRepository.delete({ id: In(deletedEntityIds) });
+    return {
+      ok: true,
+      deletedEntityIds: deletedEntityIds,
+    };
   }
 
   /**
@@ -885,7 +1130,7 @@ export class CanvasService {
           CanvasNumpadBlock,
           newBlockEntities,
         );
-        
+
         // 如果任何步驟失敗 (例如資料庫約束錯誤)，TypeORM 會自動拋出錯誤
         // transactionalEntityManager 會捕捉到錯誤並自動回滾所有操作 (包括上面的刪除)
 
@@ -936,27 +1181,48 @@ export class CanvasService {
         }
 
         // 步驟 3: 批次查詢所需的 CharacterMoveImage 實體
-        const characterMoveImageFileNames = [...new Set(characterMoveImages.map(img => img.characterMoveImage.fileName))];
-        const characterMoveImagesFromDB = await this.characterService.findCharacterMoveImagesByFileNames(
-          characterMoveImageFileNames,
-        );
+        const characterMoveImageFileNames = [
+          ...new Set(
+            characterMoveImages.map((img) => img.characterMoveImage.fileName),
+          ),
+        ];
+        const characterMoveImagesFromDB =
+          await this.characterService.findCharacterMoveImagesByFileNames(
+            characterMoveImageFileNames,
+          );
 
-        if (characterMoveImagesFromDB.length !== characterMoveImageFileNames.length) {
-          const foundFileNames = new Set(characterMoveImagesFromDB.map(c => c.fileName));
-          const missingFileNames = characterMoveImageFileNames.filter(name => !foundFileNames.has(name));
-          throw new NotFoundException(`CharacterMoveImages with fileNames [${missingFileNames.join(', ')}] not found`);
+        if (
+          characterMoveImagesFromDB.length !==
+          characterMoveImageFileNames.length
+        ) {
+          const foundFileNames = new Set(
+            characterMoveImagesFromDB.map((c) => c.fileName),
+          );
+          const missingFileNames = characterMoveImageFileNames.filter(
+            (name) => !foundFileNames.has(name),
+          );
+          throw new NotFoundException(
+            `CharacterMoveImages with fileNames [${missingFileNames.join(', ')}] not found`,
+          );
         }
 
         const characterMoveImageMap = new Map(
-          characterMoveImagesFromDB.map(charImg => [charImg.fileName, charImg])
+          characterMoveImagesFromDB.map((charImg) => [
+            charImg.fileName,
+            charImg,
+          ]),
         );
 
         // 步驟 4: 創建新的 CharacterMoveImage 實體
         const newImageEntities = characterMoveImages.map((imageDto) => {
-          const targetCharacterMoveImage = characterMoveImageMap.get(imageDto.characterMoveImage.fileName);
-          
+          const targetCharacterMoveImage = characterMoveImageMap.get(
+            imageDto.characterMoveImage.fileName,
+          );
+
           if (!targetCharacterMoveImage) {
-            throw new BadRequestException(`CharacterMoveImage with fileName ${imageDto.characterMoveImage.fileName} not found`);
+            throw new BadRequestException(
+              `CharacterMoveImage with fileName ${imageDto.characterMoveImage.fileName} not found`,
+            );
           }
 
           return transactionalEntityManager.create(CanvasCharacterMoveImage, {
@@ -1101,6 +1367,67 @@ export class CanvasService {
     );
   }
 
+  /**
+   * 同步指定 Stage 的所有 Video
+   * 此操作在一個資料庫交易中完成，確保資料一致性。
+   * @param syncDto 包含 stageId 和新的 videos 陣列
+   * @param user 當前操作的使用者
+   * @returns 返回新創建的 Video DTO 陣列
+   */
+  async syncVideos(
+    syncDto: SyncCanvasVideoDto,
+    user: User,
+  ): Promise<CanvasVideoDto[]> {
+    const { stageId, videos } = syncDto;
+
+    return this.entityManager.transaction(
+      async (transactionalEntityManager) => {
+        // 步驟 1: 驗證 Stage 是否存在且屬於該使用者
+        const stage = await transactionalEntityManager.findOne(CanvasStage, {
+          where: { id: stageId },
+          relations: ['user'],
+        });
+
+        if (!stage) {
+          throw new NotFoundException(`Stage with ID ${stageId} not found`);
+        }
+        if (stage.user.id !== user.id) {
+          throw new UnauthorizedException(
+            'You do not have permission to modify this stage.',
+          );
+        }
+
+        // 步驟 2: 刪除該 Stage 底下所有舊的 Video
+        await transactionalEntityManager.delete(CanvasVideo, {
+          stage: { id: stageId },
+        });
+
+        // 如果前端傳來的 videos 陣列是空的，那麼操作到此結束（相當於清空）
+        if (!videos || videos.length === 0) {
+          return [];
+        }
+
+        // 步驟 3: 創建新的 Video 實體
+        const newVideoEntities = videos.map((videoDto) => {
+          return transactionalEntityManager.create(CanvasVideo, {
+            ...videoDto,
+            stage: stage,
+            user: user,
+          });
+        });
+
+        // 步驟 4: 一次性儲存所有新的實體
+        const savedVideos = await transactionalEntityManager.save(
+          CanvasVideo,
+          newVideoEntities,
+        );
+
+        // 步驟 5: 將儲存後的實體轉換為 DTO 並返回
+        return savedVideos.map((video) => this.toVideoDto(video));
+      },
+    );
+  }
+
   toStageDto(stage: CanvasStage): CanvasStageDto {
     return plainToInstance(CanvasStageDto, stage, {
       excludeExtraneousValues: true,
@@ -1108,11 +1435,11 @@ export class CanvasService {
   }
 
   toNumpadBlockDto(numpadBlock: CanvasNumpadBlock): CanvasNumpadBlockDto {
-    const dto= plainToInstance(CanvasNumpadBlockDto, numpadBlock, {
+    const dto = plainToInstance(CanvasNumpadBlockDto, numpadBlock, {
       excludeExtraneousValues: true,
     });
-    dto.kind = NODE_KIND.NUMPAD_BLOCK
-    return dto
+    dto.kind = NODE_KIND.NUMPAD_BLOCK;
+    return dto;
   }
 
   toCharacterMoveImageDto(
@@ -1121,24 +1448,32 @@ export class CanvasService {
     const dto = plainToInstance(CanvasCharacterMoveImageDto, image, {
       excludeExtraneousValues: true,
     });
-    dto.kind = NODE_KIND.CHARACTER_MOVE_IMAGE
-    return dto
+    dto.kind = NODE_KIND.CHARACTER_MOVE_IMAGE;
+    return dto;
   }
 
   toArrowDto(arrow: CanvasArrow): CanvasArrowDto {
-    const dto =  plainToInstance(CanvasArrowDto, arrow, {
+    const dto = plainToInstance(CanvasArrowDto, arrow, {
       excludeExtraneousValues: true,
     });
     // TODO 應該改成資料庫都有KIND比較好?
-    dto.kind = NODE_KIND.ARROW
-    return dto
+    dto.kind = NODE_KIND.ARROW;
+    return dto;
   }
 
   toTextDto(text: CanvasText): CanvasTextDto {
     const dto = plainToInstance(CanvasTextDto, text, {
       excludeExtraneousValues: true,
     });
-    dto.kind = NODE_KIND.TEXT
-    return dto
+    dto.kind = NODE_KIND.TEXT;
+    return dto;
+  }
+
+  toVideoDto(video: CanvasVideo): CanvasVideoDto {
+    const dto = plainToInstance(CanvasVideoDto, video, {
+      excludeExtraneousValues: true,
+    });
+    dto.kind = NODE_KIND.VIDEO;
+    return dto;
   }
 }

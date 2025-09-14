@@ -208,6 +208,53 @@ export type CanvasTextDto = {
     stageId?: string;
 };
 
+export type CanvasVideoDto = {
+    /**
+     * For frontend to distinguish node kind
+     */
+    kind: 'VIDEO';
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * Video type
+     */
+    type: 'YOUTUBE';
+    /**
+     * Video source URL
+     */
+    src: string;
+    /**
+     * other canvas entity primary ID
+     */
+    title: string | null;
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
+    /**
+     * rotation, unit: degree
+     */
+    rotation: number;
+    /**
+     * scaleX
+     */
+    scaleX: number;
+    /**
+     * scaleY
+     */
+    scaleY: number;
+    /**
+     * Stage ID
+     */
+    stageId?: string;
+};
+
 export type CreateCanvasNumpadBlockDto = {
     /**
      * UUIDv4, generate by client
@@ -298,6 +345,51 @@ export type CreateCanvasTextDto = {
      * Background color
      */
     backgroundColor: string;
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
+    /**
+     * rotation, unit: degree
+     */
+    rotation: number;
+    /**
+     * scaleX
+     */
+    scaleX: number;
+    /**
+     * scaleY
+     */
+    scaleY: number;
+    /**
+     * Stage ID
+     */
+    stageId: string;
+};
+
+export type CreateCanvasVideoDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * Video type
+     */
+    type: 'YOUTUBE';
+    /**
+     * Video source URL
+     */
+    src: string;
+    /**
+     * Video title
+     */
+    title?: {
+        [key: string]: unknown;
+    };
     /**
      * x, unit: viewportWidthUnit
      */
@@ -443,6 +535,47 @@ export type UpdateCanvasTextDto = {
     scaleY: number;
 };
 
+export type UpdateCanvasVideoDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * Video type
+     */
+    type: 'YOUTUBE';
+    /**
+     * Video source URL
+     */
+    src: string;
+    /**
+     * Video title
+     */
+    title?: {
+        [key: string]: unknown;
+    };
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
+    /**
+     * rotation, unit: degree
+     */
+    rotation: number;
+    /**
+     * scaleX
+     */
+    scaleX: number;
+    /**
+     * scaleY
+     */
+    scaleY: number;
+};
+
 export type DeleteSummary = {
     /**
      * Indicates if the operation was successful
@@ -478,6 +611,17 @@ export type SyncCanvasTextDto = {
      * Array of text objects to sync
      */
     texts: Array<CreateCanvasTextDto>;
+};
+
+export type SyncCanvasVideoDto = {
+    /**
+     * Stage ID
+     */
+    stageId: string;
+    /**
+     * Array of video objects to sync
+     */
+    videos: Array<CreateCanvasVideoDto>;
 };
 
 export type AuthControllerGoogleLoginData = {
@@ -659,6 +803,27 @@ export type CanvasControllerFindAllTextsResponses = {
 };
 
 export type CanvasControllerFindAllTextsResponse = CanvasControllerFindAllTextsResponses[keyof CanvasControllerFindAllTextsResponses];
+
+export type CanvasControllerFindAllVideosData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/video/get/{stageId}';
+};
+
+export type CanvasControllerFindAllVideosResponses = {
+    /**
+     * Successfully get all videos
+     */
+    200: Array<CanvasVideoDto>;
+};
+
+export type CanvasControllerFindAllVideosResponse = CanvasControllerFindAllVideosResponses[keyof CanvasControllerFindAllVideosResponses];
 
 export type CanvasControllerCreateNumpadBlockData = {
     body: CreateCanvasNumpadBlockDto;
@@ -885,6 +1050,63 @@ export type CanvasControllerCreateTextsResponses = {
 
 export type CanvasControllerCreateTextsResponse = CanvasControllerCreateTextsResponses[keyof CanvasControllerCreateTextsResponses];
 
+export type CanvasControllerCreateVideoData = {
+    body: CreateCanvasVideoDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/video/create';
+};
+
+export type CanvasControllerCreateVideoErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerCreateVideoResponses = {
+    /**
+     * Create video Successfully
+     */
+    200: CanvasVideoDto;
+};
+
+export type CanvasControllerCreateVideoResponse = CanvasControllerCreateVideoResponses[keyof CanvasControllerCreateVideoResponses];
+
+export type CanvasControllerCreateVideosData = {
+    /**
+     * An array of CreateVideo DTO.
+     */
+    body: Array<CreateCanvasVideoDto>;
+    path?: never;
+    query?: never;
+    url: '/canvas/video/bulk-create';
+};
+
+export type CanvasControllerCreateVideosErrors = {
+    /**
+     * Bad Request (e.g., empty array provided)
+     */
+    400: unknown;
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * One or more stages not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerCreateVideosResponses = {
+    /**
+     * videos created successfully
+     */
+    200: Array<CanvasVideoDto>;
+};
+
+export type CanvasControllerCreateVideosResponse = CanvasControllerCreateVideosResponses[keyof CanvasControllerCreateVideosResponses];
+
 export type CanvasControllerCreateStageData = {
     body: CreateCanvasStageDto;
     path?: never;
@@ -1022,6 +1244,29 @@ export type CanvasControllerUpdateTextResponses = {
 };
 
 export type CanvasControllerUpdateTextResponse = CanvasControllerUpdateTextResponses[keyof CanvasControllerUpdateTextResponses];
+
+export type CanvasControllerUpdateVideoData = {
+    body: UpdateCanvasVideoDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/video/update';
+};
+
+export type CanvasControllerUpdateVideoErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerUpdateVideoResponses = {
+    /**
+     * Update video Successfully
+     */
+    200: CanvasVideoDto;
+};
+
+export type CanvasControllerUpdateVideoResponse = CanvasControllerUpdateVideoResponses[keyof CanvasControllerUpdateVideoResponses];
 
 export type CanvasControllerDeleteStageData = {
     body?: never;
@@ -1272,6 +1517,62 @@ export type CanvasControllerDeleteTextsByStageIdResponses = {
 
 export type CanvasControllerDeleteTextsByStageIdResponse = CanvasControllerDeleteTextsByStageIdResponses[keyof CanvasControllerDeleteTextsByStageIdResponses];
 
+export type CanvasControllerDeleteVideoData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of video
+         */
+        videoId: string;
+    };
+    query?: never;
+    url: '/canvas/video/delete/{videoId}';
+};
+
+export type CanvasControllerDeleteVideoErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteVideoResponses = {
+    /**
+     * Successfully delete video
+     */
+    200: DeleteSummary;
+};
+
+export type CanvasControllerDeleteVideoResponse = CanvasControllerDeleteVideoResponses[keyof CanvasControllerDeleteVideoResponses];
+
+export type CanvasControllerDeleteVideosByStageIdData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/video/delete/{stageId}';
+};
+
+export type CanvasControllerDeleteVideosByStageIdErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteVideosByStageIdResponses = {
+    /**
+     * Successfully delete videos
+     */
+    200: DeleteSummary;
+};
+
+export type CanvasControllerDeleteVideosByStageIdResponse = CanvasControllerDeleteVideosByStageIdResponses[keyof CanvasControllerDeleteVideosByStageIdResponses];
+
 export type CanvasControllerSyncNumpadBlocksData = {
     body: SyncCanvasNumpadBlocksDto;
     path?: never;
@@ -1379,6 +1680,33 @@ export type CanvasControllerSyncTextsResponses = {
 };
 
 export type CanvasControllerSyncTextsResponse = CanvasControllerSyncTextsResponses[keyof CanvasControllerSyncTextsResponses];
+
+export type CanvasControllerSyncVideosData = {
+    body: SyncCanvasVideoDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/video/sync';
+};
+
+export type CanvasControllerSyncVideosErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Stage not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerSyncVideosResponses = {
+    /**
+     * Videos sync successfully
+     */
+    200: Array<CanvasVideoDto>;
+};
+
+export type CanvasControllerSyncVideosResponse = CanvasControllerSyncVideosResponses[keyof CanvasControllerSyncVideosResponses];
 
 export type ClientOptions = {
     baseUrl: 'https://localhost:3000' | (string & {});

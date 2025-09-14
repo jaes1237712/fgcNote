@@ -35,6 +35,30 @@ export class KonvaObjectManager{
         this.layer = new Konva.Layer();
         this.stage.add(this.layer);
         this.canvasDataStore = canvasDataStore
+        // <iframe width="1001" height="563" 
+        // src="https://www.youtube.com/embed/JM2OnDfbHtc" 
+        // title="JP INSANE 7750 DAMAGE COMBO!" frameborder="0" 
+        // allow="accelerometer; autoplay; clipboard-write; 
+        // encrypted-media; gyroscope; picture-in-picture; 
+        // web-share" referrerpolicy="strict-origin-when-cross-origin" 
+        // allowfullscreen></iframe>
+        const videoId = 'JM2OnDfbHtc';
+        const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+        const new_id = crypto.randomUUID()
+        this.createNode({
+            kind: 'VIDEO',
+            id: new_id,
+            type: 'YOUTUBE',
+            src: embedUrl,
+            x: 10,
+            y:10,
+            scaleX: 1,
+            scaleY: 1,
+            rotation:0,
+            title: 'JP TEST'
+        })
+        
+
     }
 
     createNode(data:CanvasNodeData): void{
@@ -339,6 +363,77 @@ export class KonvaObjectManager{
                     event.cancelBubble = true; // 阻止事件向上冒泡到 Stage
                     contextMenuState.show(event.evt.clientX, event.evt.clientY, 'text', textBlock.id());
                 });
+                break
+            case 'VIDEO':
+                const videoType = data.type
+                switch(videoType){
+                    case 'YOUTUBE':
+                        const urlParts = data.src.split('/embed/');
+                        let videoId:string;
+                        if(urlParts.length >1){
+                            // 取得 /embed/ 後面的部分
+                            const idWithParams = urlParts[1];
+                            // 如果有問號，表示後面還有參數，只取問號之前的部分
+                            videoId = idWithParams.split('?')[0];
+                        }
+                        if(videoId){
+                            const imageURL = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+                            const iframeElement = document.createElement('iframe')
+                            iframeElement.id = `${data.id}-iframe`
+                            iframeElement.src = data.src;
+                            iframeElement.style.border = "0px"; 
+                            iframeElement.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+                            iframeElement.referrerPolicy = "strict-origin-when-cross-origin";
+                            iframeElement.allowFullscreen = true;
+                            const YTiframeStyle = {                    
+                                position:'absolute',
+                                visibility: 'hidden',
+                                left: `${data.x* userSettings.viewportWidthUnit}px`,
+                                top: `${data.y* userSettings.viewportHeightUnit}px`,
+                                transform: `scale(${data.scaleX}, ${data.scaleY})`,
+                                border: `none`,
+                                zIndex: 1000
+                            }
+                            this.konvaContainer.appendChild(iframeElement)
+                            Object.assign(iframeElement.style, YTiframeStyle)
+                            Konva.Image.fromURL(imageURL, (image) =>{
+                                image.setAttrs({
+                                    x: data.x * userSettings.viewportWidthUnit,
+                                    y: data.y * userSettings.viewportHeightUnit,
+                                    draggable: true,
+                                    scaleX: data.scaleX,
+                                    scaleY: data.scaleY,
+                                    rotation:data.rotation,
+                                    id: `${data.id}-image`
+                                });
+                                image.on('dblclick', () =>{
+                                    const context: ShowYouTubeVideoContext = {
+                                        iframeElement: iframeElement,
+                                        image: image
+                                    }
+                                    
+                                    const feature: ShowYouTubeVideoFeature = new ShowYouTubeVideoFeature()
+                                    // iframeElement.style.left = `${image.x()}px`
+                                    // iframeElement.style.top = `${image.y()}px`
+                                    // iframeElement.style.width = `${image.width()}px`
+                                    // iframeElement.style.height = `${image.height()}px`
+                                    // iframeElement.style.visibility = 'visible'
+                                    featureManager.activate('showYouTube', data.id, feature, context)
+                                })
+                                image.on('dragend', ()=>{
+                                    this.canvasDataStore.updateNodeData(data.id, {
+                                        x: image.x() / userSettings.viewportWidthUnit,
+                                        y: image.y() / userSettings.viewportHeightUnit
+                                    });
+                                })
+                                this.layer.add(image);
+                            })
+                        }
+                        
+      
+                        break
+                }
+                break
         }
     }
 
@@ -510,6 +605,33 @@ class ImageTransformerFeature implements IFeature<ImageTransformerContext> {
     }
 }
 
+interface ShowYouTubeVideoContext{
+    iframeElement: HTMLIFrameElement;
+    image: Konva.Image
+}
+
+class ShowYouTubeVideoFeature implements IFeature<ShowYouTubeVideoContext>{
+    onActivated(context: ShowYouTubeVideoContext): () => void {
+        const {iframeElement, image} = context
+        iframeElement.style.left = `${image.x()}px`
+        iframeElement.style.top = `${image.y()}px`
+        iframeElement.style.width = `${image.width()}px`
+        iframeElement.style.height = `${image.height()}px`
+        iframeElement.style.visibility = 'visible'
+        iframeElement.style.transform = `scale(${image.scaleX()},${image.scaleY()})`;
+        iframeElement.addEventListener('mouseleave', () =>{
+            if(document.fullscreenElement !== iframeElement){
+                featureManager.deactivate('showYouTube')
+            }
+            
+        })
+        const cleanup = () =>{
+            iframeElement.style.visibility = 'hidden'
+        }
+        return cleanup
+    }
+}
+
 interface TextBlockTransformerContext {
     textBlock: Konva.Group;
     layer: Konva.Layer;
@@ -529,20 +651,3 @@ class TextBlockTransformerFeature implements IFeature<TextBlockTransformerContex
         return cleanup;
     }
 }
-
-// interface ArrowingContext {
-// 	startNodeId: string;
-// 	layer: Konva.Layer;
-// 	stage: Konva.Stage;
-// }
-
-// class ArrowingFeature implements IFeature<ArrowingContext> {
-// 	onActivated(context: ArrowingContext): () => void {
-// 		dragArrow(context.startNodeId, context.layer, context.stage);
-// 		showAllAnchorPoint(context.layer);
-// 		const cleanup = () => {
-// 			removeAnchorPoint(context.layer);
-// 		};
-// 		return cleanup;
-// 	}
-// }

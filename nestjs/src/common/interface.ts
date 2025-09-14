@@ -3,9 +3,10 @@ export enum CONTROLLER_TYPE {
   MODERN = 'MODERN',
 }
 
-export enum NODE_KIND{
+export enum NODE_KIND {
   NUMPAD_BLOCK = 'NUMPAD_BLOCK',
   CHARACTER_MOVE_IMAGE = 'CHARACTER_MOVE_IMAGE',
   ARROW = 'ARROW',
-  TEXT = 'TEXT'
+  TEXT = 'TEXT',
+  VIDEO = 'VIDEO',
 }

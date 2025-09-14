@@ -1,22 +1,30 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsUUID,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
+import { CANVAS_VIDEO_TYPE } from '../../entities/canvas-video.entity';
 
-export class UpdateCanvasTextDto {
+export class UpdateCanvasVideoDto {
   @ApiProperty({ description: 'UUIDv4, generate by client' })
   @IsUUID()
   id!: string;
 
-  @ApiProperty({ description: 'Text content' })
-  @IsString()
-  text: string;
+  @ApiProperty({ description: 'Video type', enum: CANVAS_VIDEO_TYPE })
+  @IsEnum(CANVAS_VIDEO_TYPE)
+  type: CANVAS_VIDEO_TYPE;
 
-  @ApiProperty({ description: 'Font color' })
+  @ApiProperty({ description: 'Video source URL' })
   @IsString()
-  fontColor: string;
+  src: string;
 
-  @ApiProperty({ description: 'Background color' })
+  @ApiProperty({ description: 'Video title', required: false })
   @IsString()
-  backgroundColor: string;
+  @IsOptional()
+  title?: string | null;
 
   @ApiProperty({ description: 'x, unit: viewportWidthUnit' })
   @IsNumber()

@@ -12,6 +12,7 @@ import { UserModule } from 'src/user/user.module';
 import { CanvasCharacterMoveImage } from './entities/canvas-character-move-image.entity';
 import { CanvasArrow } from './entities/canvas-arrow.entity';
 import { CanvasText } from './entities/canvas-text.entity';
+import { CanvasVideo } from './entities/canvas-video.entity';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { CanvasText } from './entities/canvas-text.entity';
       CanvasNumpadBlock,
       CanvasCharacterMoveImage,
       CanvasArrow,
-      CanvasText
+      CanvasText,
+      CanvasVideo,
     ]),
     JwtModule.registerAsync({
       inject: [ConfigService],

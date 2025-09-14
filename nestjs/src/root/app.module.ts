@@ -14,6 +14,7 @@ import { CanvasCharacterMoveImage } from 'src/canvas/entities/canvas-character-m
 import { CanvasModule } from 'src/canvas/canvas.module';
 import { CanvasArrow } from 'src/canvas/entities/canvas-arrow.entity';
 import { CanvasText } from 'src/canvas/entities/canvas-text.entity';
+import { CanvasVideo } from 'src/canvas/entities/canvas-video.entity';
 
 @Module({
   imports: [
@@ -30,7 +31,8 @@ import { CanvasText } from 'src/canvas/entities/canvas-text.entity';
           CanvasStage,
           CanvasCharacterMoveImage,
           CanvasArrow,
-          CanvasText
+          CanvasText,
+          CanvasVideo,
         ],
         synchronize: true,
       }),

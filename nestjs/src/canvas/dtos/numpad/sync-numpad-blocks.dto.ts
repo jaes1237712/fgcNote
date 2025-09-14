@@ -9,7 +9,7 @@ export class SyncCanvasNumpadBlocksDto {
   stageId: string;
 
   @ApiProperty({
-    type: () => [CreateCanvasNumpadBlockDto]
+    type: () => [CreateCanvasNumpadBlockDto],
   })
   @IsArray()
   @ValidateNested({ each: true }) // 確保陣列中的每個物件都符合 CreateCanvasNumpadBlockDto 的驗證規則

@@ -16,7 +16,7 @@ export class UpdateCanvasCharacterMoveImageDto {
 
   @ApiProperty()
   scaleX: number;
-  
+
   @ApiProperty()
   scaleY: number;
 

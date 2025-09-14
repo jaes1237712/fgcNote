@@ -9,19 +9,26 @@ import {
 import { User } from 'src/user/entities/user.entity';
 import { CanvasStage } from './canvas-stage.entity';
 
-@Entity({ name: 'canvas_text' })
-export class CanvasText {
+export enum CANVAS_VIDEO_TYPE {
+  YOUTUBE = 'YOUTUBE',
+}
+
+@Entity({ name: 'canvas_video' })
+export class CanvasVideo {
   @PrimaryColumn()
   id!: string; // generate by uuid from client
 
   @Column()
-  text: string;
+  type: CANVAS_VIDEO_TYPE;
 
   @Column()
-  fontColor: string;
+  src: string;
 
-  @Column()
-  backgroundColor: string;
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  title: string | null;
 
   @Column({ type: 'float' })
   x: number; // unit:viewportWidthUnit
@@ -38,14 +45,14 @@ export class CanvasText {
   @Column({ type: 'float' })
   scaleY: number;
 
-  @ManyToOne(() => User, (user) => user.canvas_text, {
+  @ManyToOne(() => User, (user) => user.canvas_video, {
     cascade: true,
     onDelete: 'CASCADE',
     eager: true,
   })
   user: User;
 
-  @ManyToOne(() => CanvasStage, (stage) => stage.text, {
+  @ManyToOne(() => CanvasStage, (stage) => stage.video, {
     cascade: true,
     onDelete: 'CASCADE',
     eager: true,

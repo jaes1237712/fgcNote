@@ -14,8 +14,14 @@ import {
   Put,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { ApiTags, ApiOperation, ApiParam, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { CanvasService} from './canvas.service';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiBody,
+} from '@nestjs/swagger';
+import { CanvasService } from './canvas.service';
 import { CanvasNumpadBlockDto } from './dtos/numpad/canvas-numpad-block.dto';
 import { CanvasStageDto } from './dtos/stage/canvas-stage.dto';
 import { SessionGuard } from 'src/common/session.guard';
@@ -37,6 +43,10 @@ import { CanvasTextDto } from './dtos/text/canvas-text.dto';
 import { CreateCanvasTextDto } from './dtos/text/create-canvas-text.dto';
 import { UpdateCanvasTextDto } from './dtos/text/update-canvas-text.dto';
 import { SyncCanvasTextDto } from './dtos/text/sync-canvas-text.dto';
+import { CanvasVideoDto } from './dtos/video/canvas-video.dto';
+import { CreateCanvasVideoDto } from './dtos/video/create-canvas-video.dto';
+import { UpdateCanvasVideoDto } from './dtos/video/update-canvas-video.dto';
+import { SyncCanvasVideoDto } from './dtos/video/sync-canvas-video.dto';
 
 @ApiTags('canvas')
 @Controller('canvas')
@@ -151,6 +161,28 @@ export class CanvasController {
     return this.canvasService.findAllTextsByStage(stageId);
   }
 
+  @Get('video/get/:stageId')
+  @ApiOperation({
+    description: 'Get all videos of certain stage',
+  })
+  @ApiParam({
+    name: 'stageId',
+    description: 'UUID of stage',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully get all videos',
+    type: CanvasVideoDto,
+    isArray: true,
+  })
+  async findAllVideos(
+    @Param('stageId', ParseUUIDPipe) stageId: string,
+  ): Promise<CanvasVideoDto[]> {
+    return this.canvasService.findAllVideosByStage(stageId);
+  }
+
   @Post('numpadBlock/create')
   @ApiOperation({
     summary: 'Create Numpad Block',
@@ -183,13 +215,13 @@ export class CanvasController {
   })
   @ApiBody({
     type: CreateCanvasNumpadBlockDto, // 指定陣列中每個元素的類型
-    isArray: true, 
+    isArray: true,
   })
   @ApiResponse({
     status: 200,
     description: 'Numpad Blocks created successfully',
     type: CanvasNumpadBlockDto,
-    isArray: true
+    isArray: true,
   })
   @ApiResponse({
     status: 401,
@@ -250,14 +282,14 @@ export class CanvasController {
   })
   @ApiBody({
     type: CreateCanvasCharacterMoveImageDto, // 指定陣列中每個元素的類型
-    isArray: true, 
+    isArray: true,
     description: 'An array of characterMoveImages DTO.', // 可選的描述
   })
   @ApiResponse({
     status: 200,
     description: 'characterMoveImages created successfully',
     type: CanvasCharacterMoveImageDto,
-    isArray: true
+    isArray: true,
   })
   @ApiResponse({
     status: 401,
@@ -318,14 +350,14 @@ export class CanvasController {
   })
   @ApiBody({
     type: CreateCanvasArrowDto, // 指定陣列中每個元素的類型
-    isArray: true, 
+    isArray: true,
     description: 'An array of CreateArrow DTO.', // 可選的描述
   })
   @ApiResponse({
     status: 200,
     description: 'arrows created successfully',
     type: CanvasArrowDto,
-    isArray: true
+    isArray: true,
   })
   @ApiResponse({
     status: 401,
@@ -386,14 +418,14 @@ export class CanvasController {
   })
   @ApiBody({
     type: CreateCanvasTextDto, // 指定陣列中每個元素的類型
-    isArray: true, 
+    isArray: true,
     description: 'An array of CreateText DTO.', // 可選的描述
   })
   @ApiResponse({
     status: 200,
     description: 'texts created successfully',
     type: CanvasTextDto,
-    isArray: true
+    isArray: true,
   })
   @ApiResponse({
     status: 401,
@@ -417,6 +449,74 @@ export class CanvasController {
     }
     if (req.user) {
       return this.canvasService.createTexts(body, req.user); // 直接呼叫批次服務方法
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Post('video/create')
+  @ApiOperation({
+    summary: 'Create video',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Create video Successfully',
+    type: CanvasVideoDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async createVideo(
+    @Body() body: CreateCanvasVideoDto,
+    @Req() req: Request,
+  ): Promise<CanvasVideoDto> {
+    if (req.user) {
+      return this.canvasService.createVideo(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Post('video/bulk-create') // 新的 URL 路徑，使用複數和 bulk-create
+  @ApiOperation({
+    summary: 'Create multiple videos', // 清晰的 summary
+    description: 'Creates multiple videos in a single request.',
+  })
+  @ApiBody({
+    type: CreateCanvasVideoDto, // 指定陣列中每個元素的類型
+    isArray: true,
+    description: 'An array of CreateVideo DTO.', // 可選的描述
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'videos created successfully',
+    type: CanvasVideoDto,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'One or more stages not found',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request (e.g., empty array provided)',
+  })
+  @UseGuards(SessionGuard)
+  async createVideos(
+    @Body() body: CreateCanvasVideoDto[], // 接受 DTO 陣列
+    @Req() req: Request,
+  ): Promise<CanvasVideoDto[]> {
+    if (!body || body.length === 0) {
+      throw new BadRequestException('Request body must not be empty.');
+    }
+    if (req.user) {
+      return this.canvasService.createVideos(body, req.user); // 直接呼叫批次服務方法
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
@@ -567,6 +667,31 @@ export class CanvasController {
   ): Promise<CanvasTextDto> {
     if (req.user) {
       return this.canvasService.updateText(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Patch('video/update')
+  @ApiOperation({
+    summary: 'Update video',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Update video Successfully',
+    type: CanvasVideoDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async updateVideo(
+    @Body() body: UpdateCanvasVideoDto,
+    @Req() req: Request,
+  ): Promise<CanvasVideoDto> {
+    if (req.user) {
+      return this.canvasService.updateVideo(body, req.user);
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
@@ -724,12 +849,14 @@ export class CanvasController {
     @Req() req: Request,
   ): Promise<DeleteSummary> {
     if (req.user) {
-      return this.canvasService.removeCharacterMoveImageByStageId(stageId, req.user);
+      return this.canvasService.removeCharacterMoveImageByStageId(
+        stageId,
+        req.user,
+      );
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
   }
-
 
   @Delete('arrow/delete/:arrowId')
   @ApiOperation({
@@ -855,15 +982,77 @@ export class CanvasController {
     }
   }
 
+  @Delete('video/delete/:videoId')
+  @ApiOperation({
+    description: 'Delete Certain video',
+  })
+  @ApiParam({
+    name: 'videoId',
+    description: 'UUID of video',
+    type: 'string',
+    format: 'uuidV4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully delete video',
+    type: DeleteSummary,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async deleteVideo(
+    @Param('videoId', ParseUUIDPipe) videoId: string,
+    @Req() req: Request,
+  ): Promise<DeleteSummary> {
+    if (req.user) {
+      return this.canvasService.removeVideo(videoId, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Delete('video/delete/:stageId')
+  @ApiOperation({
+    description: 'Delete All videos belong to this stage',
+  })
+  @ApiParam({
+    name: 'stageId',
+    description: 'UUID of stage',
+    type: 'string',
+    format: 'uuidV4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully delete videos',
+    type: DeleteSummary,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async deleteVideosByStageId(
+    @Param('stageId', ParseUUIDPipe) stageId: string,
+    @Req() req: Request,
+  ): Promise<DeleteSummary> {
+    if (req.user) {
+      return this.canvasService.removeVideosByStageId(stageId, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
   @Put('numpadBlock/sync')
   @ApiBody({
-    type: SyncCanvasNumpadBlocksDto
+    type: SyncCanvasNumpadBlocksDto,
   })
   @ApiResponse({
     status: 200,
     description: 'Numpad Blocks sync successfully',
     type: CanvasNumpadBlockDto,
-    isArray: true
+    isArray: true,
   })
   @ApiResponse({
     status: 401,
@@ -877,24 +1066,23 @@ export class CanvasController {
   async syncNumpadBlocks(
     @Body() syncDto: SyncCanvasNumpadBlocksDto,
     @Req() req: Request,
-  ):Promise<CanvasNumpadBlockDto[]>{
-    if(req.user){
+  ): Promise<CanvasNumpadBlockDto[]> {
+    if (req.user) {
       return this.canvasService.syncNumpadBlocks(syncDto, req.user);
-    }else{
+    } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
-    
   }
 
   @Put('characterMoveImage/sync')
   @ApiBody({
-    type: SyncCanvasCharacterMoveImagesDto
+    type: SyncCanvasCharacterMoveImagesDto,
   })
   @ApiResponse({
     status: 200,
     description: 'Character Move Images sync successfully',
     type: CanvasCharacterMoveImageDto,
-    isArray: true
+    isArray: true,
   })
   @ApiResponse({
     status: 401,
@@ -908,23 +1096,23 @@ export class CanvasController {
   async syncCharacterMoveImages(
     @Body() syncDto: SyncCanvasCharacterMoveImagesDto,
     @Req() req: Request,
-  ):Promise<CanvasCharacterMoveImageDto[]> {
-    if(req.user){
+  ): Promise<CanvasCharacterMoveImageDto[]> {
+    if (req.user) {
       return this.canvasService.syncCharacterMoveImages(syncDto, req.user);
-    }else{
+    } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
   }
 
   @Put('arrow/sync')
   @ApiBody({
-    type: SyncCanvasArrowsDto
+    type: SyncCanvasArrowsDto,
   })
   @ApiResponse({
     status: 200,
     description: 'Arrows sync successfully',
     type: CanvasArrowDto,
-    isArray: true
+    isArray: true,
   })
   @ApiResponse({
     status: 401,
@@ -938,23 +1126,23 @@ export class CanvasController {
   async syncArrows(
     @Body() syncDto: SyncCanvasArrowsDto,
     @Req() req: Request,
-  ) :Promise<CanvasArrowDto[]>{
-    if(req.user){
+  ): Promise<CanvasArrowDto[]> {
+    if (req.user) {
       return this.canvasService.syncArrows(syncDto, req.user);
-    }else{
+    } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
   }
 
   @Put('text/sync')
   @ApiBody({
-    type: SyncCanvasTextDto
+    type: SyncCanvasTextDto,
   })
   @ApiResponse({
     status: 200,
     description: 'Texts sync successfully',
     type: CanvasTextDto,
-    isArray: true
+    isArray: true,
   })
   @ApiResponse({
     status: 401,
@@ -968,10 +1156,40 @@ export class CanvasController {
   async syncTexts(
     @Body() syncDto: SyncCanvasTextDto,
     @Req() req: Request,
-  ) :Promise<CanvasTextDto[]>{
-    if(req.user){
+  ): Promise<CanvasTextDto[]> {
+    if (req.user) {
       return this.canvasService.syncTexts(syncDto, req.user);
-    }else{
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Put('video/sync')
+  @ApiBody({
+    type: SyncCanvasVideoDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Videos sync successfully',
+    type: CanvasVideoDto,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Stage not found',
+  })
+  @UseGuards(SessionGuard)
+  async syncVideos(
+    @Body() syncDto: SyncCanvasVideoDto,
+    @Req() req: Request,
+  ): Promise<CanvasVideoDto[]> {
+    if (req.user) {
+      return this.canvasService.syncVideos(syncDto, req.user);
+    } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
   }
