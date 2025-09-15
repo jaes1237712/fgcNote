@@ -7,6 +7,7 @@ import { featureManager, type IFeature } from './canvas-feature-manager';
 import { contextMenuState } from './context_menu/canvas-context-menu.svelte';
 import { PUBLIC_NESTJS_URL } from '$env/static/public';
 import type { CanvasTextDto } from '$lib/client';
+import { toolBarState } from './tool_bar/canvas-tool-bar.svelte';
 
 export class KonvaObjectManager{
     private stage: Konva.Stage;
@@ -30,12 +31,15 @@ export class KonvaObjectManager{
 		});
 		this.stage.on('click tap', () => {
 			contextMenuState.visible = false;
+            toolBarState.show('stage',this.stage.id())
 			featureManager.deactivate();
 		});
         this.userSettings = userSettings
         this.layer = new Konva.Layer();
         this.stage.add(this.layer);
         this.canvasDataStore = canvasDataStore
+        const rec = this.konvaContainer.getBoundingClientRect()
+        toolBarState.show('stage',`${this.stage.id}`,rec.left,rec.top)
     }
 
     createNode(data:CanvasNodeData): void{
@@ -114,6 +118,7 @@ export class KonvaObjectManager{
                     };
                     const feature = new NumpadBlockSelectFeature();
                     featureManager.activate<NumpadBlockSelectContext>('anchor-points', block.id(), feature, context);
+                    toolBarState.show('numpadBlock', data.id)
                 });
                 block.on('dragmove', () => {
                     this.canvasDataStore.updateNodeData(block.id(), {
@@ -169,6 +174,10 @@ export class KonvaObjectManager{
                         fill: 'white',
                         stroke: 'white'
                     });
+                    arrow.on('click tap', ()=>{
+                        // TODO 調整樣式那些功能
+                        toolBarState.show('arrow', data.id)
+                    })
                     this.layer.add(arrow)
                 }
 
@@ -197,6 +206,7 @@ export class KonvaObjectManager{
                             feature,
                             context
                         );
+                        toolBarState.show('image',data.id)
                     });
                     image.on('contextmenu', (event) => {
                         event.evt.preventDefault();
@@ -313,6 +323,7 @@ export class KonvaObjectManager{
                 })
                 textBlock.on('click tap', (e) => {
                     e.cancelBubble = true;
+                    //TODO 我覺得文字應該要統一用FONTSIZE而非SCALE
                     const context: TextBlockTransformerContext = {
                         textBlock: textBlock,
                         layer: this.layer
@@ -324,6 +335,7 @@ export class KonvaObjectManager{
                         feature,
                         context
                     );
+                    toolBarState.show('text',`${data.id}`)
                 });
                 textBlock.on('dragstart', () =>{
                     featureManager.deactivate()
@@ -354,8 +366,7 @@ export class KonvaObjectManager{
                             videoId = idWithParams.split('?')[0];
                         }
                         if(videoId){
-                            const imageURL = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
-                            
+                            const imageURL = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`                      
                             Konva.Image.fromURL(imageURL, (image) =>{
                                 image.setAttrs({
                                     x: data.x * userSettings.viewportWidthUnit,
@@ -395,6 +406,7 @@ export class KonvaObjectManager{
                                         feature,
                                         context
                                     );
+                                    toolBarState.show('video',data.id)
                                 });
                                 image.on('transformend', (e) => {
                                     this.canvasDataStore.updateNodeData(image.id(), {
@@ -444,7 +456,6 @@ export class KonvaObjectManager{
                                     featureManager.activate('showYouTube', data.id, feature, context)
                                 })
                             })
-                            
                         }
                         
       

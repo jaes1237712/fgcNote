@@ -6,6 +6,7 @@
 	import { KonvaObjectManager } from './canvas-object-manager';
 	import type { UserSettings } from '$lib/userInterface';
 	import type { CONTROLLER_TYPE } from './numpad/numpadCompiler';
+	import { toolBarState } from './tool_bar/canvas-tool-bar.svelte';
 	let {stageData, userSettings}: {stageData: CanvasStageDto;userSettings: UserSettings;} = $props();
 	let konvaContainer = $state<HTMLDivElement>();
 	let numpadEditorDialog = $state<HTMLDialogElement>();
@@ -140,11 +141,24 @@
 </script>
 
 <div id="konva-container" bind:this={konvaContainer}>
-	<div class="konva-tool-container">
 
-	</div>
 </div>
 
+
+{#if toolBarState.visible}
+<div class="konva-tool-container"
+	style="
+	position:fixed; left: {toolBarState.position.x}px; top: {toolBarState.position.y}px;
+	"
+>
+	{#each toolBarState.options as option}
+		<button id={option.containerId} class="tool-bar-item" onclick={()=>{console.log(option.hoverString)}}>
+			<option.icon class="tool-bar-icon"/>
+			<span class="tool-bar-hover-text">{option.hoverString}</span>
+		</button>
+	{/each}
+</div>
+{/if}
 <!-- 自定義右鍵選單 -->
 {#if contextMenuState.visible}
 	<div
@@ -352,5 +366,31 @@
 	.text-dim{
 		font-size: small;
 		color: gray;
+	}
+
+	:global(.tool-bar-hover-text){
+		visibility: hidden;
+	}
+	.konva-tool-container{
+		display: flex;
+		flex-direction: row;
+		gap: 2px;
+	}
+	:global {
+		.tool-bar-item{
+			position: relative;
+			display: inline-block;
+		}
+		.tool-bar-hover-text{
+			position: absolute;
+			left: 0;
+			top: 2rem;
+			visibility: hidden;
+			z-index: 999;
+		}
+		.tool-bar-item:hover .tool-bar-hover-text{
+			visibility: visible;
+			background-color: white;
+		}
 	}
 </style>
