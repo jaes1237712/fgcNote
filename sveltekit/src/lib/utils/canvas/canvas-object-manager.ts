@@ -14,6 +14,7 @@ export class KonvaObjectManager{
     private userSettings: UserSettings = null
     private canvasDataStore: CanvasDataStore
     private konvaContainer: HTMLDivElement
+    public youtubePlayers = new Map<string, YT.Player>();
 
     constructor(container: HTMLDivElement, stageId: string, userSettings: UserSettings, canvasDataStore: CanvasDataStore) {
         this.konvaContainer = container
@@ -354,24 +355,7 @@ export class KonvaObjectManager{
                         }
                         if(videoId){
                             const imageURL = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
-                            const iframeElement = document.createElement('iframe')
-                            iframeElement.id = `${data.id}-iframe`
-                            iframeElement.src = data.src;
-                            iframeElement.style.border = "0px"; 
-                            iframeElement.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-                            iframeElement.referrerPolicy = "strict-origin-when-cross-origin";
-                            iframeElement.allowFullscreen = true;
-                            const YTiframeStyle = {                    
-                                position:'absolute',
-                                visibility: 'hidden',
-                                left: `${data.x* userSettings.viewportWidthUnit}px`,
-                                top: `${data.y* userSettings.viewportHeightUnit}px`,
-                                transform: `scale(${data.scaleX}, ${data.scaleY})`,
-                                border: `none`,
-                                zIndex: 1000
-                            }
-                            this.konvaContainer.appendChild(iframeElement)
-                            Object.assign(iframeElement.style, YTiframeStyle)
+                            
                             Konva.Image.fromURL(imageURL, (image) =>{
                                 image.setAttrs({
                                     x: data.x * userSettings.viewportWidthUnit,
@@ -382,15 +366,6 @@ export class KonvaObjectManager{
                                     rotation:data.rotation,
                                     id: `${data.id}`
                                 });
-                                image.on('dblclick', () =>{
-                                    const context: ShowYouTubeVideoContext = {
-                                        iframeElement: iframeElement,
-                                        image: image
-                                    }
-                                    
-                                    const feature: ShowYouTubeVideoFeature = new ShowYouTubeVideoFeature()
-                                    featureManager.activate('showYouTube', data.id, feature, context)
-                                })
                                 image.on('dragend', ()=>{
                                     this.canvasDataStore.updateNodeData(data.id, {
                                         x: image.x() / userSettings.viewportWidthUnit,
@@ -407,8 +382,69 @@ export class KonvaObjectManager{
                                         data.id
                                     );
                                 })
+                                image.on('click tap', (e) => {
+                                    e.cancelBubble = true;
+                                    const context: ImageTransformerContext = {
+                                        imageNode: image,
+                                        layer: this.layer
+                                    };
+                                    const feature = new ImageTransformerFeature();
+                                    featureManager.activate<ImageTransformerContext>(
+                                        'transformer',
+                                        image.id(),
+                                        feature,
+                                        context
+                                    );
+                                });
+                                image.on('transformend', (e) => {
+                                    this.canvasDataStore.updateNodeData(image.id(), {
+                                        rotation: image.rotation(),
+                                        scaleX: image.scaleX(),
+                                        scaleY: image.scaleY()
+                                    });
+                                });
                                 this.layer.add(image);
+                                const playerContainer = document.createElement('div')
+                                playerContainer.id = `${data.id}-player`
+                                const YTiframeStyle = {                    
+                                    position:'absolute',
+                                    visibility: 'hidden',
+                                    left: `${data.x* userSettings.viewportWidthUnit}px`,
+                                    top: `${data.y* userSettings.viewportHeightUnit}px`,
+                                    width: `${image.width()}px`,
+                                    height: `${image.height()}px`,
+                                    transform: `scale(${data.scaleX}, ${data.scaleY})`,
+                                    border: `none`,
+                                    zIndex: 1000,
+                                    transformOrigin: `top left`,
+                                }
+                                Object.assign(playerContainer.style, YTiframeStyle)
+                                this.konvaContainer.appendChild(playerContainer)
+                                const playerInstance = new YT.Player(playerContainer.id, {
+                                    videoId: videoId,
+                                    playerVars: {
+                                        'playsinline': 1,
+                                        'autoplay': 0, // 不要自動播放，讓使用者控制
+                                        'controls': 1,
+                                        'rel': 0,
+                                        'showinfo': 0,
+                                        'modestbranding': 1,
+                                    },
+                                })
+                                this.youtubePlayers.set(`${data.id}`, playerInstance)
+                                const iframeElement = document.getElementById(`${data.id}-player`) as HTMLIFrameElement
+                                image.on('dblclick', () =>{
+                                    const context: ShowYouTubeVideoContext = {
+                                        iframeElement: iframeElement,
+                                        image: image,
+                                        playerInstance: playerInstance
+                                    }
+                                    
+                                    const feature: ShowYouTubeVideoFeature = new ShowYouTubeVideoFeature()
+                                    featureManager.activate('showYouTube', data.id, feature, context)
+                                })
                             })
+                            
                         }
                         
       
@@ -598,20 +634,23 @@ class ImageTransformerFeature implements IFeature<ImageTransformerContext> {
 
 interface ShowYouTubeVideoContext{
     iframeElement: HTMLIFrameElement;
-    image: Konva.Image
+    image: Konva.Image;
+    playerInstance: YT.Player
 }
 
 class ShowYouTubeVideoFeature implements IFeature<ShowYouTubeVideoContext>{
     onActivated(context: ShowYouTubeVideoContext): () => void {
-        const {iframeElement, image} = context
+        const {iframeElement, image, playerInstance} = context
         iframeElement.style.left = `${image.x()}px`
         iframeElement.style.top = `${image.y()}px`
         iframeElement.style.width = `${image.width()}px`
         iframeElement.style.height = `${image.height()}px`
         iframeElement.style.visibility = 'visible'
         iframeElement.style.transform = `scale(${image.scaleX()},${image.scaleY()})`;
+
         iframeElement.addEventListener('mouseleave', () =>{
-            if(document.fullscreenElement !== iframeElement){
+            console.log('mouseleave')
+            if(document.fullscreenElement !== iframeElement && playerInstance.getPlayerState() !==1){
                 featureManager.deactivate('showYouTube')
             }
             

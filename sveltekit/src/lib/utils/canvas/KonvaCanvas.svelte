@@ -14,6 +14,10 @@
 		type: CONTROLLER_TYPE
 	}>();
 	let videoFormDialog = $state<HTMLDialogElement>();
+	let videoForm = $state<HTMLFormElement>();
+	let videoType = $state<string>();
+	let videoTitle = $state<string>();
+	let videoUrl = $state<string>("https://www.youtube.com/watch?v=nGwZ853dbJk");
 	let imageSearchDialog = $state<HTMLDialogElement>();
 	let canvasDataStore = $state<CanvasDataStore>()
 	let konvaObjectManger = $state<KonvaObjectManager>();
@@ -27,17 +31,10 @@
 		)
 		canvasDataStore.setKonvaObjectManger(konvaObjectManger)
 		await canvasDataStore.SetStageDataAndFetchBackendData(stageData)
-		const videoForm = document.getElementById("video-form") 
-		const videoTypeSelect = document.getElementById('video-type-select') as HTMLSelectElement; // 獲取下拉選單
-		const videoUrlInput = document.getElementById('video-url-input') as HTMLInputElement; // 獲取 URL 輸入框
-		const videoTitleInput = document.getElementById('video-title-input') as HTMLInputElement; // 獲取 URL 輸入框
-
 		videoForm.addEventListener('submit', function(event) {
 			event.preventDefault();
-			if(videoTypeSelect.value === 'YOUTUBE'){
-				const enteredVideoUrl = videoUrlInput.value;   // 獲取輸入的影片 URL
-				const videoTitle = videoTitleInput.value;
-				const videoId = enteredVideoUrl.split('/watch?v=')[1]
+			if(videoType === 'YOUTUBE'){
+				const videoId = videoUrl.split('/watch?v=')[1]
 				const newId = crypto.randomUUID()
 				const videoData: CanvasVideoDto = {
 					kind: 'VIDEO',
@@ -142,7 +139,11 @@
 	
 </script>
 
-<div id="konva-container" bind:this={konvaContainer}></div>
+<div id="konva-container" bind:this={konvaContainer}>
+	<div class="konva-tool-container">
+
+	</div>
+</div>
 
 <!-- 自定義右鍵選單 -->
 {#if contextMenuState.visible}
@@ -225,24 +226,49 @@
 </dialog>
 
 <dialog id="video-dialog" bind:this={videoFormDialog}>
-	<form id="video-form" class="video-form">
-		<label>
-			Video Type
-			<select id="video-type-select" name="video-type"required>
-				<option value="YOUTUBE">
-					YouTube
-				</option>
-			</select>
-		</label>
-		<label>
-			Video URL
-			<input id="video-url-input" name="video-url"  type='url' required/>
-		</label>
-		<label>
-			Your Title
-			<input id="video-title-input" name="video-url"  type='text' required/>
-		</label>
-		<input type='submit' value="Create"/>
+	<form id="video-form" class="video-form" bind:this={videoForm}>
+		<div class="video-form-header">
+			<label>
+				Video Type
+				<select id="video-type-select" name="video-type" required bind:value={videoType}>
+					<option value="YOUTUBE">
+						YouTube
+					</option>
+				</select>
+			</label>
+			<label>
+				Your Title
+				<input id="video-title-input" name="video-url"  type='text' required bind:value={videoTitle}/>
+			</label>
+		</div>	
+		<div class="video-form-preview">
+			<label>
+				Video URL
+				<input 
+				id="video-url-input" name="video-url"  type='url' required bind:value={videoUrl}/>
+				<div class="text-dim">
+					Format: https://www.youtube.com/watch?v=nGwZ853dbJk
+				</div>
+			</label>
+			
+			{#if videoType}
+				{#if videoType === 'YOUTUBE' && videoUrl}
+					<!-- {#key videoUrl} -->
+					<iframe
+						src={"https://www.youtube.com/embed/"+videoUrl.split('/watch?v=')[1]}
+						title={videoTitle}
+						allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+						referrerpolicy="strict-origin-when-cross-origin" 
+						allowfullscreen
+					>
+					</iframe>
+					<!-- {/key} -->
+				{/if}
+			{/if}
+		</div>
+		<div class="video-form-footer">
+			<input type='submit' value="Create"/>
+		</div>
 	</form>
 </dialog>
 
@@ -254,7 +280,7 @@
 	}
 	dialog {
 		overflow: visible;
-		background-color: oklch(0.25 0.02 264.15);
+		background-color: oklch(0.1 0.02 264.15);
 	}
 	.dialog-wrapper {
 		display: flex;
@@ -290,6 +316,41 @@
 		field-sizing: content;
 	}
 	.video-form{
+		height: 50vh;
+		width: 50vw;
 		color: white;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		padding: 1rem;
+	
+		.video-form-header{
+			font-size: larger;
+			height: 10%;
+		}
+		.video-form-preview{
+			height: 80%;
+			display: flex;
+			flex-direction: column;
+			box-sizing: border-box;
+			label {
+				margin-bottom: 10px; /* 在 URL 输入框下方留白 */
+				display: block; /* 确保 label 独占一行 */
+			}
+			iframe {
+				flex-grow: 1; /* 关键：让 iframe 占据所有剩余的垂直空间 */
+				/* width: 100%; 让 iframe 填充所有可用的水平空间 */
+				border: none; /* 移除 iframe 默认边框 */
+				min-height: 0; /* 允许 iframe 在必要时缩小到 0 高度，但 flex-grow 会使其伸展 */
+			}
+		}
+		.video-form-footer{
+			display: flex;
+			flex-direction: row-reverse;
+		}
+	}
+	.text-dim{
+		font-size: small;
+		color: gray;
 	}
 </style>
