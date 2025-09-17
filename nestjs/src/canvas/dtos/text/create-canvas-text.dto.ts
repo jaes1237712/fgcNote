@@ -30,13 +30,10 @@ export class CreateCanvasTextDto {
   @IsNumber()
   rotation: number;
 
-  @ApiProperty({ description: 'scaleX' })
+  @ApiProperty({ description: 'fontSize' })
   @IsNumber()
-  scaleX: number;
+  fontSize: number;
 
-  @ApiProperty({ description: 'scaleY' })
-  @IsNumber()
-  scaleY: number;
 
   @ApiProperty({ description: 'Stage ID' })
   @IsUUID()

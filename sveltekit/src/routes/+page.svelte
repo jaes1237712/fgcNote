@@ -24,6 +24,7 @@
 	import '$lib/component/NumpadEditor.svelte';
 	import { contextMenuState } from '$lib/utils/canvas/context_menu/canvas-context-menu.svelte';
 	import KonvaCanvas from '$lib/utils/canvas/KonvaCanvas.svelte';
+	import { Settings } from '@lucide/svelte';
 	let { data }: PageProps = $props();
 	const SCREEN_WIDTH = screen.width;
 	const SCREEN_HEIGHT = screen.height;
@@ -37,13 +38,7 @@
 		commandSize: 3,
 		defaultControllerType: 'CLASSIC'
 	}) 
-	let numpadEditorValue: {
-		input: string;
-		type: CONTROLLER_TYPE;
-	} = $state({
-		input: '',
-		type: 'CLASSIC' //之後從data中拿取
-	});
+	let userSettingsDialog = $state<HTMLDialogElement>()
 	let characterMe = $state<CharacterDto>(data.allCharacters[0]);
 	let characterOpponent = $state<CharacterDto>(data.allCharacters[1]);
 	let currentStageDtos = $derived.by<CanvasStageDto[]>(() => {
@@ -284,6 +279,9 @@
 					{/each}
 				{/key}
 			</div>
+			<button class="user-settings-button" onclick={()=>userSettingsDialog.showModal()}>
+				<Settings class="user-settings-icon"/>
+			</button>	
 		</div>
 		{#if currentStageDto && currentUserSettings}
 			{#key [currentStageDto, currentUserSettings]}
@@ -292,6 +290,26 @@
 		{/if}
 	</main>
 </div>
+
+<dialog class="user-settings-dialog" bind:this={userSettingsDialog}>
+	<div class="user-settings-dialog-header">
+		User Setting
+	</div>
+	<div class="user-settings-dialog-main">
+		<div class="user-settings-dialog-left-panel">
+		</div>
+		<div class="user-settings-dialog-content">
+		</div>
+	</div>
+	<div class="user-settings-dialog-footer">
+		<button onclick={()=>userSettingsDialog.close()}>
+			保存
+		</button>
+		<button onclick={()=>userSettingsDialog.close()}>
+			關閉
+		</button>
+	</div>
+</dialog>
 
 <style>
 	#root {
@@ -326,6 +344,7 @@
 		grid-template-columns: 20% 1fr;
 		grid-template-rows: 1fr;
 		.left-panel {
+			position: relative;
 			background-color: oklch(0.21 0.01 258.37);
 			padding: 1rem;
 			hr.primary-hr {
@@ -373,40 +392,23 @@
 					}
 				}
 			}
-		}
-	}
-	/* dialog {
-		overflow: visible;
-		background-color: oklch(0.25 0.02 264.15);
-	}
-	.dialog-wrapper {
-		display: flex;
-		flex-direction: column;
-		justify-content: space-evenly;
-		overflow: hidden;
-		width: 40vw;
-		height: 40vh;
-		padding: 1rem;
-		numpad-editor {
-			width: 100%;
-			height: 60%;
-			color: white;
-		}
-		.btns {
-			display: flex;
-			flex-direction: row;
-			align-items: center;
-			justify-content: space-evenly;
-			z-index: 999;
-			button {
-				width: 4rem;
-				height: 2rem;
+			.user-settings-button{
+				position: absolute;
+				border: none;
+				left:0;
+				bottom: 0;
+				color: white;
+				background-color: transparent;
+				:global(.user-settings-icon){
+					width: 5vh;
+					height: 5vh;
+				}
 			}
 		}
 	}
-	search-character-image {
-		display: block;
-		width: 50vw;
-		height: 80vh;
-	} */
+	.user-settings-dialog{
+		width: 70vw;
+		height: 70vh;
+		background-color: oklch(0.21 0.01 268.19);
+	}
 </style>

@@ -1,4 +1,4 @@
-export type FeatureType = 'showYouTube'|'transformer' | 'text-transformer' | 'anchor-points' | 'arrowing' | 'dragging' | 'text-editing';
+export type FeatureType = 'showYouTube'|'transformer' | 'text-transformer' | 'anchor-points' | 'arrowing' | 'dragging' | 'text-editing' | 'arrow-select';
 
 export interface IFeature<TContext> {
 	onActivated(context: TContext): () => void;

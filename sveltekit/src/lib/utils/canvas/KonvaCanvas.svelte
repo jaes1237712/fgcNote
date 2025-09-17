@@ -1,12 +1,13 @@
 <script lang="ts">
 	import {onMount } from 'svelte';
-	import { CanvasDataStore} from './canvas-data-manager.svelte';
+	import { CanvasDataStore, type CanvasNodeData} from './canvas-data-manager.svelte';
 	import { contextMenuState } from './context_menu/canvas-context-menu.svelte';
 	import type { CanvasCharacterMoveImageDto, CanvasNumpadBlockDto, CanvasStageDto, CanvasTextDto, CanvasVideoDto, CharacterMoveImageDto } from '$lib/client';
 	import { KonvaObjectManager } from './canvas-object-manager';
 	import type { UserSettings } from '$lib/userInterface';
 	import type { CONTROLLER_TYPE } from './numpad/numpadCompiler';
-	import { toolBarState } from './tool_bar/canvas-tool-bar.svelte';
+	import { ToolBarState } from './tool_bar/canvas-tool-bar.svelte';
+	import TextToolBar from './tool_bar/TextToolBar.svelte';
 	let {stageData, userSettings}: {stageData: CanvasStageDto;userSettings: UserSettings;} = $props();
 	let konvaContainer = $state<HTMLDivElement>();
 	let numpadEditorDialog = $state<HTMLDialogElement>();
@@ -22,13 +23,18 @@
 	let imageSearchDialog = $state<HTMLDialogElement>();
 	let canvasDataStore = $state<CanvasDataStore>()
 	let konvaObjectManger = $state<KonvaObjectManager>();
+	// let selectedNode = $state<CanvasNodeData>()
+	let toolBarState = $state<ToolBarState>()
+	let toolBarData = $derived<CanvasNodeData| CanvasStageDto>(toolBarState.targetData);
 	onMount( async () => {
 		canvasDataStore = new CanvasDataStore()
+		toolBarState = new ToolBarState('stage',stageData)
 		konvaObjectManger = new KonvaObjectManager(
 			konvaContainer,
-			stageData.id,
+			stageData,
 			userSettings,
-			canvasDataStore
+			canvasDataStore,
+			toolBarState
 		)
 		canvasDataStore.setKonvaObjectManger(konvaObjectManger)
 		await canvasDataStore.SetStageDataAndFetchBackendData(stageData)
@@ -75,16 +81,15 @@
 					kind: 'TEXT',
 					id: new_id,
 					text: 'EDIT ME',
-					fontColor: 'white',
-					backgroundColor:'oklch(0.67 0.11 247.16)',
+					fontColor: '#ffffff',
+					backgroundColor:'#589bd5',
 					x: (contextMenuState.position.x - rec_konva.left) /
 					userSettings.viewportWidthUnit,
 					y:
 					(contextMenuState.position.y - rec_konva.top) /
 					userSettings.viewportHeightUnit,
 					rotation: 0,
-					scaleX: 1,
-					scaleY: 1
+					fontSize:32
 				}
 				canvasDataStore.addNodeData(new_text)
 				break
@@ -137,7 +142,6 @@
 		}
 		
 	}
-	
 </script>
 
 <div id="konva-container" bind:this={konvaContainer}>
@@ -145,19 +149,20 @@
 </div>
 
 
-{#if toolBarState.visible}
-<div class="konva-tool-container"
-	style="
-	position:fixed; left: {toolBarState.position.x}px; top: {toolBarState.position.y}px;
-	"
->
-	{#each toolBarState.options as option}
-		<button id={option.containerId} class="tool-bar-item" onclick={()=>{console.log(option.hoverString)}}>
-			<option.icon class="tool-bar-icon"/>
-			<span class="tool-bar-hover-text">{option.hoverString}</span>
-		</button>
-	{/each}
-</div>
+{#if toolBarState}
+	{#if toolBarState.visible}
+	<div class="konva-tool-container"
+		style="
+		position:fixed; left: {toolBarState.position.x}px; top: {toolBarState.position.y}px;
+		"
+	>
+		{#if 'kind' in toolBarState.targetData}
+			{#if toolBarState.targetType === 'text' && toolBarState.targetData.kind === 'TEXT' }
+				<TextToolBar canvasDataStore={canvasDataStore} InitialTextData={toolBarState.targetData}/>
+			{/if}
+		{/if}
+	</div>
+	{/if}
 {/if}
 <!-- 自定義右鍵選單 -->
 {#if contextMenuState.visible}
@@ -370,11 +375,6 @@
 
 	:global(.tool-bar-hover-text){
 		visibility: hidden;
-	}
-	.konva-tool-container{
-		display: flex;
-		flex-direction: row;
-		gap: 2px;
 	}
 	:global {
 		.tool-bar-item{

@@ -12,6 +12,7 @@ import { CanvasCharacterMoveImage } from 'src/canvas/entities/canvas-character-m
 import { CanvasArrow } from 'src/canvas/entities/canvas-arrow.entity';
 import { CanvasText } from 'src/canvas/entities/canvas-text.entity';
 import { CanvasVideo } from 'src/canvas/entities/canvas-video.entity';
+import { CanvasArrowAnchor } from 'src/canvas/entities/canvas-arrow-anchor.entity';
 
 @Entity({ name: 'user' })
 export class User {
@@ -49,11 +50,14 @@ export class User {
   canvas_stages: CanvasStage[];
 
   @OneToMany(() => CanvasVideo, (stage) => stage.user)
-  canvas_video: CanvasVideo[];
+  canvas_videos: CanvasVideo[];
 
   @OneToMany(() => CanvasCharacterMoveImage, (image) => image.user)
   canvas_character_move_images: CanvasCharacterMoveImage[];
 
   @OneToMany(() => CanvasText, (text) => text.user)
-  canvas_text: CanvasText[];
+  canvas_texts: CanvasText[];
+
+  @OneToMany(() => CanvasArrowAnchor, (anchor) => anchor.user)
+  canvas_arrow_anchors: CanvasArrowAnchor[];
 }

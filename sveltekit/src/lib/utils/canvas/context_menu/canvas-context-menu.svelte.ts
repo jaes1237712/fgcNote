@@ -1,4 +1,4 @@
-import { DeleteIcon, EditIcon, ImageIcon, Plus, Text, Video } from '@lucide/svelte';
+import { DeleteIcon, EditIcon, ImageIcon, Joystick, Plus, Text, Video } from '@lucide/svelte';
 
 export type ContextMenuOption = {
 	id: string;
@@ -34,7 +34,7 @@ class ContextMenuStore {
 }
 
 const STAGE_OPTIONS: ContextMenuOption[] = [
-	{ id: 'insert-block', label: '新增連段', icon: Plus },
+	{ id: 'insert-block', label: '新增連段', icon: Joystick },
 	{ id: 'insert-image', label: '新增圖片', icon: ImageIcon },
 	{id:'insert-text', label:'新增文字', icon: Text},
 	{id:'insert-video', label:'新增影片', icon: Video}

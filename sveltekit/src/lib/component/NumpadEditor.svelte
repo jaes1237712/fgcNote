@@ -2,10 +2,7 @@
 
 <script lang="ts">
 	import { drawNumpadBlock } from '$lib/utils/canvas';
-	import type { CanvasNumpadBlockDto } from '$lib/client';
-	import type { DrawNumpadBlockConfig } from '$lib/utils/canvas';
 	import type { UserSettings } from '$lib/userInterface';
-	import { LAYOUT_SETTING } from '$lib/userInterface';
 	import type { CONTROLLER_TYPE } from '$lib/utils/canvas/numpad/numpadCompiler';
 	import Konva from 'konva';
 	import { onMount } from 'svelte';

@@ -45,14 +45,14 @@ export class CanvasVideo {
   @Column({ type: 'float' })
   scaleY: number;
 
-  @ManyToOne(() => User, (user) => user.canvas_video, {
+  @ManyToOne(() => User, (user) => user.canvas_videos, {
     cascade: true,
     onDelete: 'CASCADE',
     eager: true,
   })
   user: User;
 
-  @ManyToOne(() => CanvasStage, (stage) => stage.video, {
+  @ManyToOne(() => CanvasStage, (stage) => stage.videos, {
     cascade: true,
     onDelete: 'CASCADE',
     eager: true,

@@ -13,6 +13,7 @@ import { CanvasNumpadBlock } from './canvas-numpad-block.entity';
 import { CanvasArrow } from './canvas-arrow.entity';
 import { CanvasText } from './canvas-text.entity';
 import { CanvasVideo } from './canvas-video.entity';
+import { CanvasArrowAnchor } from './canvas-arrow-anchor.entity';
 
 @Entity({ name: 'canvas_stage' })
 export class CanvasStage {
@@ -45,10 +46,13 @@ export class CanvasStage {
   arrows?: CanvasArrow[];
 
   @OneToMany(() => CanvasText, (text) => text.stage)
-  text?: CanvasText[];
+  texts?: CanvasText[];
 
   @OneToMany(() => CanvasVideo, (video) => video.stage)
-  video?: CanvasVideo[];
+  videos?: CanvasVideo[];
+
+  @OneToMany(() => CanvasArrowAnchor, (anchor) => anchor.stage)
+  arrowAnchors?: CanvasArrowAnchor[];
 
   @CreateDateColumn()
   createdAt!: Date;

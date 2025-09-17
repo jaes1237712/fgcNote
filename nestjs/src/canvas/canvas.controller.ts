@@ -47,6 +47,10 @@ import { CanvasVideoDto } from './dtos/video/canvas-video.dto';
 import { CreateCanvasVideoDto } from './dtos/video/create-canvas-video.dto';
 import { UpdateCanvasVideoDto } from './dtos/video/update-canvas-video.dto';
 import { SyncCanvasVideoDto } from './dtos/video/sync-canvas-video.dto';
+import { CanvasArrowAnchorDto } from './dtos/arrow_anchor/canvas-arrow-anchor.dto';
+import { CreateCanvasArrowAnchorDto } from './dtos/arrow_anchor/create-canvas-arrow-anchor.dto';
+import { UpdateCanvasArrowAnchorDto } from './dtos/arrow_anchor/update-canvas-arrow-anchor.dto';
+import { SyncCanvasArrowAnchorDto } from './dtos/arrow_anchor/sync-canvas-arrow-anchor.dto';
 
 @ApiTags('canvas')
 @Controller('canvas')
@@ -181,6 +185,28 @@ export class CanvasController {
     @Param('stageId', ParseUUIDPipe) stageId: string,
   ): Promise<CanvasVideoDto[]> {
     return this.canvasService.findAllVideosByStage(stageId);
+  }
+
+  @Get('arrowAnchor/get/:stageId')
+  @ApiOperation({
+    description: 'Get all arrow anchors of certain stage',
+  })
+  @ApiParam({
+    name: 'stageId',
+    description: 'UUID of stage',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully get all arrow anchors',
+    type: CanvasArrowAnchorDto,
+    isArray: true,
+  })
+  async findAllArrowAnchors(
+    @Param('stageId', ParseUUIDPipe) stageId: string,
+  ): Promise<CanvasArrowAnchorDto[]> {
+    return this.canvasService.findAllArrowAnchorsByStage(stageId);
   }
 
   @Post('numpadBlock/create')
@@ -522,6 +548,74 @@ export class CanvasController {
     }
   }
 
+  @Post('arrowAnchor/create')
+  @ApiOperation({
+    summary: 'Create arrow anchor',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Create arrow anchor Successfully',
+    type: CanvasArrowAnchorDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async createArrowAnchor(
+    @Body() body: CreateCanvasArrowAnchorDto,
+    @Req() req: Request,
+  ): Promise<CanvasArrowAnchorDto> {
+    if (req.user) {
+      return this.canvasService.createArrowAnchor(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Post('arrowAnchor/bulk-create') // 新的 URL 路徑，使用複數和 bulk-create
+  @ApiOperation({
+    summary: 'Create multiple arrow anchors', // 清晰的 summary
+    description: 'Creates multiple arrow anchors in a single request.',
+  })
+  @ApiBody({
+    type: CreateCanvasArrowAnchorDto, // 指定陣列中每個元素的類型
+    isArray: true,
+    description: 'An array of CreateArrowAnchor DTO.', // 可選的描述
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'arrow anchors created successfully',
+    type: CanvasArrowAnchorDto,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'One or more stages or arrows not found',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request (e.g., empty array provided)',
+  })
+  @UseGuards(SessionGuard)
+  async createArrowAnchors(
+    @Body() body: CreateCanvasArrowAnchorDto[], // 接受 DTO 陣列
+    @Req() req: Request,
+  ): Promise<CanvasArrowAnchorDto[]> {
+    if (!body || body.length === 0) {
+      throw new BadRequestException('Request body must not be empty.');
+    }
+    if (req.user) {
+      return this.canvasService.createArrowAnchors(body, req.user); // 直接呼叫批次服務方法
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
   @Post('stage/create')
   @ApiOperation({
     summary: 'Create Stage',
@@ -692,6 +786,31 @@ export class CanvasController {
   ): Promise<CanvasVideoDto> {
     if (req.user) {
       return this.canvasService.updateVideo(body, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Patch('arrowAnchor/update')
+  @ApiOperation({
+    summary: 'Update arrow anchor',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Update arrow anchor Successfully',
+    type: CanvasArrowAnchorDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async updateArrowAnchor(
+    @Body() body: UpdateCanvasArrowAnchorDto,
+    @Req() req: Request,
+  ): Promise<CanvasArrowAnchorDto> {
+    if (req.user) {
+      return this.canvasService.updateArrowAnchor(body, req.user);
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }
@@ -1044,6 +1163,68 @@ export class CanvasController {
     }
   }
 
+  @Delete('arrowAnchor/delete/:arrowAnchorId')
+  @ApiOperation({
+    description: 'Delete Certain arrow anchor',
+  })
+  @ApiParam({
+    name: 'arrowAnchorId',
+    description: 'UUID of arrow anchor',
+    type: 'string',
+    format: 'uuidV4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully delete arrow anchor',
+    type: DeleteSummary,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async deleteArrowAnchor(
+    @Param('arrowAnchorId', ParseUUIDPipe) arrowAnchorId: string,
+    @Req() req: Request,
+  ): Promise<DeleteSummary> {
+    if (req.user) {
+      return this.canvasService.removeArrowAnchor(arrowAnchorId, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Delete('arrowAnchor/delete/:stageId')
+  @ApiOperation({
+    description: 'Delete All arrow anchors belong to this stage',
+  })
+  @ApiParam({
+    name: 'stageId',
+    description: 'UUID of stage',
+    type: 'string',
+    format: 'uuidV4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully delete arrow anchors',
+    type: DeleteSummary,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @UseGuards(SessionGuard)
+  async deleteArrowAnchorsByStageId(
+    @Param('stageId', ParseUUIDPipe) stageId: string,
+    @Req() req: Request,
+  ): Promise<DeleteSummary> {
+    if (req.user) {
+      return this.canvasService.removeArrowAnchorsByStageId(stageId, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
   @Put('numpadBlock/sync')
   @ApiBody({
     type: SyncCanvasNumpadBlocksDto,
@@ -1189,6 +1370,36 @@ export class CanvasController {
   ): Promise<CanvasVideoDto[]> {
     if (req.user) {
       return this.canvasService.syncVideos(syncDto, req.user);
+    } else {
+      throw new UnauthorizedException('User not logged in or session expired.');
+    }
+  }
+
+  @Put('arrowAnchor/sync')
+  @ApiBody({
+    type: SyncCanvasArrowAnchorDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Arrow anchors sync successfully',
+    type: CanvasArrowAnchorDto,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Stage not found',
+  })
+  @UseGuards(SessionGuard)
+  async syncArrowAnchors(
+    @Body() syncDto: SyncCanvasArrowAnchorDto,
+    @Req() req: Request,
+  ): Promise<CanvasArrowAnchorDto[]> {
+    if (req.user) {
+      return this.canvasService.syncArrowAnchors(syncDto, req.user);
     } else {
       throw new UnauthorizedException('User not logged in or session expired.');
     }

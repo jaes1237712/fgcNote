@@ -15,6 +15,7 @@ import { CanvasModule } from 'src/canvas/canvas.module';
 import { CanvasArrow } from 'src/canvas/entities/canvas-arrow.entity';
 import { CanvasText } from 'src/canvas/entities/canvas-text.entity';
 import { CanvasVideo } from 'src/canvas/entities/canvas-video.entity';
+import { CanvasArrowAnchor } from 'src/canvas/entities/canvas-arrow-anchor.entity';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { CanvasVideo } from 'src/canvas/entities/canvas-video.entity';
           CanvasArrow,
           CanvasText,
           CanvasVideo,
+          CanvasArrowAnchor
         ],
         synchronize: true,
       }),

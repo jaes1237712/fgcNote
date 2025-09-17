@@ -3,33 +3,18 @@ import { ApiProperty } from '@nestjs/swagger';
 import { NODE_KIND } from 'src/common/interface';
 import { Expose } from 'class-transformer';
 
-export class CanvasTextDto {
+export class CanvasArrowAnchorDto {
   @ApiProperty({
     description: 'For frontend to distinguish node kind',
-    enum: [NODE_KIND.TEXT],
+    enum: [NODE_KIND.ARROW_ANCHOR],
   })
   @Expose()
-  kind: NODE_KIND.TEXT;
+  kind: NODE_KIND.ARROW_ANCHOR;
 
   @ApiProperty({ description: 'UUIDv4, generate by client' })
   @IsUUID()
   @Expose()
   id: string;
-
-  @ApiProperty({ description: 'Text content' })
-  @IsString()
-  @Expose()
-  text: string;
-
-  @ApiProperty({ description: 'Font color' })
-  @IsString()
-  @Expose()
-  fontColor: string;
-
-  @ApiProperty({ description: 'Background color' })
-  @IsString()
-  @Expose()
-  backgroundColor: string;
 
   @ApiProperty({ description: 'x, unit: viewportWidthUnit' })
   @IsNumber()
@@ -41,19 +26,15 @@ export class CanvasTextDto {
   @Expose()
   y: number;
 
-  @ApiProperty({ description: 'rotation, unit: degree' })
-  @IsNumber()
-  @Expose()
-  rotation: number;
-
-  @ApiProperty({ description: 'fontSize' })
-  @IsNumber()
-  @Expose()
-  fontSize: number;
-
   @ApiProperty({ description: 'Stage ID', required: false })
   @IsUUID()
   @IsOptional()
   @Expose()
   stageId?: string;
+
+  @ApiProperty({ description: 'Arrow ID', required: false })
+  @IsUUID()
+  @IsOptional()
+  @Expose()
+  arrowId?: string;
 }

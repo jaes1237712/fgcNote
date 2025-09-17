@@ -5,10 +5,13 @@ import {
   UpdateDateColumn,
   PrimaryColumn,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { CanvasStage } from './canvas-stage.entity';
 import { ValueTransformer } from 'typeorm';
+import { ArrayMinSize, IsArray, IsString } from 'class-validator';
+import { CanvasArrowAnchor } from './canvas-arrow-anchor.entity';
 
 class JsonTransformer implements ValueTransformer {
   to(value: any): string | null {
@@ -39,20 +42,30 @@ export class CanvasArrow {
   @PrimaryColumn()
   id!: string;
 
-  @Column()
-  startNodeId: string; // other canvas entity primary ID
-
-  @Column({
-    type: 'text', // <-- 添加這行
-    nullable: true,
-  })
-  endNodeId: string | null; // other canvas entity primary ID
-
   @Column({
     type: 'text',
     transformer: new JsonTransformer(),
-  })
-  points: number[]; // unit:viewportWidthUnit
+  })  
+  @IsArray()
+  @IsString({each:true})
+  @ArrayMinSize(2)
+  anchorNodesId: string[] // anchor nodes ID
+
+
+  // @Column()
+  // startNodeId: string; // other canvas entity primary ID
+
+  // @Column({
+  //   type: 'text', // <-- 添加這行
+  //   nullable: true,
+  // })
+  // endNodeId: string | null; // other canvas entity primary ID
+
+  // @Column({
+  //   type: 'text',
+  //   transformer: new JsonTransformer(),
+  // })
+  // points: number[]; // unit:viewportWidthUnit
 
   @ManyToOne(() => User, (user) => user.canvas_arrows, {
     cascade: true,
@@ -67,6 +80,9 @@ export class CanvasArrow {
     eager: true,
   })
   stage: CanvasStage;
+
+  @OneToMany(() => CanvasArrowAnchor, (anchor) => anchor.arrow)
+  anchor?: CanvasArrowAnchor[];
 
   @CreateDateColumn()
   createdAt!: Date;

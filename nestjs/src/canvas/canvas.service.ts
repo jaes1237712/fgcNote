@@ -42,6 +42,11 @@ import { CanvasVideoDto } from './dtos/video/canvas-video.dto';
 import { CreateCanvasVideoDto } from './dtos/video/create-canvas-video.dto';
 import { UpdateCanvasVideoDto } from './dtos/video/update-canvas-video.dto';
 import { SyncCanvasVideoDto } from './dtos/video/sync-canvas-video.dto';
+import { CanvasArrowAnchor } from './entities/canvas-arrow-anchor.entity';
+import { CanvasArrowAnchorDto } from './dtos/arrow_anchor/canvas-arrow-anchor.dto';
+import { CreateCanvasArrowAnchorDto } from './dtos/arrow_anchor/create-canvas-arrow-anchor.dto';
+import { UpdateCanvasArrowAnchorDto } from './dtos/arrow_anchor/update-canvas-arrow-anchor.dto';
+import { SyncCanvasArrowAnchorDto } from './dtos/arrow_anchor/sync-canvas-arrow-anchor.dto';
 
 @Injectable()
 export class CanvasService {
@@ -54,6 +59,8 @@ export class CanvasService {
     private canvasCharacterMoveImageRepository: Repository<CanvasCharacterMoveImage>,
     @InjectRepository(CanvasArrow)
     private canvasArrowRepository: Repository<CanvasArrow>,
+    @InjectRepository(CanvasArrowAnchor)
+    private canvasArrowAnchorRepository: Repository<CanvasArrowAnchor>,
     @InjectRepository(CanvasText)
     private canvasTextRepository: Repository<CanvasText>,
     @InjectRepository(CanvasVideo)
@@ -306,9 +313,7 @@ export class CanvasService {
     } else {
       const arrowEntity = this.canvasArrowRepository.create({
         id: arrow.id,
-        startNodeId: arrow.startNodeId,
-        endNodeId: arrow.endNodeId,
-        points: arrow.points,
+        anchorNodesId: arrow.anchorNodesId,
         stage: stage,
         user: user,
       });
@@ -351,9 +356,7 @@ export class CanvasService {
       }
       return this.canvasArrowRepository.create({
         id: arrow.id,
-        startNodeId: arrow.startNodeId,
-        endNodeId: arrow.endNodeId,
-        points: arrow.points,
+        anchorNodesId: arrow.anchorNodesId,
         stage: stage, // 從 Map 中取得對應的 stage 實體
         user: user,
       });
@@ -384,8 +387,7 @@ export class CanvasService {
         x: text.x,
         y: text.y,
         rotation: text.rotation,
-        scaleX: text.scaleX,
-        scaleY: text.scaleY,
+        fontSize: text.fontSize,
         stage: stage,
         user: user,
       });
@@ -434,8 +436,7 @@ export class CanvasService {
         x: text.x,
         y: text.y,
         rotation: text.rotation,
-        scaleX: text.scaleX,
-        scaleY: text.scaleY,
+        fontSize: text.fontSize,
         stage: stage, // 從 Map 中取得對應的 stage 實體
         user: user,
       });
@@ -530,6 +531,100 @@ export class CanvasService {
     return savedVideos.map((video) => this.toVideoDto(video));
   }
 
+  async createArrowAnchor(
+    arrowAnchor: CreateCanvasArrowAnchorDto,
+    user: User,
+  ): Promise<CanvasArrowAnchorDto> {
+    const stage = await this.canvasStageRepository.findOne({
+      where: { id: arrowAnchor.stageId },
+    });
+    if (!stage) {
+      throw new NotFoundException(`Stage with ID ${arrowAnchor.stageId} not found`);
+    }
+
+    const arrow = await this.canvasArrowRepository.findOne({
+      where: { id: arrowAnchor.arrowId },
+    });
+    if (!arrow) {
+      throw new NotFoundException(`Arrow with ID ${arrowAnchor.arrowId} not found`);
+    }
+
+    const arrowAnchorEntity = this.canvasArrowAnchorRepository.create({
+      id: arrowAnchor.id,
+      x: arrowAnchor.x,
+      y: arrowAnchor.y,
+      stage: stage,
+      arrow: arrow,
+      user: user,
+    });
+    const savedArrowAnchor = await this.canvasArrowAnchorRepository.save(arrowAnchorEntity);
+    return this.toArrowAnchorDto(savedArrowAnchor);
+  }
+
+  async createArrowAnchors(
+    arrowAnchors: CreateCanvasArrowAnchorDto[], // 參數改為 DTO 陣列
+    user: User,
+  ): Promise<CanvasArrowAnchorDto[]> {
+    // 回傳值改為 DTO 陣列
+    if (!arrowAnchors || arrowAnchors.length === 0) {
+      return [];
+    }
+
+    // 1. 批次處理 Stage 查詢
+    const stageIds = [...new Set(arrowAnchors.map((anchor) => anchor.stageId))];
+    const stages = await this.canvasStageRepository.find({
+      where: { id: In(stageIds) },
+    });
+    if (stages.length !== stageIds.length) {
+      const foundStageIds = new Set(stages.map((s) => s.id));
+      const missingStageIds = stageIds.filter((id) => !foundStageIds.has(id));
+      throw new NotFoundException(
+        `Stages with IDs [${missingStageIds.join(', ')}] not found`,
+      );
+    }
+    const stageMap = new Map(stages.map((stage) => [stage.id, stage]));
+
+    // 2. 批次處理 Arrow 查詢
+    const arrowIds = [...new Set(arrowAnchors.map((anchor) => anchor.arrowId))];
+    const arrows = await this.canvasArrowRepository.find({
+      where: { id: In(arrowIds) },
+    });
+    if (arrows.length !== arrowIds.length) {
+      const foundArrowIds = new Set(arrows.map((a) => a.id));
+      const missingArrowIds = arrowIds.filter((id) => !foundArrowIds.has(id));
+      throw new NotFoundException(
+        `Arrows with IDs [${missingArrowIds.join(', ')}] not found`,
+      );
+    }
+    const arrowMap = new Map(arrows.map((arrow) => [arrow.id, arrow]));
+
+    // 3. 批次建立 Entity
+    const arrowAnchorEntities = arrowAnchors.map((anchor) => {
+      const stage = stageMap.get(anchor.stageId);
+      const arrow = arrowMap.get(anchor.arrowId);
+      // 理論上不會發生，因為前面已驗證，但為型別安全保留
+      if (!stage || !arrow) {
+        throw new BadRequestException(
+          `Internal error: Stage or Arrow for anchor ${anchor.id} not pre-fetched.`,
+        );
+      }
+      return this.canvasArrowAnchorRepository.create({
+        id: anchor.id,
+        x: anchor.x,
+        y: anchor.y,
+        stage: stage,
+        arrow: arrow,
+        user: user,
+      });
+    });
+
+    // 4. 一次性儲存所有 Entity
+    const savedArrowAnchors = await this.canvasArrowAnchorRepository.save(arrowAnchorEntities);
+
+    // 5. 批次轉換為 DTO 並回傳
+    return savedArrowAnchors.map((anchor) => this.toArrowAnchorDto(anchor));
+  }
+
   async findAllStage(user: User): Promise<CanvasStageDto[]> {
     const stages = await this.canvasStageRepository.find({
       where: {
@@ -588,6 +683,15 @@ export class CanvasService {
       },
     });
     return videos.map((video) => this.toVideoDto(video));
+  }
+
+  async findAllArrowAnchorsByStage(stageId: string): Promise<CanvasArrowAnchorDto[]> {
+    const arrowAnchors = await this.canvasArrowAnchorRepository.find({
+      where: {
+        stage: { id: stageId },
+      },
+    });
+    return arrowAnchors.map((arrowAnchor) => this.toArrowAnchorDto(arrowAnchor));
   }
 
   async updateNumpadBlock(
@@ -650,9 +754,7 @@ export class CanvasService {
       throw new NotFoundException(`Arrow with ID ${arrow.id} not found`);
     }
 
-    targetArrow.startNodeId = arrow.startNodeId;
-    targetArrow.endNodeId = arrow.endNodeId;
-    targetArrow.points = arrow.points;
+    targetArrow.anchorNodesId = arrow.anchorNodesId;
 
     const savedArrow = await this.canvasArrowRepository.save(targetArrow);
     return this.toArrowDto(savedArrow);
@@ -676,8 +778,8 @@ export class CanvasService {
     targetText.x = text.x;
     targetText.y = text.y;
     targetText.rotation = text.rotation;
-    targetText.scaleX = text.scaleX;
-    targetText.scaleY = text.scaleY;
+    targetText.fontSize = text.fontSize;
+
 
     const savedText = await this.canvasTextRepository.save(targetText);
     return this.toTextDto(savedText);
@@ -708,6 +810,25 @@ export class CanvasService {
 
     const savedVideo = await this.canvasVideoRepository.save(targetVideo);
     return this.toVideoDto(savedVideo);
+  }
+
+  async updateArrowAnchor(
+    arrowAnchor: UpdateCanvasArrowAnchorDto,
+    user: User,
+  ): Promise<CanvasArrowAnchorDto> {
+    const targetArrowAnchor = await this.canvasArrowAnchorRepository.findOne({
+      where: { id: arrowAnchor.id },
+    });
+
+    if (!targetArrowAnchor) {
+      throw new NotFoundException(`ArrowAnchor with ID ${arrowAnchor.id} not found`);
+    }
+
+    targetArrowAnchor.x = arrowAnchor.x;
+    targetArrowAnchor.y = arrowAnchor.y;
+
+    const savedArrowAnchor = await this.canvasArrowAnchorRepository.save(targetArrowAnchor);
+    return this.toArrowAnchorDto(savedArrowAnchor);
   }
 
   async updateStage(
@@ -761,6 +882,10 @@ export class CanvasService {
       select: ['id'],
     });
     const affectVideos = await this.canvasVideoRepository.find({
+      where: { stage: { id: stageId } },
+      select: ['id'],
+    });
+    const affectArrowAnchors = await this.canvasArrowAnchorRepository.find({
       where: { stage: { id: stageId } },
       select: ['id'],
     });
@@ -841,6 +966,20 @@ export class CanvasService {
       }
     });
     await Promise.all(videoCheckPromises);
+    const arrowAnchorCheckPromises = affectArrowAnchors.map(async (anchor) => {
+      const result = await this.canvasArrowAnchorRepository.findOneBy({
+        id: anchor.id,
+      });
+      if (!result) {
+        deletedEntityIds.push(anchor.id);
+      } else {
+        throw new InternalServerErrorException(
+          `Critical Error: CanvasArrowAnchor with ID "${anchor.id}" was expected to be cascade-deleted by Stage ${stageId} but still exists. ` +
+            `This indicates a potential database 'onDelete: CASCADE' misconfiguration or a database integrity issue.`,
+        );
+      }
+    });
+    await Promise.all(arrowAnchorCheckPromises);
     return {
       ok: true,
       deletedEntityIds: deletedEntityIds,
@@ -951,6 +1090,27 @@ export class CanvasService {
     return {
       ok: true,
       deletedEntityIds: [videoId],
+    };
+  }
+
+  async removeArrowAnchor(arrowAnchorId: string, user: User): Promise<DeleteSummary> {
+    const targetArrowAnchor = await this.canvasArrowAnchorRepository.findOneBy({
+      id: arrowAnchorId,
+    });
+    if (!targetArrowAnchor) {
+      throw new NotFoundException(`ArrowAnchor with ID ${arrowAnchorId} not found`);
+    }
+    if (targetArrowAnchor.user.id != user.id) {
+      throw new UnauthorizedException('The arrowAnchor not belong to this user');
+    }
+    const deleteResult: DeleteResult =
+      await this.canvasArrowAnchorRepository.delete(arrowAnchorId);
+    if (deleteResult.affected === 0) {
+      throw new NotFoundException(`ArrowAnchor with ID "${arrowAnchorId}" not found`);
+    }
+    return {
+      ok: true,
+      deletedEntityIds: [arrowAnchorId],
     };
   }
 
@@ -1065,6 +1225,28 @@ export class CanvasService {
     }
     const deletedEntityIds = targetVideos.map((video) => video.id);
     await this.canvasVideoRepository.delete({ id: In(deletedEntityIds) });
+    return {
+      ok: true,
+      deletedEntityIds: deletedEntityIds,
+    };
+  }
+
+  async removeArrowAnchorsByStageId(
+    stageId: string,
+    user: User,
+  ): Promise<DeleteSummary> {
+    const targetArrowAnchors = await this.canvasArrowAnchorRepository.find({
+      where: { stage: { id: stageId } },
+      select: ['id'],
+    });
+    if (!targetArrowAnchors) {
+      throw new NotFoundException(`ArrowAnchors with stage ID ${stageId} not found`);
+    }
+    if (targetArrowAnchors[0].user.id != user.id) {
+      throw new UnauthorizedException('The ArrowAnchors not belong to this user');
+    }
+    const deletedEntityIds = targetArrowAnchors.map((anchor) => anchor.id);
+    await this.canvasArrowAnchorRepository.delete({ id: In(deletedEntityIds) });
     return {
       ok: true,
       deletedEntityIds: deletedEntityIds,
@@ -1428,6 +1610,92 @@ export class CanvasService {
     );
   }
 
+  /**
+   * 同步指定 Stage 的所有 ArrowAnchor
+   * 此操作在一個資料庫交易中完成，確保資料一致性。
+   * @param syncDto 包含 stageId 和新的 arrowAnchors 陣列
+   * @param user 當前操作的使用者
+   * @returns 返回新創建的 ArrowAnchor DTO 陣列
+   */
+  async syncArrowAnchors(
+    syncDto: SyncCanvasArrowAnchorDto,
+    user: User,
+  ): Promise<CanvasArrowAnchorDto[]> {
+    const { stageId, arrowAnchors } = syncDto;
+
+    return this.entityManager.transaction(
+      async (transactionalEntityManager) => {
+        // 步驟 1: 驗證 Stage 是否存在且屬於該使用者
+        const stage = await transactionalEntityManager.findOne(CanvasStage, {
+          where: { id: stageId },
+          relations: ['user'],
+        });
+
+        if (!stage) {
+          throw new NotFoundException(`Stage with ID ${stageId} not found`);
+        }
+        if (stage.user.id !== user.id) {
+          throw new UnauthorizedException(
+            'You do not have permission to modify this stage.',
+          );
+        }
+
+        // 步驟 2: 刪除該 Stage 底下所有舊的 ArrowAnchor
+        await transactionalEntityManager.delete(CanvasArrowAnchor, {
+          stage: { id: stageId },
+        });
+
+        // 如果前端傳來的 arrowAnchors 陣列是空的，那麼操作到此結束（相當於清空）
+        if (!arrowAnchors || arrowAnchors.length === 0) {
+          return [];
+        }
+
+        // 步驟 3: 批次查詢所需的 Arrow 實體
+        const arrowIds = [
+          ...new Set(arrowAnchors.map((anchor) => anchor.arrowId)),
+        ];
+        const arrows = await transactionalEntityManager.find(CanvasArrow, {
+          where: { id: In(arrowIds) },
+        });
+
+        if (arrows.length !== arrowIds.length) {
+          const foundArrowIds = new Set(arrows.map((a) => a.id));
+          const missingArrowIds = arrowIds.filter((id) => !foundArrowIds.has(id));
+          throw new NotFoundException(
+            `Arrows with IDs [${missingArrowIds.join(', ')}] not found`,
+          );
+        }
+
+        const arrowMap = new Map(arrows.map((arrow) => [arrow.id, arrow]));
+
+        // 步驟 4: 創建新的 ArrowAnchor 實體
+        const newArrowAnchorEntities = arrowAnchors.map((anchorDto) => {
+          const arrow = arrowMap.get(anchorDto.arrowId);
+          if (!arrow) {
+            throw new BadRequestException(
+              `Arrow with ID ${anchorDto.arrowId} not found`,
+            );
+          }
+          return transactionalEntityManager.create(CanvasArrowAnchor, {
+            ...anchorDto,
+            arrow: arrow,
+            stage: stage,
+            user: user,
+          });
+        });
+
+        // 步驟 5: 一次性儲存所有新的實體
+        const savedArrowAnchors = await transactionalEntityManager.save(
+          CanvasArrowAnchor,
+          newArrowAnchorEntities,
+        );
+
+        // 步驟 6: 將儲存後的實體轉換為 DTO 並返回
+        return savedArrowAnchors.map((anchor) => this.toArrowAnchorDto(anchor));
+      },
+    );
+  }
+
   toStageDto(stage: CanvasStage): CanvasStageDto {
     return plainToInstance(CanvasStageDto, stage, {
       excludeExtraneousValues: true,
@@ -1474,6 +1742,14 @@ export class CanvasService {
       excludeExtraneousValues: true,
     });
     dto.kind = NODE_KIND.VIDEO;
+    return dto;
+  }
+
+  toArrowAnchorDto(arrowAnchor: CanvasArrowAnchor): CanvasArrowAnchorDto {
+    const dto = plainToInstance(CanvasArrowAnchorDto, arrowAnchor, {
+      excludeExtraneousValues: true,
+    });
+    dto.kind = NODE_KIND.ARROW_ANCHOR;
     return dto;
   }
 }

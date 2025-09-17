@@ -113,12 +113,13 @@ export class CanvasDataStore {
 		return nodeData;
 	}
 
-	public updateNodeData(nodeId: string, updates: Partial<CanvasNodeData>): void {
+	public updateNodeData(nodeId: string, updates: Partial<CanvasNodeData>): CanvasNodeData {
 		const nodeData = this.nodesData.get(nodeId)
 		if (nodeData) {
 			Object.assign(nodeData, updates)
 			this.debouncedSync(this.stageData, this.nodesData)
 			this.konvaObjectManger.updateKonvaNode(nodeData)
+			return nodeData
 		}
 	}
 

@@ -148,17 +148,9 @@ export type CanvasArrowDto = {
      */
     id: string;
     /**
-     *  other canvas entity primary ID
+     * Konva arrow anchors
      */
-    startNodeId: string;
-    /**
-     * other canvas entity primary ID
-     */
-    endNodeId: string | null;
-    /**
-     * Konva arrow attrs points
-     */
-    points: Array<number>;
+    anchorNodesId: Array<string>;
 };
 
 export type CanvasTextDto = {
@@ -195,13 +187,9 @@ export type CanvasTextDto = {
      */
     rotation: number;
     /**
-     * scaleX
+     * fontSize
      */
-    scaleX: number;
-    /**
-     * scaleY
-     */
-    scaleY: number;
+    fontSize: number;
     /**
      * Stage ID
      */
@@ -311,17 +299,9 @@ export type CreateCanvasArrowDto = {
      */
     id: string;
     /**
-     *  other canvas entity primary ID
+     * Konva arrow anchors
      */
-    startNodeId: string;
-    /**
-     * other canvas entity primary ID
-     */
-    endNodeId: string | null;
-    /**
-     * Konva arrow attrs points
-     */
-    points: Array<number>;
+    anchorNodesId: Array<string>;
     /**
      * belong to which stage
      */
@@ -358,13 +338,9 @@ export type CreateCanvasTextDto = {
      */
     rotation: number;
     /**
-     * scaleX
+     * fontSize
      */
-    scaleX: number;
-    /**
-     * scaleY
-     */
-    scaleY: number;
+    fontSize: number;
     /**
      * Stage ID
      */
@@ -477,17 +453,9 @@ export type UpdateCanvasArrowDto = {
      */
     id: string;
     /**
-     *  other canvas entity primary ID
+     * Konva arrow anchors
      */
-    startNodeId: string;
-    /**
-     * other canvas entity primary ID
-     */
-    endNodeId: string | null;
-    /**
-     * Konva arrow attrs points
-     */
-    points: Array<number>;
+    anchorNodesId: Array<string>;
     /**
      * belong to which stage
      */
@@ -524,13 +492,9 @@ export type UpdateCanvasTextDto = {
      */
     rotation: number;
     /**
-     * scaleX
+     * fontSize
      */
-    scaleX: number;
-    /**
-     * scaleY
-     */
-    scaleY: number;
+    fontSize: number;
 };
 
 export type UpdateCanvasVideoDto = {

@@ -33,19 +33,16 @@ export class CanvasText {
   rotation: number; // unit:degree
 
   @Column({ type: 'float' })
-  scaleX: number;
+  fontSize: number;
 
-  @Column({ type: 'float' })
-  scaleY: number;
-
-  @ManyToOne(() => User, (user) => user.canvas_text, {
+  @ManyToOne(() => User, (user) => user.canvas_texts, {
     cascade: true,
     onDelete: 'CASCADE',
     eager: true,
   })
   user: User;
 
-  @ManyToOne(() => CanvasStage, (stage) => stage.text, {
+  @ManyToOne(() => CanvasStage, (stage) => stage.texts, {
     cascade: true,
     onDelete: 'CASCADE',
     eager: true,

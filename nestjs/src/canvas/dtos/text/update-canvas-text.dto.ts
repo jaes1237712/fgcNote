@@ -30,11 +30,7 @@ export class UpdateCanvasTextDto {
   @IsNumber()
   rotation: number; // unit:degree
 
-  @ApiProperty({ description: 'scaleX' })
+  @ApiProperty({ description: 'fontSize' })
   @IsNumber()
-  scaleX: number;
-
-  @ApiProperty({ description: 'scaleY' })
-  @IsNumber()
-  scaleY: number;
+  fontSize: number;
 }

@@ -15,24 +15,32 @@ export class CanvasArrowDto {
   @Expose()
   id!: string;
 
-  @ApiProperty({ description: ' other canvas entity primary ID' })
-  @Expose()
-  startNodeId: string;
-
   @ApiProperty({
-    description: 'other canvas entity primary ID',
-    type: String, // <-- 明確指定為 String
-    nullable: true, // <-- 明確指定為可為 null
-  })
-  @Expose()
-  endNodeId: string | null;
-
-  @ApiProperty({
-    description: 'Konva arrow attrs points',
-    type: Number,
+    description: 'Konva arrow anchors',
+    type: String,
     isArray: true,
   })
   @IsArray()
   @Expose()
-  points: number[]; // unit:viewportHeightUnit
+  anchorNodesId: string[]; // unit:viewportHeightUnit
+  // @ApiProperty({ description: ' other canvas entity primary ID' })
+  // @Expose()
+  // startNodeId: string;
+
+  // @ApiProperty({
+  //   description: 'other canvas entity primary ID',
+  //   type: String, // <-- 明確指定為 String
+  //   nullable: true, // <-- 明確指定為可為 null
+  // })
+  // @Expose()
+  // endNodeId: string | null;
+
+  // @ApiProperty({
+  //   description: 'Konva arrow attrs points',
+  //   type: Number,
+  //   isArray: true,
+  // })
+  // @IsArray()
+  // @Expose()
+  // points: number[]; // unit:viewportHeightUnit
 }

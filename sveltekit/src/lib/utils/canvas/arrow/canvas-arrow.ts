@@ -6,48 +6,6 @@ import { featureManager, type IFeature } from '../canvas-feature-manager';
 import type { CanvasDataStore } from '../canvas-data-manager.svelte';
 import type { UserSettings } from '$lib/userInterface';
 
-export interface DrawArrowConfig {
-	canvasArrow: CanvasArrowDto;
-}
-
-export function drawArrow(config: DrawArrowConfig, layer: Konva.Layer, userSettings: UserSettings) {
-	const { canvasArrow } = config;
-	const startNode = layer.findOne('#' + canvasArrow.startNodeId);
-	const startAbsPos = startNode.getAbsolutePosition();
-	const layerInverseTransform = layer.getAbsoluteTransform().copy().invert();
-	const startLayerPos = layerInverseTransform.point(startAbsPos);
-	let drawPoints = canvasArrow.points;
-	if (canvasArrow.endNodeId) {
-		const endNode = layer.findOne('#' + canvasArrow.endNodeId);
-		const endNodeAbsPos = endNode.getAbsolutePosition();
-		const dx = (endNodeAbsPos.x - startAbsPos.x)/userSettings.viewportWidthUnit;
-		const dy = (endNodeAbsPos.y - startAbsPos.y)/userSettings.viewportHeightUnit;
-		drawPoints.pop();
-		drawPoints.pop();
-		drawPoints.push(dx);
-		drawPoints.push(dy);
-	}
-	let pointsToPx = drawPoints.map((point, index)=>{
-		const modResult = index % 2
-		if(modResult === 1){
-			return point*userSettings.viewportWidthUnit
-		}
-		return point*userSettings.viewportHeightUnit
-	})
-	const arrow = new Konva.Arrow({
-		x: startLayerPos.x,
-		y: startLayerPos.y,
-		points: pointsToPx,
-		id: canvasArrow.id,
-		startNodeId: canvasArrow.startNodeId,
-		endNodeId: canvasArrow.endNodeId,
-		fill: 'white',
-		stroke: 'white'
-	});
-	layer.add(arrow);
-	return arrow;
-}
-
 const orientations = {
 	left: 'left',
 	up: 'up',
@@ -70,30 +28,95 @@ export function getAnchorPositionArray(nodeId: string, layer: Konva.Layer | Konv
 	];
 }
 
-function dragArrow(startNodeId: string, layer: Konva.Layer, stage: Konva.Stage, canvasDataStore: CanvasDataStore, userSettings: UserSettings) {
-	const startNode = layer.findOne('#' + startNodeId);
-	const x = startNode.getAbsolutePosition().x;
-	const y = startNode.getAbsolutePosition().y;
-	const layerInverseTransform = layer.getAbsoluteTransform().copy().invert();
+export interface DrawArrowConfig {
+	canvasArrow: CanvasArrowDto;
+}
 
-	const arrow = drawArrow(
+export function drawArrow(config: DrawArrowConfig, layer: Konva.Layer, userSettings: UserSettings) {
+	const { canvasArrow } = config;
+	
+	// Calculate points from anchorNodesId
+	const points: number[] = [];
+	const layerInverseTransform = layer.getAbsoluteTransform().copy().invert();
+	
+	// Get positions of all anchor nodes
+	for (const anchorNodeId of canvasArrow.anchorNodesId) {
+		const anchorNode = layer.findOne('#' + anchorNodeId);
+		if (anchorNode) {
+			const anchorAbsPos = anchorNode.getAbsolutePosition();
+			const anchorLayerPos = layerInverseTransform.point(anchorAbsPos);
+			points.push(anchorLayerPos.x, anchorLayerPos.y);
+		}
+	}
+	
+	// If we have at least 2 anchor points, create the arrow
+	if (points.length >= 4) {
+		// Set the arrow position to the first anchor point
+		const startX = points[0];
+		const startY = points[1];
+		
+		// Convert relative points (relative to start position)
+		const relativePoints = [];
+		for (let i = 2; i < points.length; i += 2) {
+			relativePoints.push(points[i] - startX, points[i + 1] - startY);
+		}
+		
+		const arrow = new Konva.Arrow({
+			x: startX,
+			y: startY,
+			points: relativePoints,
+			id: canvasArrow.id,
+			anchorNodesId: canvasArrow.anchorNodesId,
+			fill: 'white',
+			stroke: 'white'
+		});
+		layer.add(arrow);
+		return arrow;
+	}
+	
+	return null;
+}
+
+function dragArrow(startNodeId: string, tempNodeId:string, layer: Konva.Layer, stage: Konva.Stage, canvasDataStore: CanvasDataStore, userSettings: UserSettings) {
+	// Initialize with start node and temp anchor
+	let currentAnchorNodesId = [startNodeId, tempNodeId];
+
+	// Create a temp anchor node that follows the mouse
+	const tempAnchor = new Konva.Circle({
+		radius: 4,
+		fill: 'white',
+		stroke: 'none',
+		id: tempNodeId,
+		name: 'temp-anchor-point',
+		visible: true
+	});
+	layer.add(tempAnchor);
+
+	// Initialize temp anchor at current mouse position
+	const initialPointer = stage.getRelativePointerPosition();
+	if (initialPointer) {
+		tempAnchor.setAbsolutePosition({ x: initialPointer.x, y: initialPointer.y });
+	}
+
+	let currentArrow = drawArrow(
 		{
 			canvasArrow: {
 				kind: 'ARROW',
 				id: 'temp-arrow',
-				startNodeId: startNodeId,
-				endNodeId: null,
-				points: [0, 0, 0, 0]
+				anchorNodesId: currentAnchorNodesId
 			}
 		},
 		layer,
 		userSettings
 	);
-	layer.add(arrow);
+
+	if (!currentArrow) return;
+
+	layer.add(currentArrow);
 	const anchorNodes = layer.find('.anchor-point');
 	const ANCHOR_SNAP_THRESHOLD = 20; // 吸附半徑 (像素)
 
-	stage.on('mousemove', function (event) {
+	stage.on('mousemove', function () {
 		const mouseAbsolutePos = stage.getRelativePointerPosition();
 		// magnetic attraction
 		let closestAnchorAbsolutePos: Konva.Vector2d | null = null;
@@ -111,31 +134,51 @@ function dragArrow(startNodeId: string, layer: Konva.Layer, stage: Konva.Stage, 
 				closestAnchorId = anchorNode.id();
 			}
 		}
-		let arrowEndAbsolutePos = mouseAbsolutePos; // 預設箭頭終點是滑鼠絕對位置
-		if (closestAnchorAbsolutePos) {
-			arrowEndAbsolutePos = closestAnchorAbsolutePos; // 如果有吸附點，終點就是吸附點的絕對位置
-			arrow.setAttr('endNodeId', closestAnchorId);
+
+		if (closestAnchorId) {
+			// Snap to real anchor: hide temp anchor
+			tempAnchor.visible(false);
+			currentAnchorNodesId = [startNodeId, closestAnchorId];
 		} else {
-			arrow.setAttr('endNodeId', null);
+			// No snap: show and move temp anchor to mouse
+			tempAnchor.visible(true);
+			tempAnchor.setAbsolutePosition({ x: mouseAbsolutePos.x, y: mouseAbsolutePos.y });
+			currentAnchorNodesId = [startNodeId, tempNodeId];
 		}
-		const arrowEndPos = {
-			x: layerInverseTransform.point(arrowEndAbsolutePos).x,
-			y: layerInverseTransform.point(arrowEndAbsolutePos).y
-		};
-		arrow.points([0, 0, arrowEndPos.x - x, arrowEndPos.y - y]);
+
+		// Redraw arrow with updated anchor nodes
+		currentArrow.destroy();
+		currentArrow = drawArrow(
+			{
+				canvasArrow: {
+					kind: 'ARROW',
+					id: 'temp-arrow',
+					anchorNodesId: currentAnchorNodesId
+				}
+			},
+			layer,
+			userSettings
+		);
+		if (currentArrow) {
+			layer.add(currentArrow);
+		}
 	});
+
 	stage.on('mouseup', function (event) {
 		event.cancelBubble = true;
-		const new_id = crypto.randomUUID()
-		const new_data: CanvasArrowDto = {
-			kind:'ARROW',
-			id: new_id,
-			startNodeId: startNodeId,
-			endNodeId: arrow.getAttr('endNodeId'),		
-			points: arrow.points()
+		const snapped = !currentAnchorNodesId.includes(tempNodeId);
+		if (snapped) {
+			const new_id = crypto.randomUUID()
+			const new_data: CanvasArrowDto = {
+				kind:'ARROW',
+				id: new_id,
+				anchorNodesId: currentAnchorNodesId
+			}
+			canvasDataStore.addNodeData(new_data)
 		}
-		arrow.destroy()
-		canvasDataStore.addNodeData(new_data)
+		// cleanup
+		if (currentArrow) currentArrow.destroy();
+		tempAnchor.destroy();
 		featureManager.deactivate();
 		stage.off('mousemove');
 		stage.off('mouseup');
@@ -221,7 +264,7 @@ export function removeAnchorPoint(layer: Konva.Layer) {
 
 
 export interface ArrowingContext {
-	startNodeId: string;
+	startNodeId: string; // Keep this for backward compatibility with drag start
 	layer: Konva.Layer;
 	stage: Konva.Stage;
 	canvasDataStore: CanvasDataStore;
@@ -230,9 +273,29 @@ export interface ArrowingContext {
 
 export class ArrowingFeature implements IFeature<ArrowingContext> {
 	onActivated(context: ArrowingContext): () => void {
-		dragArrow(context.startNodeId, context.layer, context.stage, context.canvasDataStore, context.userSettings);
+		dragArrow(context.startNodeId,"temp-anchor-point", context.layer, context.stage, context.canvasDataStore, context.userSettings);
 		showAllAnchorPoint(context.layer);
 		const cleanup = () => {
+			removeAnchorPoint(context.layer);
+		};
+		return cleanup;
+	}
+}
+
+export interface ArrowSelectContext{
+	arrowData: CanvasArrowDto;
+	layer: Konva.Layer;
+}
+
+export class ArrowSelectFeature implements IFeature<ArrowSelectContext>{
+	onActivated(context: ArrowSelectContext): () => void {
+		// Show anchor points for all nodes in the arrow's anchorNodesId
+		context.arrowData.anchorNodesId.forEach(nodeId => {
+			showSpecificAnchorPoint(nodeId, context.layer, context.layer.getStage());
+		});
+		
+		const cleanup = () => {
+			// Hide anchor points when selection is cleared
 			removeAnchorPoint(context.layer);
 		};
 		return cleanup;

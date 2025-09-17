@@ -2,12 +2,12 @@ import Konva from 'konva';
 import { CanvasDataStore, type CanvasNodeData } from './canvas-data-manager.svelte';
 import { LAYOUT_SETTING, type UserSettings } from '$lib/userInterface';
 import { numpadInputToCommandImages } from './numpad/numpadCompiler';
-import { ArrowingFeature, drawInvisibleAnchorPoint, removeAnchorPoint, showSpecificAnchorPoint, type ArrowingContext } from './arrow/canvas-arrow';
+import { ArrowingFeature, drawArrow, drawInvisibleAnchorPoint, removeAnchorPoint, showSpecificAnchorPoint, type ArrowingContext } from './arrow/canvas-arrow';
 import { featureManager, type IFeature } from './canvas-feature-manager';
 import { contextMenuState } from './context_menu/canvas-context-menu.svelte';
 import { PUBLIC_NESTJS_URL } from '$env/static/public';
-import type { CanvasTextDto } from '$lib/client';
-import { toolBarState } from './tool_bar/canvas-tool-bar.svelte';
+import type { CanvasStageDto, CanvasTextDto } from '$lib/client';
+import type { ToolBarState } from './tool_bar/canvas-tool-bar.svelte';
 
 export class KonvaObjectManager{
     private stage: Konva.Stage;
@@ -16,22 +16,26 @@ export class KonvaObjectManager{
     private canvasDataStore: CanvasDataStore
     private konvaContainer: HTMLDivElement
     public youtubePlayers = new Map<string, YT.Player>();
+    public toolBarState: ToolBarState
 
-    constructor(container: HTMLDivElement, stageId: string, userSettings: UserSettings, canvasDataStore: CanvasDataStore) {
+    constructor(container: HTMLDivElement, stageDto: CanvasStageDto, 
+        userSettings: UserSettings, canvasDataStore: CanvasDataStore, 
+        toolBarState: ToolBarState) {
+        this.toolBarState = toolBarState
         this.konvaContainer = container
         this.stage = new Konva.Stage({
             container,
-            id: stageId,
+            id: stageDto.id,
             width: container.clientWidth,
             height: container.clientHeight
         });
         this.stage.on('contextmenu', (event) => {
 			event.evt.preventDefault();
-			contextMenuState.show(event.evt.clientX, event.evt.clientY, 'stage', stageId);
+			contextMenuState.show(event.evt.clientX, event.evt.clientY, 'stage', stageDto.id);
 		});
 		this.stage.on('click tap', () => {
 			contextMenuState.visible = false;
-            toolBarState.show('stage',this.stage.id())
+            this.toolBarState.show('stage',stageDto)
 			featureManager.deactivate();
 		});
         this.userSettings = userSettings
@@ -39,7 +43,7 @@ export class KonvaObjectManager{
         this.stage.add(this.layer);
         this.canvasDataStore = canvasDataStore
         const rec = this.konvaContainer.getBoundingClientRect()
-        toolBarState.show('stage',`${this.stage.id}`,rec.left,rec.top)
+        this.toolBarState.show('stage',stageDto,rec.left,rec.top)
     }
 
     createNode(data:CanvasNodeData): void{
@@ -118,7 +122,7 @@ export class KonvaObjectManager{
                     };
                     const feature = new NumpadBlockSelectFeature();
                     featureManager.activate<NumpadBlockSelectContext>('anchor-points', block.id(), feature, context);
-                    toolBarState.show('numpadBlock', data.id)
+                    this.toolBarState.show('numpadBlock', data)
                 });
                 block.on('dragmove', () => {
                     this.canvasDataStore.updateNodeData(block.id(), {
@@ -127,9 +131,8 @@ export class KonvaObjectManager{
                     });
                     anchorPoints.forEach((anchor) =>{
                         const foundNodes = this.layer.find(node =>{
-                            const nodeStartNodeId = node.getAttr('startNodeId');
-                            const nodeEndNodeId = node.getAttr('endNodeId');
-                            return nodeStartNodeId === anchor.id() || nodeEndNodeId === anchor.id()
+                            const nodeAnchorNodesId = node.getAttr('anchorNodesId');
+                            return nodeAnchorNodesId && nodeAnchorNodesId.includes(anchor.id())
                         }) 
                         foundNodes.forEach((node)=>{
                             this.updateKonvaNode(this.canvasDataStore.getNodeData(node.id()))
@@ -146,39 +149,17 @@ export class KonvaObjectManager{
                 });
                 break
             case 'ARROW':
-                const startNode = this.layer.findOne('#' + data.startNodeId);
-                if(startNode){
-                    const startAbsPos = startNode.getAbsolutePosition();
-                    const layerInverseTransform = this.layer.getAbsoluteTransform().copy().invert();
-                    const startLayerPos = layerInverseTransform.point(startAbsPos);
-                    let drawPoints = data.points;
-                    if (data.endNodeId) {
-                        const endNode = this.layer.findOne('#' + data.endNodeId);
-                        if(endNode){
-                            const endNodeAbsPos = endNode.getAbsolutePosition();
-                            const dx = endNodeAbsPos.x - startAbsPos.x;
-                            const dy = endNodeAbsPos.y - startAbsPos.y;
-                            drawPoints.pop();
-                            drawPoints.pop();
-                            drawPoints.push(dx);
-                            drawPoints.push(dy);
-                        }
-                    }
-                    const arrow = new Konva.Arrow({
-                        x: startLayerPos.x,
-                        y: startLayerPos.y,
-                        points: drawPoints,
-                        id: data.id,
-                        startNodeId: data.startNodeId,
-                        endNodeId: data.endNodeId,
-                        fill: 'white',
-                        stroke: 'white'
-                    });
+                // Use the new drawArrow function from canvas-arrow.ts
+                const arrow = drawArrow(
+                    { canvasArrow: data },
+                    this.layer,
+                    userSettings
+                );
+                if (arrow) {
                     arrow.on('click tap', ()=>{
                         // TODO 調整樣式那些功能
-                        toolBarState.show('arrow', data.id)
+                        this.toolBarState.show('arrow', data)
                     })
-                    this.layer.add(arrow)
                 }
 
                 break
@@ -206,7 +187,7 @@ export class KonvaObjectManager{
                             feature,
                             context
                         );
-                        toolBarState.show('image',data.id)
+                        this.toolBarState.show('image',data)
                     });
                     image.on('contextmenu', (event) => {
                         event.evt.preventDefault();
@@ -244,7 +225,7 @@ export class KonvaObjectManager{
                     y: 12,
                     text:data.text,
                     fill: data.fontColor,
-                    fontSize: 32,
+                    fontSize: data.fontSize,
                     fontFamily: 'sans-serif',
                     lineHeight: 1.2,
                 })
@@ -260,8 +241,7 @@ export class KonvaObjectManager{
                     id: data.id,
                     x: data.x*this.userSettings.viewportWidthUnit,
                     y: data.y*this.userSettings.viewportHeightUnit,
-                    scaleX: data.scaleX,
-                    scaleY: data.scaleY,
+                    rotation:data.rotation,
                     name: 'text',
                     draggable: true
                 })
@@ -279,16 +259,16 @@ export class KonvaObjectManager{
                     border: 'none',
                     outline: 'none',
                     filedSizing:'content',
-                    fontSize:'32px',
+                    fontSize:`${text.fontSize()}px`,
                     lineHeight: `${text.lineHeight()}`,
                     margin:`0`,
                     fontFamily:`sans-serif`,
                     boxSizing: `border-box`,
-                    transform: `scale(${data.scaleX}, ${data.scaleY})`,
                     padding: `${text.y()}px ${text.x()}px`,
-                    transformOrigin: 'top left',
                     zIndex: 1000,
-                    resize: 'none'
+                    resize: 'none',
+                    transform: `rotate(${textBlock.rotation()}deg)`,
+                    transformOrigin: `top left`
                 }
                 textarea.value = data.text
                 textarea.focus();
@@ -323,7 +303,6 @@ export class KonvaObjectManager{
                 })
                 textBlock.on('click tap', (e) => {
                     e.cancelBubble = true;
-                    //TODO 我覺得文字應該要統一用FONTSIZE而非SCALE
                     const context: TextBlockTransformerContext = {
                         textBlock: textBlock,
                         layer: this.layer
@@ -335,7 +314,7 @@ export class KonvaObjectManager{
                         feature,
                         context
                     );
-                    toolBarState.show('text',`${data.id}`)
+                    this.toolBarState.show('text',data)
                 });
                 textBlock.on('dragstart', () =>{
                     featureManager.deactivate()
@@ -343,8 +322,6 @@ export class KonvaObjectManager{
                 textBlock.on('transformend', (e) => {
                     this.canvasDataStore.updateNodeData(textBlock.id(), {
                         rotation: textBlock.rotation(),
-                        scaleX: textBlock.scaleX(),
-                        scaleY: textBlock.scaleY()
                     });
                 });
                 textBlock.on('contextmenu', (event) => {
@@ -406,7 +383,7 @@ export class KonvaObjectManager{
                                         feature,
                                         context
                                     );
-                                    toolBarState.show('video',data.id)
+                                    this.toolBarState.show('video',{...data})
                                 });
                                 image.on('transformend', (e) => {
                                     this.canvasDataStore.updateNodeData(image.id(), {
@@ -474,30 +451,16 @@ export class KonvaObjectManager{
         }
         switch(kind){
             case 'ARROW':
-                const startNode = this.layer.findOne('#' + data.startNodeId);
-                if(startNode){
-                    const startAbsPos = startNode.getAbsolutePosition();
-                    const layerInverseTransform = this.layer.getAbsoluteTransform().copy().invert();
-                    const startLayerPos = layerInverseTransform.point(startAbsPos);
-                    let drawPoints = data.points;
-                    if (data.endNodeId) {
-                        const endNode = this.layer.findOne('#' + data.endNodeId);
-                        if(endNode){
-                            const endNodeAbsPos = endNode.getAbsolutePosition();
-                            const dx = endNodeAbsPos.x - startAbsPos.x;
-                            const dy = endNodeAbsPos.y - startAbsPos.y;
-                            drawPoints.pop();
-                            drawPoints.pop();
-                            drawPoints.push(dx);
-                            drawPoints.push(dy);
-                        }
-                    }
-                    targetNode.setAttrs({
-                        x: startLayerPos.x,
-                        y: startLayerPos.y,
-                        points: drawPoints,
-                        startNodeId: data.startNodeId,
-                        endNodeId: data.endNodeId,
+                // Remove the old arrow and redraw with new anchorNodesId
+                targetNode.destroy();
+                const newArrow = drawArrow(
+                    { canvasArrow: data },
+                    this.layer,
+                    this.userSettings
+                );
+                if (newArrow) {
+                    newArrow.on('click tap', ()=>{
+                        this.toolBarState.show('arrow', data)
                     })
                 }
                 break
@@ -505,11 +468,13 @@ export class KonvaObjectManager{
                 const text = this.layer.findOne('#'+`${data.id}-text`) as Konva.Text;
                 text.text(data.text)
                 text.fill(data.fontColor)
+                text.scale({x:1,y:1})
+                text.fontSize(data.fontSize)
                 const background = this.layer.findOne('#'+`${data.id}-background`) as Konva.Rect;
+                background.width(text.width()+24)
+                background.height(text.height()+24)
                 background.fill(data.backgroundColor)
                 const textBlock = this.layer.findOne('#'+`${data.id}`) as Konva.Group;
-                textBlock.scaleX(data.scaleX)
-                textBlock.scaleY(data.scaleY)
                 textBlock.rotation(data.rotation)
                 const textarea = document.getElementById(`${data.id}-textarea`) as HTMLTextAreaElement
                 const textAreaStyle = {
@@ -521,16 +486,16 @@ export class KonvaObjectManager{
                     border: 'none',
                     outline: 'none',
                     filedSizing:'content',
-                    fontSize:'32px',
+                    fontSize:`${text.fontSize()}px`,
                     lineHeight: `${text.lineHeight()}`,
                     margin:`0`,
                     fontFamily:`sans-serif`,
                     boxSizing: `border-box`,
-                    transform: `scale(${data.scaleX}, ${data.scaleY})`,
                     padding: `${text.y()}px ${text.x()}px`,
-                    transformOrigin: 'top left',
                     zIndex: 1000,
-                    resize: 'none'
+                    resize: 'none',
+                    transform: `rotate(${textBlock.rotation()}deg)`,
+                    transformOrigin: `top left`
                 }
                 Object.assign(textarea.style, textAreaStyle)
                 this.layer.draw()
@@ -546,9 +511,8 @@ export class KonvaObjectManager{
             switch(kind){
                 case 'NUMPAD_BLOCK':
                     const foundNodes = this.layer.find(node =>{
-                        const nodeStartNodeId = node.getAttr('startNodeId');
-                        const nodeEndNodeId = node.getAttr('endNodeId');
-                        return nodeStartNodeId === data.id || nodeEndNodeId === data.id
+                        const nodeAnchorNodesId = node.getAttr('anchorNodesId');
+                        return nodeAnchorNodesId && nodeAnchorNodesId.includes(data.id)
                     }) 
                     foundNodes.forEach((node)=>{
                         this.canvasDataStore.deleteNodeData(node.id())
@@ -681,10 +645,34 @@ interface TextBlockTransformerContext {
 class TextBlockTransformerFeature implements IFeature<TextBlockTransformerContext> {
     onActivated(context: TextBlockTransformerContext): () => void {
         const tr = new Konva.Transformer();
+        tr.resizeEnabled(false)
         tr.nodes([context.textBlock]);
+        // context.textBlock.draggable(false)
         context.layer.add(tr);
         context.layer.draw();
+        // const SNAP_DEGREES = 2; // 吸附閾值，例如：在目標角度的 ±5 度內吸附
+        // const SNAP_ANGLES = [0, 90, 180, 270]; // 目標吸附角度
+        // tr.on('transform', (e) =>{
+        //     const node = tr.nodes()[0]; // 獲取當前 Transformer 附著的節點
+        //     if (!node) return;
+        //     const currentRotation = node.rotation();
+        //     console.log(currentRotation)
+        //     let snapped = false;
+        //     for (const snapAngle of SNAP_ANGLES) {
+        //         // 計算當前角度與目標吸附角度的差值
+        //         const diff = Math.abs(currentRotation % 360 - snapAngle);
+        
+        //         // 如果差值在吸附閾值內，則進行吸附
+        //         // 考慮到 0/360 度的邊界情況，以及負角度
+        //         if (diff < SNAP_DEGREES || Math.abs(diff - 360) < SNAP_DEGREES) {
+        //             node.rotation(snapAngle); // 將節點旋轉設置為吸附角度
+        //             snapped = true;
+        //             break; // 找到一個吸附點就停止
+        //         }
+        //     }
+        // })
         const cleanup = () => {
+            // context.textBlock.draggable(true)
             tr.destroy();
             context.layer.draw();
             console.log('text transformer clean up');
