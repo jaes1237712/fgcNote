@@ -32,9 +32,8 @@ export class CanvasArrowAnchorDto {
   @Expose()
   stageId?: string;
 
-  @ApiProperty({ description: 'Arrow ID', required: false })
+  @ApiProperty({ description: 'Arrow ID'})
   @IsUUID()
-  @IsOptional()
   @Expose()
-  arrowId?: string;
+  arrowId: string;
 }

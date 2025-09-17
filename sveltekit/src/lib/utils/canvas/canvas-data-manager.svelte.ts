@@ -24,16 +24,21 @@ import {
 	canvasControllerFindAllVideos,
 	type CreateCanvasVideoDto,
 	type SyncCanvasVideoDto,
-	canvasControllerSyncVideos
+	canvasControllerSyncVideos,
+	type CanvasArrowAnchorDto,
+	type SyncCanvasArrowAnchorDto,
+	type CreateCanvasArrowAnchorDto,
+	canvasControllerSyncArrowAnchors,
+	canvasControllerFindAllArrowAnchors
 } from '$lib/client';
 import type { UserSettings } from '$lib/userInterface';
 import _, { debounce } from 'lodash';
 import type { KonvaObjectManager } from './canvas-object-manager';
 import { featureManager } from './canvas-feature-manager';
 
-export type CanvasNodeData = CanvasNumpadBlockDto | CanvasCharacterMoveImageDto | CanvasArrowDto | CanvasTextDto | CanvasVideoDto; 
-const NodeKindOrder = ['NUMPAD_BLOCK', 'CHARACTER_MOVE_IMAGE','VIDEO','TEXT', 'ARROW', ] as const;
-type NodeKind = (typeof NodeKindOrder)[number];
+export type CanvasNodeData = CanvasNumpadBlockDto | CanvasCharacterMoveImageDto | CanvasArrowDto | CanvasTextDto | CanvasVideoDto | CanvasArrowAnchorDto; 
+// const NodeKindOrder = ['NUMPAD_BLOCK', 'CHARACTER_MOVE_IMAGE','VIDEO','TEXT', 'ARROW', 'ARROW_ANCHOR'] as const;
+// type NodeKind = (typeof NodeKindOrder)[number];
 
 export class CanvasDataStore {
 	public nodesData = $state<Map<string, CanvasNodeData>>();
@@ -67,14 +72,14 @@ export class CanvasDataStore {
 				this.addNodeData(image);
 			});
 		}
-		const arrowResp = await canvasControllerFindAllArrows({
+		const anchorResp = await canvasControllerFindAllArrowAnchors({
 			path: {
 				stageId: data.id
 			}
 		});
-		if (arrowResp.data) {
-			arrowResp.data.forEach((arrow) => {
-				this.addNodeData(arrow);
+		if (anchorResp.data) {
+			anchorResp.data.forEach((data) => {
+				this.addNodeData(data);
 			});
 		}
 		const textResp = await canvasControllerFindAllTexts({
@@ -97,6 +102,17 @@ export class CanvasDataStore {
 				this.addNodeData(data);
 			});
 		}
+		const arrowResp = await canvasControllerFindAllArrows({
+			path: {
+				stageId: data.id
+			}
+		});
+		if (arrowResp.data) {
+			arrowResp.data.forEach((arrow) => {
+				this.addNodeData(arrow);
+			});
+		}
+		// console.log(this.nodesData)
 		this.LegalizeNodesDate()
 	}
 	
@@ -200,8 +216,8 @@ export class CanvasDataStore {
 			};
 			const text = nodesData.filter((node) => node.kind === 'TEXT');
 			const createTextDto: CreateCanvasTextDto[] = text.map(
-				(image) => {
-					const baseDto = _.omit(image, ['kind']);
+				(data) => {
+					const baseDto = _.omit(data, ['kind']);
 					return {
 						...baseDto,
 						stageId: stageData.id
@@ -211,6 +227,23 @@ export class CanvasDataStore {
 			const syncTextPayload:SyncCanvasTextDto = {
 				stageId: stageData.id,
 				texts: createTextDto
+			};
+			const arrowAnchors = nodesData.filter((node) => node.kind === 'ARROW_ANCHOR');
+			const createArrowAnchorsDto: CreateCanvasArrowAnchorDto[] = arrowAnchors.map(
+				(data) => {
+					// console.log('arrow anchor',data)
+					const baseDto = _.omit(data, ['kind']);
+					// console.log('baseDto',baseDto)
+
+					return {
+						...baseDto,
+						stageId: stageData.id
+					};
+				}
+			);
+			const syncArrowAnchorPayload:SyncCanvasArrowAnchorDto = {
+				stageId: stageData.id,
+				arrowAnchors: createArrowAnchorsDto
 			};
 			const videos = nodesData.filter((node) => node.kind === 'VIDEO');
 			const createVideoDtos: CreateCanvasVideoDto[] = videos.map(
@@ -262,7 +295,14 @@ export class CanvasDataStore {
 					console.log('Sync Video Data successfully', syncVideoResp.data);
 				} else {
 					// 這種情況比較少見，通常是網路層或服務器層的非預期錯誤
-					alert('Sync text failed: No response data.');
+					alert('Sync Video failed: No response data.');
+				}
+				const syncArrowAnchorResp = await canvasControllerSyncArrowAnchors({ body: syncArrowAnchorPayload });
+				if (syncArrowAnchorResp.data) {
+					console.log('Sync Arrow Anchor Data successfully', syncArrowAnchorResp.data);
+				} else {
+					// 這種情況比較少見，通常是網路層或服務器層的非預期錯誤
+					alert('Sync Arrow Anchor  failed: No response data.');
 				}
 			} catch (error) {
 				// 3. 統一處理錯誤
@@ -285,45 +325,43 @@ export class CanvasDataStore {
 		const copyData = new Map(this.nodesData)
 		copyData.forEach((data)=>{
 			if(data.kind === 'ARROW'){
-				if(data.startNodeId){
-					const anchorId = data.startNodeId
-					// `${groupId}-anchor-point-${pos.orientation}`;
+				data.anchorNodesId.forEach((anchorId)=>{
+					// 1.`${groupId}-anchor-point-${pos.orientation}`;
+					// 2. `${arrowAnchorId}`
+					let idToCheck:string
 					const parts = anchorId.split('-anchor-point-');
 					if (parts.length < 2) {
-						console.warn(`警告: 字串 "${anchorId}" 格式不符預期，無法提取 groupId。`);
-						return false; // 或者拋出錯誤，看你的錯誤處理策略
-					  }
-					const groupId = parts[0]
-					if(!copyData.has(groupId)){
+						//`${arrowAnchorId}`
+						idToCheck = anchorId
+					}
+					else{
+						idToCheck = parts[0]
+					}
+					if(!copyData.has(idToCheck)){
 						if(this.deleteNodeData(data.id)){
+							console.log('delete', data)
+							console.log('because', idToCheck)
 							affectedData += 1
 						}
 						else{
 							console.warn(`警告: 無法刪除arrow:${data}`);
-						}
-						
+						}	
 					}
-				}
-				if(data.endNodeId){
-					const anchorId = data.endNodeId
-					// `${groupId}-anchor-point-${pos.orientation}`;
-					const parts = anchorId.split('-anchor-point-');
-					if (parts.length < 2) {
-						console.warn(`警告: 字串 "${anchorId}" 格式不符預期，無法提取 groupId。`);
-						return false; // 或者拋出錯誤，看你的錯誤處理策略
-					  }
-					const groupId = parts[0]
-					if(!this.nodesData.has(groupId)){
-						if(this.deleteNodeData(data.id)){
-							affectedData += 1
-						}
-						else{
-							console.warn(`警告: 無法刪除arrow:${data}`);
-						}
+				})
+			}
+			if(data.kind === 'ARROW_ANCHOR'){
+				if(!copyData.has(data.arrowId)){
+					if(this.deleteNodeData(data.id)){
+						console.log('delete', data)
+						affectedData += 1
 					}
+					else{
+						console.warn(`警告: 無法刪除anchor Arrow:${data}`);
+					}	
 				}
 			}
 		})
+		console.log('after Legalize, DATA:', this.nodesData)
 		console.log('LegalizeNodesData: Delete', affectedData)
 		return true
 	}

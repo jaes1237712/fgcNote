@@ -98,10 +98,9 @@ export class CanvasService {
       );
     }
     const stageEntity = this.canvasStageRepository.create({
-      id: stage.id,
+      ...stage,
       characterMe: characterMe,
       characterOpponent: characterOpponent,
-      name: stage.name,
       user: user,
     });
     const savedStage = await this.canvasStageRepository.save(stageEntity);
@@ -119,11 +118,7 @@ export class CanvasService {
       throw new NotFoundException(`Stage with ID ${block.stageId} not found`);
     } else {
       const blockEntity = this.canvasNumpadBlockRepository.create({
-        id: block.id,
-        input: block.input,
-        type: block.type,
-        x: block.x,
-        y: block.y,
+        ...block,
         stage: stage,
         user: user,
       });
@@ -174,11 +169,7 @@ export class CanvasService {
         );
       }
       return this.canvasNumpadBlockRepository.create({
-        id: block.id,
-        input: block.input,
-        type: block.type,
-        x: block.x,
-        y: block.y,
+        ...block,
         stage: stage, // 從 Map 中取得對應的 stage 實體
         user: user,
       });
@@ -208,9 +199,7 @@ export class CanvasService {
         image.characterMoveImage.fileName,
       );
     const imageEntity = this.canvasCharacterMoveImageRepository.create({
-      id: image.id,
-      x: image.x,
-      y: image.y,
+      ...image,
       characterMoveImage: targetCharacterMoveImage,
       stage: stage,
       user: user,
@@ -284,9 +273,7 @@ export class CanvasService {
       }
 
       return this.canvasCharacterMoveImageRepository.create({
-        id: img.id,
-        x: img.x,
-        y: img.y,
+        ...img,
         characterMoveImage: targetCharacterMoveImage,
         stage: stage,
         user: user,
@@ -312,8 +299,7 @@ export class CanvasService {
       throw new NotFoundException(`Stage with ID ${arrow.stageId} not found`);
     } else {
       const arrowEntity = this.canvasArrowRepository.create({
-        id: arrow.id,
-        anchorNodesId: arrow.anchorNodesId,
+        ...arrow,
         stage: stage,
         user: user,
       });
@@ -355,8 +341,7 @@ export class CanvasService {
         );
       }
       return this.canvasArrowRepository.create({
-        id: arrow.id,
-        anchorNodesId: arrow.anchorNodesId,
+        ...arrow,
         stage: stage, // 從 Map 中取得對應的 stage 實體
         user: user,
       });
@@ -380,14 +365,7 @@ export class CanvasService {
       throw new NotFoundException(`Stage with ID ${text.stageId} not found`);
     } else {
       const textEntity = this.canvasTextRepository.create({
-        id: text.id,
-        text: text.text,
-        fontColor: text.fontColor,
-        backgroundColor: text.backgroundColor,
-        x: text.x,
-        y: text.y,
-        rotation: text.rotation,
-        fontSize: text.fontSize,
+        ...text,
         stage: stage,
         user: user,
       });
@@ -429,14 +407,7 @@ export class CanvasService {
         );
       }
       return this.canvasTextRepository.create({
-        id: text.id,
-        text: text.text,
-        fontColor: text.fontColor,
-        backgroundColor: text.backgroundColor,
-        x: text.x,
-        y: text.y,
-        rotation: text.rotation,
-        fontSize: text.fontSize,
+        ...text,
         stage: stage, // 從 Map 中取得對應的 stage 實體
         user: user,
       });
@@ -460,15 +431,7 @@ export class CanvasService {
       throw new NotFoundException(`Stage with ID ${video.stageId} not found`);
     } else {
       const videoEntity = this.canvasVideoRepository.create({
-        id: video.id,
-        type: video.type,
-        src: video.src,
-        title: video.title,
-        x: video.x,
-        y: video.y,
-        rotation: video.rotation,
-        scaleX: video.scaleX,
-        scaleY: video.scaleY,
+        ...video,
         stage: stage,
         user: user,
       });
@@ -510,15 +473,7 @@ export class CanvasService {
         );
       }
       return this.canvasVideoRepository.create({
-        id: video.id,
-        type: video.type,
-        src: video.src,
-        title: video.title,
-        x: video.x,
-        y: video.y,
-        rotation: video.rotation,
-        scaleX: video.scaleX,
-        scaleY: video.scaleY,
+        ...video,
         stage: stage, // 從 Map 中取得對應的 stage 實體
         user: user,
       });
@@ -550,9 +505,7 @@ export class CanvasService {
     }
 
     const arrowAnchorEntity = this.canvasArrowAnchorRepository.create({
-      id: arrowAnchor.id,
-      x: arrowAnchor.x,
-      y: arrowAnchor.y,
+      ...arrowAnchor,
       stage: stage,
       arrow: arrow,
       user: user,
@@ -609,9 +562,7 @@ export class CanvasService {
         );
       }
       return this.canvasArrowAnchorRepository.create({
-        id: anchor.id,
-        x: anchor.x,
-        y: anchor.y,
+        ...anchor,
         stage: stage,
         arrow: arrow,
         user: user,
@@ -707,10 +658,7 @@ export class CanvasService {
     }
 
     // 3. Update the properties of the found entity
-    targetBlock.input = block.input;
-    targetBlock.type = block.type;
-    targetBlock.x = block.x;
-    targetBlock.y = block.y;
+    Object.assign(targetBlock, block);
     // Assign the found stage entity to the block's stage relationship
     const savedBlock = await this.canvasNumpadBlockRepository.save(targetBlock);
     return this.toNumpadBlockDto(savedBlock);
@@ -733,8 +681,7 @@ export class CanvasService {
     }
 
     // 3. Update the properties of the found entity
-    targetImage.x = image.x;
-    targetImage.y = image.y;
+    Object.assign(targetImage, image);
     targetImage.characterMoveImage = targetCharacterMoveImage;
     // Assign the found stage entity to the block's stage relationship
     const savedImage =
@@ -754,7 +701,7 @@ export class CanvasService {
       throw new NotFoundException(`Arrow with ID ${arrow.id} not found`);
     }
 
-    targetArrow.anchorNodesId = arrow.anchorNodesId;
+    Object.assign(targetArrow, arrow);
 
     const savedArrow = await this.canvasArrowRepository.save(targetArrow);
     return this.toArrowDto(savedArrow);
@@ -772,13 +719,7 @@ export class CanvasService {
       throw new NotFoundException(`Text with ID ${text.id} not found`);
     }
 
-    targetText.text = text.text;
-    targetText.fontColor = text.fontColor;
-    targetText.backgroundColor = text.backgroundColor;
-    targetText.x = text.x;
-    targetText.y = text.y;
-    targetText.rotation = text.rotation;
-    targetText.fontSize = text.fontSize;
+    Object.assign(targetText, text);
 
 
     const savedText = await this.canvasTextRepository.save(targetText);
@@ -797,16 +738,7 @@ export class CanvasService {
       throw new NotFoundException(`Video with ID ${video.id} not found`);
     }
 
-    targetVideo.type = video.type;
-    targetVideo.src = video.src;
-    if (video.title) {
-      targetVideo.title = video.title;
-    }
-    targetVideo.x = video.x;
-    targetVideo.y = video.y;
-    targetVideo.rotation = video.rotation;
-    targetVideo.scaleX = video.scaleX;
-    targetVideo.scaleY = video.scaleY;
+    Object.assign(targetVideo, video);
 
     const savedVideo = await this.canvasVideoRepository.save(targetVideo);
     return this.toVideoDto(savedVideo);
@@ -824,8 +756,7 @@ export class CanvasService {
       throw new NotFoundException(`ArrowAnchor with ID ${arrowAnchor.id} not found`);
     }
 
-    targetArrowAnchor.x = arrowAnchor.x;
-    targetArrowAnchor.y = arrowAnchor.y;
+    Object.assign(targetArrowAnchor, arrowAnchor);
 
     const savedArrowAnchor = await this.canvasArrowAnchorRepository.save(targetArrowAnchor);
     return this.toArrowAnchorDto(savedArrowAnchor);
@@ -1439,7 +1370,7 @@ export class CanvasService {
     user: User,
   ): Promise<CanvasArrowDto[]> {
     const { stageId, arrows } = syncDto;
-
+    console.log(arrows)
     return this.entityManager.transaction(
       async (transactionalEntityManager) => {
         // 步驟 1: 驗證 Stage 是否存在且屬於該使用者
@@ -1622,7 +1553,7 @@ export class CanvasService {
     user: User,
   ): Promise<CanvasArrowAnchorDto[]> {
     const { stageId, arrowAnchors } = syncDto;
-
+    console.log('syncArrowAnchors',arrowAnchors)
     return this.entityManager.transaction(
       async (transactionalEntityManager) => {
         // 步驟 1: 驗證 Stage 是否存在且屬於該使用者
@@ -1750,6 +1681,7 @@ export class CanvasService {
       excludeExtraneousValues: true,
     });
     dto.kind = NODE_KIND.ARROW_ANCHOR;
+    dto.arrowId = arrowAnchor.arrow.id;
     return dto;
   }
 }

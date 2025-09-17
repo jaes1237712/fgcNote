@@ -89,7 +89,10 @@
 					(contextMenuState.position.y - rec_konva.top) /
 					userSettings.viewportHeightUnit,
 					rotation: 0,
-					fontSize:32
+					fontSize:32,
+					isBold: false,
+					isItalic: false,
+					isUnderline: false
 				}
 				canvasDataStore.addNodeData(new_text)
 				break

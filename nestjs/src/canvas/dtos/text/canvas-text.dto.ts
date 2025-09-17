@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsUUID, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { NODE_KIND } from 'src/common/interface';
 import { Expose } from 'class-transformer';
@@ -21,7 +21,7 @@ export class CanvasTextDto {
   @Expose()
   text: string;
 
-  @ApiProperty({ description: 'Font color' })
+  @ApiProperty({ description: 'Font color(hex)' })
   @IsString()
   @Expose()
   fontColor: string;
@@ -50,6 +50,21 @@ export class CanvasTextDto {
   @IsNumber()
   @Expose()
   fontSize: number;
+
+  @ApiProperty()
+  @IsBoolean()
+  @Expose()
+  isBold: boolean
+
+  @ApiProperty()
+  @IsBoolean()
+  @Expose()  
+  isItalic: boolean
+
+  @ApiProperty()
+  @IsBoolean()
+  @Expose()  
+  isUnderline: boolean
 
   @ApiProperty({ description: 'Stage ID', required: false })
   @IsUUID()

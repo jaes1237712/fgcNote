@@ -1,4 +1,5 @@
 import {
+	type CanvasArrowAnchorDto,
 	type CanvasArrowDto,
 } from '$lib/client';
 import Konva from 'konva';
@@ -38,10 +39,12 @@ export function drawArrow(config: DrawArrowConfig, layer: Konva.Layer, userSetti
 	// Calculate points from anchorNodesId
 	const points: number[] = [];
 	const layerInverseTransform = layer.getAbsoluteTransform().copy().invert();
-	
+	// const startAnchorNode = layer.findOne('#' + canvasArrow.anchorNodesId[0]);
+	// const startPos = startAnchorNode.getAbsolutePosition()
 	// Get positions of all anchor nodes
 	for (const anchorNodeId of canvasArrow.anchorNodesId) {
 		const anchorNode = layer.findOne('#' + anchorNodeId);
+		// console.log(anchorNode)
 		if (anchorNode) {
 			const anchorAbsPos = anchorNode.getAbsolutePosition();
 			const anchorLayerPos = layerInverseTransform.point(anchorAbsPos);
@@ -56,7 +59,7 @@ export function drawArrow(config: DrawArrowConfig, layer: Konva.Layer, userSetti
 		const startY = points[1];
 		
 		// Convert relative points (relative to start position)
-		const relativePoints = [];
+		const relativePoints = [0,0];
 		for (let i = 2; i < points.length; i += 2) {
 			relativePoints.push(points[i] - startX, points[i + 1] - startY);
 		}
@@ -68,7 +71,9 @@ export function drawArrow(config: DrawArrowConfig, layer: Konva.Layer, userSetti
 			id: canvasArrow.id,
 			anchorNodesId: canvasArrow.anchorNodesId,
 			fill: 'white',
-			stroke: 'white'
+			stroke: 'white',
+			strokeWidth: 5,
+			// hitStrokeWidth: 20
 		});
 		layer.add(arrow);
 		return arrow;
@@ -176,6 +181,26 @@ function dragArrow(startNodeId: string, tempNodeId:string, layer: Konva.Layer, s
 			}
 			canvasDataStore.addNodeData(new_data)
 		}
+		else{
+			const newAnchorId = crypto.randomUUID()
+			const newArrowId = crypto.randomUUID()
+			const mouseAbsolutePos = stage.getRelativePointerPosition();
+			const newArrowAnchor: CanvasArrowAnchorDto = {
+				kind:'ARROW_ANCHOR',
+				id: newAnchorId,
+				arrowId: newArrowId,
+				x:mouseAbsolutePos.x/userSettings.viewportWidthUnit,
+				y:mouseAbsolutePos.y/userSettings.viewportHeightUnit,
+				stageId: stage.id(),
+			}
+			const newArrow: CanvasArrowDto ={
+				kind:'ARROW',
+				id:newArrowId,
+				anchorNodesId: [currentAnchorNodesId[0], newAnchorId]
+			}
+			canvasDataStore.addNodeData(newArrowAnchor)
+			canvasDataStore.addNodeData(newArrow)
+		}
 		// cleanup
 		if (currentArrow) currentArrow.destroy();
 		tempAnchor.destroy();
@@ -225,6 +250,7 @@ export function drawInvisibleAnchorPoint(nodeId: string, group: Konva.Group, sta
 			visible: false
 		});
 		group.add(anchorCircle);
+
 		anchorsObject.push(anchorCircle)
 	});
 	return anchorsObject
@@ -282,22 +308,22 @@ export class ArrowingFeature implements IFeature<ArrowingContext> {
 	}
 }
 
-export interface ArrowSelectContext{
-	arrowData: CanvasArrowDto;
-	layer: Konva.Layer;
-}
+// export interface ArrowSelectContext{
+// 	arrowData: CanvasArrowDto;
+// 	layer: Konva.Layer;
+// }
 
-export class ArrowSelectFeature implements IFeature<ArrowSelectContext>{
-	onActivated(context: ArrowSelectContext): () => void {
-		// Show anchor points for all nodes in the arrow's anchorNodesId
-		context.arrowData.anchorNodesId.forEach(nodeId => {
-			showSpecificAnchorPoint(nodeId, context.layer, context.layer.getStage());
-		});
+// export class ArrowSelectFeature implements IFeature<ArrowSelectContext>{
+// 	onActivated(context: ArrowSelectContext): () => void {
+// 		// Show anchor points for all nodes in the arrow's anchorNodesId
+// 		context.arrowData.anchorNodesId.forEach(nodeId => {
+// 			showSpecificAnchorPoint(nodeId, context.layer, context.layer.getStage());
+// 		});
 		
-		const cleanup = () => {
-			// Hide anchor points when selection is cleared
-			removeAnchorPoint(context.layer);
-		};
-		return cleanup;
-	}
-}
+// 		const cleanup = () => {
+// 			// Hide anchor points when selection is cleared
+// 			removeAnchorPoint(context.layer);
+// 		};
+// 		return cleanup;
+// 	}
+// }

@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsUUID } from 'class-validator';
+import { IsString, IsNumber, IsUUID, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateCanvasTextDto {
@@ -34,7 +34,18 @@ export class CreateCanvasTextDto {
   @IsNumber()
   fontSize: number;
 
+  @ApiProperty()
+  @IsBoolean()
+  isBold: boolean
 
+  @ApiProperty()
+  @IsBoolean()
+  isItalic: boolean
+
+  @ApiProperty()
+  @IsBoolean() 
+  isUnderline: boolean
+  
   @ApiProperty({ description: 'Stage ID' })
   @IsUUID()
   stageId: string;

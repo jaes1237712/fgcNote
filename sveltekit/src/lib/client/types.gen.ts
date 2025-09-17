@@ -167,7 +167,7 @@ export type CanvasTextDto = {
      */
     text: string;
     /**
-     * Font color
+     * Font color(hex)
      */
     fontColor: string;
     /**
@@ -190,6 +190,9 @@ export type CanvasTextDto = {
      * fontSize
      */
     fontSize: number;
+    isBold: boolean;
+    isItalic: boolean;
+    isUnderline: boolean;
     /**
      * Stage ID
      */
@@ -241,6 +244,33 @@ export type CanvasVideoDto = {
      * Stage ID
      */
     stageId?: string;
+};
+
+export type CanvasArrowAnchorDto = {
+    /**
+     * For frontend to distinguish node kind
+     */
+    kind: 'ARROW_ANCHOR';
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
+    /**
+     * Stage ID
+     */
+    stageId?: string;
+    /**
+     * Arrow ID
+     */
+    arrowId: string;
 };
 
 export type CreateCanvasNumpadBlockDto = {
@@ -341,6 +371,9 @@ export type CreateCanvasTextDto = {
      * fontSize
      */
     fontSize: number;
+    isBold: boolean;
+    isItalic: boolean;
+    isUnderline: boolean;
     /**
      * Stage ID
      */
@@ -388,6 +421,29 @@ export type CreateCanvasVideoDto = {
      * Stage ID
      */
     stageId: string;
+};
+
+export type CreateCanvasArrowAnchorDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
+    /**
+     * Stage ID
+     */
+    stageId: string;
+    /**
+     * Arrow ID
+     */
+    arrowId: string;
 };
 
 export type CreateCanvasStageDto = {
@@ -495,6 +551,9 @@ export type UpdateCanvasTextDto = {
      * fontSize
      */
     fontSize: number;
+    isBold: boolean;
+    isItalic: boolean;
+    isUnderline: boolean;
 };
 
 export type UpdateCanvasVideoDto = {
@@ -534,6 +593,21 @@ export type UpdateCanvasVideoDto = {
      * scaleY
      */
     scaleY: number;
+};
+
+export type UpdateCanvasArrowAnchorDto = {
+    /**
+     * UUIDv4, generate by client
+     */
+    id: string;
+    /**
+     * x, unit: viewportWidthUnit
+     */
+    x: number;
+    /**
+     * y, unit: viewportHeightUnit
+     */
+    y: number;
 };
 
 export type DeleteSummary = {
@@ -582,6 +656,17 @@ export type SyncCanvasVideoDto = {
      * Array of video objects to sync
      */
     videos: Array<CreateCanvasVideoDto>;
+};
+
+export type SyncCanvasArrowAnchorDto = {
+    /**
+     * Stage ID
+     */
+    stageId: string;
+    /**
+     * Array of arrow anchor objects to sync
+     */
+    arrowAnchors: Array<CreateCanvasArrowAnchorDto>;
 };
 
 export type AuthControllerGoogleLoginData = {
@@ -784,6 +869,27 @@ export type CanvasControllerFindAllVideosResponses = {
 };
 
 export type CanvasControllerFindAllVideosResponse = CanvasControllerFindAllVideosResponses[keyof CanvasControllerFindAllVideosResponses];
+
+export type CanvasControllerFindAllArrowAnchorsData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/arrowAnchor/get/{stageId}';
+};
+
+export type CanvasControllerFindAllArrowAnchorsResponses = {
+    /**
+     * Successfully get all arrow anchors
+     */
+    200: Array<CanvasArrowAnchorDto>;
+};
+
+export type CanvasControllerFindAllArrowAnchorsResponse = CanvasControllerFindAllArrowAnchorsResponses[keyof CanvasControllerFindAllArrowAnchorsResponses];
 
 export type CanvasControllerCreateNumpadBlockData = {
     body: CreateCanvasNumpadBlockDto;
@@ -1067,6 +1173,63 @@ export type CanvasControllerCreateVideosResponses = {
 
 export type CanvasControllerCreateVideosResponse = CanvasControllerCreateVideosResponses[keyof CanvasControllerCreateVideosResponses];
 
+export type CanvasControllerCreateArrowAnchorData = {
+    body: CreateCanvasArrowAnchorDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/arrowAnchor/create';
+};
+
+export type CanvasControllerCreateArrowAnchorErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerCreateArrowAnchorResponses = {
+    /**
+     * Create arrow anchor Successfully
+     */
+    200: CanvasArrowAnchorDto;
+};
+
+export type CanvasControllerCreateArrowAnchorResponse = CanvasControllerCreateArrowAnchorResponses[keyof CanvasControllerCreateArrowAnchorResponses];
+
+export type CanvasControllerCreateArrowAnchorsData = {
+    /**
+     * An array of CreateArrowAnchor DTO.
+     */
+    body: Array<CreateCanvasArrowAnchorDto>;
+    path?: never;
+    query?: never;
+    url: '/canvas/arrowAnchor/bulk-create';
+};
+
+export type CanvasControllerCreateArrowAnchorsErrors = {
+    /**
+     * Bad Request (e.g., empty array provided)
+     */
+    400: unknown;
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * One or more stages or arrows not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerCreateArrowAnchorsResponses = {
+    /**
+     * arrow anchors created successfully
+     */
+    200: Array<CanvasArrowAnchorDto>;
+};
+
+export type CanvasControllerCreateArrowAnchorsResponse = CanvasControllerCreateArrowAnchorsResponses[keyof CanvasControllerCreateArrowAnchorsResponses];
+
 export type CanvasControllerCreateStageData = {
     body: CreateCanvasStageDto;
     path?: never;
@@ -1227,6 +1390,29 @@ export type CanvasControllerUpdateVideoResponses = {
 };
 
 export type CanvasControllerUpdateVideoResponse = CanvasControllerUpdateVideoResponses[keyof CanvasControllerUpdateVideoResponses];
+
+export type CanvasControllerUpdateArrowAnchorData = {
+    body: UpdateCanvasArrowAnchorDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/arrowAnchor/update';
+};
+
+export type CanvasControllerUpdateArrowAnchorErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerUpdateArrowAnchorResponses = {
+    /**
+     * Update arrow anchor Successfully
+     */
+    200: CanvasArrowAnchorDto;
+};
+
+export type CanvasControllerUpdateArrowAnchorResponse = CanvasControllerUpdateArrowAnchorResponses[keyof CanvasControllerUpdateArrowAnchorResponses];
 
 export type CanvasControllerDeleteStageData = {
     body?: never;
@@ -1533,6 +1719,62 @@ export type CanvasControllerDeleteVideosByStageIdResponses = {
 
 export type CanvasControllerDeleteVideosByStageIdResponse = CanvasControllerDeleteVideosByStageIdResponses[keyof CanvasControllerDeleteVideosByStageIdResponses];
 
+export type CanvasControllerDeleteArrowAnchorData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of arrow anchor
+         */
+        arrowAnchorId: string;
+    };
+    query?: never;
+    url: '/canvas/arrowAnchor/delete/{arrowAnchorId}';
+};
+
+export type CanvasControllerDeleteArrowAnchorErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteArrowAnchorResponses = {
+    /**
+     * Successfully delete arrow anchor
+     */
+    200: DeleteSummary;
+};
+
+export type CanvasControllerDeleteArrowAnchorResponse = CanvasControllerDeleteArrowAnchorResponses[keyof CanvasControllerDeleteArrowAnchorResponses];
+
+export type CanvasControllerDeleteArrowAnchorsByStageIdData = {
+    body?: never;
+    path: {
+        /**
+         * UUID of stage
+         */
+        stageId: string;
+    };
+    query?: never;
+    url: '/canvas/arrowAnchor/delete/{stageId}';
+};
+
+export type CanvasControllerDeleteArrowAnchorsByStageIdErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type CanvasControllerDeleteArrowAnchorsByStageIdResponses = {
+    /**
+     * Successfully delete arrow anchors
+     */
+    200: DeleteSummary;
+};
+
+export type CanvasControllerDeleteArrowAnchorsByStageIdResponse = CanvasControllerDeleteArrowAnchorsByStageIdResponses[keyof CanvasControllerDeleteArrowAnchorsByStageIdResponses];
+
 export type CanvasControllerSyncNumpadBlocksData = {
     body: SyncCanvasNumpadBlocksDto;
     path?: never;
@@ -1667,6 +1909,33 @@ export type CanvasControllerSyncVideosResponses = {
 };
 
 export type CanvasControllerSyncVideosResponse = CanvasControllerSyncVideosResponses[keyof CanvasControllerSyncVideosResponses];
+
+export type CanvasControllerSyncArrowAnchorsData = {
+    body: SyncCanvasArrowAnchorDto;
+    path?: never;
+    query?: never;
+    url: '/canvas/arrowAnchor/sync';
+};
+
+export type CanvasControllerSyncArrowAnchorsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Stage not found
+     */
+    404: unknown;
+};
+
+export type CanvasControllerSyncArrowAnchorsResponses = {
+    /**
+     * Arrow anchors sync successfully
+     */
+    200: Array<CanvasArrowAnchorDto>;
+};
+
+export type CanvasControllerSyncArrowAnchorsResponse = CanvasControllerSyncArrowAnchorsResponses[keyof CanvasControllerSyncArrowAnchorsResponses];
 
 export type ClientOptions = {
     baseUrl: 'https://localhost:3000' | (string & {});

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsUUID } from 'class-validator';
+import { IsString, IsNumber, IsUUID, IsBoolean } from 'class-validator';
 
 export class UpdateCanvasTextDto {
   @ApiProperty({ description: 'UUIDv4, generate by client' })
@@ -33,4 +33,16 @@ export class UpdateCanvasTextDto {
   @ApiProperty({ description: 'fontSize' })
   @IsNumber()
   fontSize: number;
+
+  @ApiProperty()
+  @IsBoolean()
+  isBold: boolean
+
+  @ApiProperty()
+  @IsBoolean()
+  isItalic: boolean
+
+  @ApiProperty()
+  @IsBoolean() 
+  isUnderline: boolean
 }

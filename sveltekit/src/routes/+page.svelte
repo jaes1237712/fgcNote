@@ -148,7 +148,7 @@
 		try {
 			currentCredential = await (navigator as any).credentials.get({
 				identity: {
-					context: 'signup',
+					// context: 'signup',
 					providers: [
 						{
 							configURL: 'https://accounts.google.com/gsi/fedcm.json',
@@ -157,7 +157,7 @@
 					]
 				}
 			});
-
+			console.log(currentCredential)
 			// 1) call backend to exchange id_token for session cookie
 			const loginResponse = await authControllerGoogleLogin({
 				body: {

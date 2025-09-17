@@ -6,8 +6,10 @@ import { ArrowingFeature, drawArrow, drawInvisibleAnchorPoint, removeAnchorPoint
 import { featureManager, type IFeature } from './canvas-feature-manager';
 import { contextMenuState } from './context_menu/canvas-context-menu.svelte';
 import { PUBLIC_NESTJS_URL } from '$env/static/public';
-import type { CanvasStageDto, CanvasTextDto } from '$lib/client';
+import type { CanvasArrowAnchorDto, CanvasArrowDto, CanvasStageDto, CanvasTextDto } from '$lib/client';
 import type { ToolBarState } from './tool_bar/canvas-tool-bar.svelte';
+import type { Vector2d } from 'konva/lib/types';
+import type { Node } from 'konva/lib/Node';
 
 export class KonvaObjectManager{
     private stage: Konva.Stage;
@@ -151,14 +153,23 @@ export class KonvaObjectManager{
             case 'ARROW':
                 // Use the new drawArrow function from canvas-arrow.ts
                 const arrow = drawArrow(
-                    { canvasArrow: data },
+                    { canvasArrow: data},
                     this.layer,
                     userSettings
                 );
                 if (arrow) {
-                    arrow.on('click tap', ()=>{
+                    arrow.on('click tap', (event)=>{
                         // TODO 調整樣式那些功能
+                        event.cancelBubble = true
                         this.toolBarState.show('arrow', data)
+                        const context:ArrowSelectContext ={
+                            arrowData: this.canvasDataStore.getNodeData(data.id) as CanvasArrowDto,
+                            layer: this.layer,
+                            canvasDataStore: this.canvasDataStore,
+                            userSettings:this.userSettings
+                        }
+                        const feature = new ArrowSelectFeature()
+                        featureManager.activate('arrow-select', data.id, feature, context)
                     })
                 }
 
@@ -219,6 +230,18 @@ export class KonvaObjectManager{
                 });
                 break
             case 'TEXT':
+                let fontStyle:string
+                if(data.isBold || data.isItalic || data.isUnderline){
+                    fontStyle = ""
+                    if(data.isBold){
+                        fontStyle += "bold "
+                    }
+                    if(data.isItalic){
+                        fontStyle += "italic"
+                    }
+                }else{
+                    fontStyle = "normal"
+                }
                 const text = new Konva.Text({
                     id: `${data.id}-text`,
                     x: 12,
@@ -228,7 +251,11 @@ export class KonvaObjectManager{
                     fontSize: data.fontSize,
                     fontFamily: 'sans-serif',
                     lineHeight: 1.2,
+                    fontStyle: fontStyle
                 })
+                if(data.isUnderline){
+                    text.textDecoration('underline')   
+                }
                 const background = new Konva.Rect({
                     id: `${data.id}-background`,
                     x: 0,
@@ -434,10 +461,71 @@ export class KonvaObjectManager{
                                 })
                             })
                         }
-                        
-      
                         break
                 }
+                break
+            case 'ARROW_ANCHOR':
+                const anchor = new Konva.Circle({
+                    x: data.x*this.userSettings.viewportWidthUnit,
+                    y: data.y*this.userSettings.viewportHeightUnit,
+                    radius: 8,
+                    fill: 'white',
+                    stroke: 'none',
+                    id: data.id,
+                    arrowId: data.arrowId,
+                    name: 'arrow-anchor',
+                    visible: false,
+                    draggable: true,
+                });
+                anchor.on('dragend',()=>{
+                    featureManager.deactivate()
+                })
+                anchor.on('dragmove', () => {
+                    const otherVisibleAnchors = this.layer.find('.arrow-anchor').filter((node)=>{
+                        if(node.visible() && node.id()!=data.id){
+                            return node
+                        }
+                    })
+                    const mousePos = this.layer.getRelativePointerPosition()
+                    let minX = 10
+                    let minY = 10
+                    let nodeMinX:Node|null = null
+                    let nodeMinY:Node|null = null
+                    otherVisibleAnchors.forEach((node)=>{
+                        if(Math.abs(node.x()-mousePos.x)<minX){
+                            minX = Math.abs(node.x()-mousePos.x)
+                            nodeMinX = node
+                        }
+                        if(Math.abs(node.y()-mousePos.y)<minY){
+                            minY = Math.abs(node.y()-mousePos.y)
+                            nodeMinY = node
+                        }
+                    })
+                    if(nodeMinX==null && nodeMinY==null){
+                        this.canvasDataStore.updateNodeData(anchor.id(), {
+                            x: anchor.x() / userSettings.viewportWidthUnit,
+                            y: anchor.y() / userSettings.viewportHeightUnit
+                        });
+                    }else{
+                        if(minX<minY){
+                            anchor.x(nodeMinX.x())
+                            this.canvasDataStore.updateNodeData(anchor.id(), {
+                                x: nodeMinX.x() / userSettings.viewportWidthUnit,
+                                y: anchor.y() / userSettings.viewportHeightUnit
+                            });
+                        }else{
+                            anchor.y(nodeMinY.y())
+                            this.canvasDataStore.updateNodeData(anchor.id(), {
+                                x: anchor.x() / userSettings.viewportWidthUnit,
+                                y: nodeMinY.y() / userSettings.viewportHeightUnit
+                            });
+                        }
+                    }
+                    
+                    const arrowData = this.canvasDataStore.getNodeData(data.arrowId)
+                    this.canvasDataStore.updateNodeData(arrowData.id, arrowData)
+                });
+                this.layer.add(anchor)
                 break
         }
     }
@@ -459,8 +547,18 @@ export class KonvaObjectManager{
                     this.userSettings
                 );
                 if (newArrow) {
-                    newArrow.on('click tap', ()=>{
+                    newArrow.on('click tap', (event)=>{
+                        // TODO 調整樣式那些功能
+                        event.cancelBubble = true
                         this.toolBarState.show('arrow', data)
+                        const context:ArrowSelectContext ={
+                            arrowData: this.canvasDataStore.getNodeData(data.id) as CanvasArrowDto,
+                            layer: this.layer,
+                            canvasDataStore: this.canvasDataStore,
+                            userSettings:this.userSettings
+                        }
+                        const feature = new ArrowSelectFeature()
+                        featureManager.activate('arrow-select', data.id, feature, context)
                     })
                 }
                 break
@@ -470,6 +568,25 @@ export class KonvaObjectManager{
                 text.fill(data.fontColor)
                 text.scale({x:1,y:1})
                 text.fontSize(data.fontSize)
+                let fontStyle: string
+                if(data.isBold || data.isItalic || data.isUnderline){
+                    fontStyle = ""
+                    if(data.isBold){
+                        fontStyle += "bold "
+                    }
+                    if(data.isItalic){
+                        fontStyle += "italic"
+                    }
+                }else{
+                    fontStyle = "normal"
+                }
+                if(data.isUnderline){
+                    text.textDecoration('underline')
+                }
+                else{
+                    text.textDecoration('')
+                }
+                text.fontStyle(fontStyle)
                 const background = this.layer.findOne('#'+`${data.id}-background`) as Konva.Rect;
                 background.width(text.width()+24)
                 background.height(text.height()+24)
@@ -637,6 +754,206 @@ class ShowYouTubeVideoFeature implements IFeature<ShowYouTubeVideoContext>{
     }
 }
 
+
+/**
+ * 計算兩個點之間的歐幾里得距離。
+ * @param {{x: number, y: number}} p1 - 第一個點。
+ * @param {{x: number, y: number}} p2 - 第二個點。
+ * @returns {number} 兩個點之間的距離。
+ */
+function getDistance(p1:Vector2d, p2:Vector2d) {
+    const dx = p1.x - p2.x;
+    const dy = p1.y - p2.y;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+/**
+ * 在一條線段上找到距離給定點最近的點。
+ * @param {{x: number, y: number}} P - 給定的點 (例如滑鼠位置)。
+ * @param {{x: number, y: number}} A - 線段的起點。
+ * @param {{x: number, y: number}} B - 線段的終點。
+ * @returns {{pointOnSegment: {x: number, y: number}, distance: number}} 包含最近點和其到P的距離。
+ */
+function getClosestPointOnSegment(P:Vector2d, A:Vector2d, B:Vector2d) {
+    // 向量 AP 和 AB
+    const AP = { x: P.x - A.x, y: P.y - A.y };
+    const AB = { x: B.x - A.x, y: B.y - A.y };
+
+    // 計算 AP 在 AB 上的投影長度比例 t
+    // t = (AP . AB) / |AB|^2
+    const ab2 = AB.x * AB.x + AB.y * AB.y; // |AB|^2
+    let t = 0; // 默認設置為 A 點，處理 A 和 B 是同一個點的情況
+
+    if (ab2 > 0) { // 避免除以零
+        t = (AP.x * AB.x + AP.y * AB.y) / ab2;
+    }
+
+    let closestPoint;
+    if (t < 0) {
+        // 最近點在 A 之前，所以是 A 點本身
+        closestPoint = A;
+    } else if (t > 1) {
+        // 最近點在 B 之後，所以是 B 點本身
+        closestPoint = B;
+    } else {
+        // 最近點在線段 AB 上
+        closestPoint = {
+            x: A.x + t * AB.x,
+            y: A.y + t * AB.y
+        };
+    }
+
+    return {
+        pointOnSegment: closestPoint,
+        distance: getDistance(P, closestPoint)
+    };
+}
+
+/**
+ * 找到 Konva.Arrow 路徑上離給定點最近的點。
+ * @param {Konva.Arrow} konvaArrow - Konva箭頭實例。
+ * @param {{x: number, y: number}} mousePos - 滑鼠在圖層上的絕對位置。
+ * @returns {closestPos:{x: number, y: number}, startNodeIndex:number, | null} 路徑上最近的點的絕對座標，如果箭頭沒有足夠的點則返回null。
+ */
+function findClosestPointOnArrowPath(konvaArrow: Konva.Arrow, mousePos: Vector2d):{
+    closestPos:{x:number, y:number},
+    startNodeIndex:number
+}|null {
+    const arrowPoints = konvaArrow.points(); // 獲取箭頭的局部點位數組
+    const arrowGlobalX = konvaArrow.x(); // 箭頭的全局X位置
+    const arrowGlobalY = konvaArrow.y(); // 箭頭的全局Y位置
+
+    // 如果箭頭點位少於2個，無法形成線段
+    if (arrowPoints.length < 4) { // 需要至少 (x0, y0, x1, y1)
+        return null;
+    }
+
+    let closestPointOverall = null;
+    let minDistanceOverall = Infinity;
+    let startNodeIndex = null
+    // 將局部點位轉換為全局點位，並遍歷所有線段
+    for (let i = 0; i < arrowPoints.length - 2; i += 2) {
+        const A = {
+            x: arrowPoints[i] + arrowGlobalX,
+            y: arrowPoints[i + 1] + arrowGlobalY
+        };
+        const B = {
+            x: arrowPoints[i + 2] + arrowGlobalX,
+            y: arrowPoints[i + 3] + arrowGlobalY
+        };
+
+        const { pointOnSegment, distance } = getClosestPointOnSegment(mousePos, A, B);
+
+        if (distance < minDistanceOverall) {
+            minDistanceOverall = distance;
+            closestPointOverall = pointOnSegment;
+            startNodeIndex = i/2
+        }
+    }
+
+    return {
+        closestPos: closestPointOverall,
+        startNodeIndex: startNodeIndex
+    };
+}
+
+interface ArrowSelectContext{
+    arrowData: CanvasArrowDto;
+    layer: Konva.Layer;
+    canvasDataStore: CanvasDataStore;
+    userSettings: UserSettings
+}
+
+class ArrowSelectFeature implements IFeature<ArrowSelectContext> {
+    onActivated(context: ArrowSelectContext): () => void {
+        const {arrowData, layer, canvasDataStore, userSettings} = context
+        const konvaArrow = layer.findOne('#'+arrowData.id) as Konva.Arrow
+        const initialPos = layer.getRelativePointerPosition()
+        const tempCircle = new Konva.Circle({
+            x: initialPos.x,
+            y: initialPos.y,
+            radius: 6,
+            fill: 'black',
+            stroke: 'none',
+            id:'temp-anchor',
+            visible: false
+        })
+        let insertIndex:number = arrowData.anchorNodesId.length-1
+        layer.add(tempCircle)
+        konvaArrow.on('pointermove', ()=>{
+            const pos = layer.getRelativePointerPosition()
+            const closestPoint = findClosestPointOnArrowPath(konvaArrow, pos);
+            if (closestPoint) {
+                tempCircle.visible(true);
+                tempCircle.x(closestPoint.closestPos.x);
+                tempCircle.y(closestPoint.closestPos.y);
+                insertIndex = closestPoint.startNodeIndex
+            } else {
+                tempCircle.visible(false); // 如果箭頭沒有有效路徑，則隱藏tempCircle
+            }
+        })
+        tempCircle.on('click', (event)=>{
+            event.cancelBubble = true
+            const newId = crypto.randomUUID()
+            const newArrowAnchorData: CanvasArrowAnchorDto = {
+                kind:'ARROW_ANCHOR',
+                id:newId,
+                arrowId: arrowData.id,
+                x: tempCircle.x()/userSettings.viewportWidthUnit,
+                y: tempCircle.y()/userSettings.viewportHeightUnit
+            }
+            
+            canvasDataStore.addNodeData(newArrowAnchorData)
+            const newAnchorNodes = []
+            arrowData.anchorNodesId.forEach((anchorId, index)=>{
+                newAnchorNodes.push(anchorId)
+                if(index === insertIndex){
+                    newAnchorNodes.push(newId)
+                }
+            })
+            arrowData.anchorNodesId = newAnchorNodes
+            canvasDataStore.updateNodeData(arrowData.id, arrowData)
+            featureManager.deactivate('arrow-select')
+            const context:ArrowSelectContext={
+                arrowData:arrowData,
+                layer:layer,
+                userSettings:userSettings,
+                canvasDataStore:canvasDataStore
+            }
+            const feature = new ArrowSelectFeature()
+            featureManager.activate('arrow-select',arrowData.id, feature, context)
+        })
+        arrowData.anchorNodesId.forEach((anchorId)=>{
+            const anchorNode = layer.findOne('#'+anchorId)
+            anchorNode.visible(true)
+            anchorNode.draggable(true)
+            anchorNode.moveToTop()
+            // Prevent bubbling to Stage while interacting with anchors
+            anchorNode.on('mouseover', ()=>{
+                tempCircle.visible(false)
+            })
+        })
+        // konvaArrow.on('pointerout', ()=>{
+        //     console.log('pointerout')
+        //     tempCircle.visible(false)
+        // })
+        const cleanup = () => {
+            arrowData.anchorNodesId.forEach((anchorId)=>{
+                const anchorNode = layer.findOne('#'+anchorId) as Konva.Circle
+                anchorNode.visible(false)
+                // Reset draggable to avoid accidental drags when hidden
+                anchorNode.draggable(false)
+            })
+            konvaArrow.removeEventListener('pointermove')
+            tempCircle.destroy()
+        };
+        return cleanup;
+    }
+}
+
+
+
+
 interface TextBlockTransformerContext {
     textBlock: Konva.Group;
     layer: Konva.Layer;
@@ -647,32 +964,9 @@ class TextBlockTransformerFeature implements IFeature<TextBlockTransformerContex
         const tr = new Konva.Transformer();
         tr.resizeEnabled(false)
         tr.nodes([context.textBlock]);
-        // context.textBlock.draggable(false)
         context.layer.add(tr);
         context.layer.draw();
-        // const SNAP_DEGREES = 2; // 吸附閾值，例如：在目標角度的 ±5 度內吸附
-        // const SNAP_ANGLES = [0, 90, 180, 270]; // 目標吸附角度
-        // tr.on('transform', (e) =>{
-        //     const node = tr.nodes()[0]; // 獲取當前 Transformer 附著的節點
-        //     if (!node) return;
-        //     const currentRotation = node.rotation();
-        //     console.log(currentRotation)
-        //     let snapped = false;
-        //     for (const snapAngle of SNAP_ANGLES) {
-        //         // 計算當前角度與目標吸附角度的差值
-        //         const diff = Math.abs(currentRotation % 360 - snapAngle);
-        
-        //         // 如果差值在吸附閾值內，則進行吸附
-        //         // 考慮到 0/360 度的邊界情況，以及負角度
-        //         if (diff < SNAP_DEGREES || Math.abs(diff - 360) < SNAP_DEGREES) {
-        //             node.rotation(snapAngle); // 將節點旋轉設置為吸附角度
-        //             snapped = true;
-        //             break; // 找到一個吸附點就停止
-        //         }
-        //     }
-        // })
         const cleanup = () => {
-            // context.textBlock.draggable(true)
             tr.destroy();
             context.layer.draw();
             console.log('text transformer clean up');

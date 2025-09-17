@@ -35,6 +35,15 @@ export class CanvasText {
   @Column({ type: 'float' })
   fontSize: number;
 
+  @Column({type:'boolean'})
+  isBold: boolean
+
+  @Column({type:'boolean'})
+  isItalic: boolean
+
+  @Column({type:'boolean'})
+  isUnderline: boolean
+
   @ManyToOne(() => User, (user) => user.canvas_texts, {
     cascade: true,
     onDelete: 'CASCADE',

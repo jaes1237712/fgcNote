@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CanvasTextDto } from "$lib/client";
 	import type { CanvasDataStore } from "$lib/utils/canvas/canvas-data-manager.svelte";
-	import { AArrowDown, AArrowUp, Baseline, FoldHorizontal, FoldVertical, PaintBucket } from "@lucide/svelte";
+	import { AArrowDown, AArrowUp, Baseline, Bold, FoldHorizontal, FoldVertical, Italic, PaintBucket, Underline } from "@lucide/svelte";
 	import { featureManager } from "../canvas-feature-manager";
     let{
         InitialTextData,
@@ -32,14 +32,14 @@
             fontSize=maxFontSize
         }
         textData.fontSize = fontSize
-        canvasDataStore.updateNodeData(textData.id, textData)
+        textData = canvasDataStore.updateNodeData(textData.id, textData) as CanvasTextDto
         featureManager.deactivate('text-transformer')
     }}>
         <AArrowUp/>
     </button>
     <select id="tool-fontNumber" bind:value={fontSize} onchange={()=>{
         textData.fontSize = fontSize
-        canvasDataStore.updateNodeData(textData.id, textData)
+        textData = canvasDataStore.updateNodeData(textData.id, textData) as CanvasTextDto
         featureManager.deactivate('text-transformer')
     }}>
         {#each fontSizeArray as size}
@@ -52,7 +52,7 @@
             fontSize = minFontSize
         }
         textData.fontSize = fontSize
-        canvasDataStore.updateNodeData(textData.id, textData)
+        textData = canvasDataStore.updateNodeData(textData.id, textData) as CanvasTextDto
         featureManager.deactivate('text-transformer')
     }}>
         <AArrowDown/>
@@ -62,7 +62,7 @@
             <Baseline id="font-color-icon"/>
             <input id="font-color-picker" type="color" bind:value={fontColor} oninput={()=>{
                 textData.fontColor = fontColor
-                canvasDataStore.updateNodeData(textData.id, textData)
+                textData = canvasDataStore.updateNodeData(textData.id, textData) as CanvasTextDto
             }}/>
         </label>
     </div>
@@ -71,21 +71,39 @@
             <PaintBucket/>
             <input id="background-color-picker" type="color"bind:value={backgroundColor} oninput={()=>{
                 textData.backgroundColor = backgroundColor
-                canvasDataStore.updateNodeData(textData.id, textData)
+                textData = canvasDataStore.updateNodeData(textData.id, textData) as CanvasTextDto
             }}/>
         </label>
     </div>
-    <button>
-        <FoldVertical onclick={()=>{
-            textData.rotation = 0
-            canvasDataStore.updateNodeData(textData.id, textData)
-        }}/>
+    <button onclick={()=>{
+        textData.isBold = !(textData.isBold)
+        textData = canvasDataStore.updateNodeData(textData.id, textData) as CanvasTextDto        
+    }}>
+        <Bold />
     </button>
-    <button>
-        <FoldHorizontal onclick={()=>{
-            textData.rotation = 90
-            canvasDataStore.updateNodeData(textData.id, textData)
-        }}/>
+    <button onclick={()=>{
+        textData.isItalic = !(textData.isItalic)
+        textData = canvasDataStore.updateNodeData(textData.id, textData) as CanvasTextDto        
+    }}>
+        <Italic />
+    </button>
+    <button onclick={()=>{
+        textData.isUnderline = !(textData.isUnderline)
+        textData = canvasDataStore.updateNodeData(textData.id, textData) as CanvasTextDto        
+    }}>
+        <Underline />
+    </button>
+    <button onclick={()=>{
+        textData.rotation = 0
+        canvasDataStore.updateNodeData(textData.id, textData)
+    }}>
+        <FoldVertical />
+    </button>
+    <button onclick={()=>{
+        textData.rotation = 90
+        canvasDataStore.updateNodeData(textData.id, textData)
+    }}>
+        <FoldHorizontal />
     </button>
 </div>
 
