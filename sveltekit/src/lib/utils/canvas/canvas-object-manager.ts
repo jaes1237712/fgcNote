@@ -464,7 +464,7 @@ export class KonvaObjectManager{
                         break
                 }
                 break
-            case 'ARROW_ANCHOR':
+            case 'ARROW_ANCHOR':{
                 const anchor = new Konva.Circle({
                     x: data.x*this.userSettings.viewportWidthUnit,
                     y: data.y*this.userSettings.viewportHeightUnit,
@@ -481,23 +481,28 @@ export class KonvaObjectManager{
                     featureManager.deactivate()
                 })
                 anchor.on('dragmove', () => {
-                    const otherVisibleAnchors = this.layer.find('.arrow-anchor').filter((node)=>{
-                        if(node.visible() && node.id()!=data.id){
-                            return node
+                    const arrowData = this.canvasDataStore.getNodeData(data.arrowId) as CanvasArrowDto
+                    const otherVisibleAnchors:Node[] = []
+                    arrowData.anchorNodesId.forEach((id)=>{
+                        if(id!==data.id){
+                            const node = this.layer.findOne('#'+id)
+                            otherVisibleAnchors.push(node)
                         }
                     })
-                    const mousePos = this.layer.getRelativePointerPosition()
+                    const mousePos = this.stage.getPointerPosition()
                     let minX = 10
                     let minY = 10
                     let nodeMinX:Node|null = null
                     let nodeMinY:Node|null = null
                     otherVisibleAnchors.forEach((node)=>{
-                        if(Math.abs(node.x()-mousePos.x)<minX){
-                            minX = Math.abs(node.x()-mousePos.x)
+                        const nodeX = node.getAbsolutePosition(this.stage).x
+                        const nodeY = node.getAbsolutePosition(this.stage).y
+                        if(Math.abs(nodeX-mousePos.x)<minX){
+                            minX = Math.abs(nodeX-mousePos.x)
                             nodeMinX = node
                         }
-                        if(Math.abs(node.y()-mousePos.y)<minY){
-                            minY = Math.abs(node.y()-mousePos.y)
+                        if(Math.abs(nodeY-mousePos.y)<minY){
+                            minY = Math.abs(nodeY-mousePos.y)
                             nodeMinY = node
                         }
                     })
@@ -507,26 +512,46 @@ export class KonvaObjectManager{
                             y: anchor.y() / userSettings.viewportHeightUnit
                         });
                     }else{
-                        if(minX<minY){
-                            anchor.x(nodeMinX.x())
-                            this.canvasDataStore.updateNodeData(anchor.id(), {
-                                x: nodeMinX.x() / userSettings.viewportWidthUnit,
-                                y: anchor.y() / userSettings.viewportHeightUnit
-                            });
-                        }else{
-                            anchor.y(nodeMinY.y())
-                            this.canvasDataStore.updateNodeData(anchor.id(), {
-                                x: anchor.x() / userSettings.viewportWidthUnit,
-                                y: nodeMinY.y() / userSettings.viewportHeightUnit
-                            });
+                        const alignLineX = this.layer.findOne('.align-line-x') as Konva.Line
+                        let anchorX = anchor.x()
+                        if(nodeMinX){
+                            anchorX = nodeMinX.getAbsolutePosition(this.stage).x
+                            if(alignLineX){
+                                alignLineX.points([anchorX,this.userSettings.viewportHeightUnit*-200,anchorX,this.userSettings.viewportHeightUnit*200])
+                                alignLineX.visible(true)
+                            }
                         }
+                        else{
+                            if(alignLineX){
+                                alignLineX.visible(false)
+                            }
+                        }
+                        let anchorY = anchor.y()
+                        const alignLineY = this.layer.findOne('.align-line-y') as Konva.Line
+                        if(nodeMinY){
+                            anchorY = nodeMinY.getAbsolutePosition(this.stage).y
+                            if(alignLineY){
+                                alignLineY.points([this.userSettings.viewportWidthUnit*-200,anchorY,this.userSettings.viewportWidthUnit*200,anchorY])
+                                alignLineY.visible(true)
+                            }
+                        }
+                        else{
+                            if(alignLineY){
+                                alignLineY.visible(false)
+                            }
+                        }
+                        anchor.x(anchorX)
+                        anchor.y(anchorY)
+                        this.canvasDataStore.updateNodeData(anchor.id(),{
+                            x: anchor.x()/this.userSettings.viewportWidthUnit,
+                            y: anchor.y()/this.userSettings.viewportHeightUnit
+                        })
                     }
-                    
-                    const arrowData = this.canvasDataStore.getNodeData(data.arrowId)
                     this.canvasDataStore.updateNodeData(arrowData.id, arrowData)
                 });
                 this.layer.add(anchor)
                 break
+            }
         }
     }
 
@@ -873,11 +898,29 @@ class ArrowSelectFeature implements IFeature<ArrowSelectContext> {
             x: initialPos.x,
             y: initialPos.y,
             radius: 6,
-            fill: 'black',
+            fill: 'gray',
             stroke: 'none',
             id:'temp-anchor',
             visible: false
         })
+        const alignLineX = new Konva.Line({
+            points: [10,0,10,4000],
+            stroke: 'rgb(0, 161, 255)',
+            strokeWidth: 2,
+            dash: [4,6],
+            name: 'align-line-x',
+            visible:false
+        })
+        const alignLineY = new Konva.Line({
+            points: [0,10,4000,10],
+            stroke: 'rgb(0, 161, 255)',
+            strokeWidth: 2,
+            dash: [4,6],
+            name:'align-line-y',
+            visible: false
+        })
+        layer.add(alignLineX)
+        layer.add(alignLineY)
         let insertIndex:number = arrowData.anchorNodesId.length-1
         layer.add(tempCircle)
         konvaArrow.on('pointermove', ()=>{
@@ -945,6 +988,8 @@ class ArrowSelectFeature implements IFeature<ArrowSelectContext> {
                 anchorNode.draggable(false)
             })
             konvaArrow.removeEventListener('pointermove')
+            alignLineX.destroy()
+            alignLineY.destroy()
             tempCircle.destroy()
         };
         return cleanup;
